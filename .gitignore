@@ -21,4 +21,6 @@ e2e/evidence/*
 !e2e/evidence/startup-diagnosis.json
 !e2e/evidence/pi-startup.json
 !e2e/evidence/startup-fixed-review.json
-!e2e/evidence/controller-e2e.json
+!e2e/evidence/controller-audit-initial.json
+!e2e/evidence/controller-audit-second.json
+!e2e/evidence/controller-reanalysis.json

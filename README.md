@@ -212,6 +212,7 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 | Release-era public six-task review-loop driver | 27/27 passed in 7m 19s, including two failing first reviews and two passing final reviews |
 | Pi startup dialog guard | 11/11 passed; trust dialog and decisions remain untouched before task submission |
 | Fresh six-task loop after startup fix | 27/27 passed in 7m 11s, using the relocated public driver |
+| Codex controller, current skill (two real runs) | Each completed six tasks and passed 46 scenario/source/cleanup checks; wait and delivery audits passed after verifier corrections |
 | Claude Code controller, skill end-to-end | 19/19 passed |
 | Claude Code controller, pstack review loop end-to-end | 21/21 passed — the first reviewer panel FAILed the revision, and a fresh second panel PASSed it |
 | Codex controller, full pstack review loop | 10/10 passed; direct TOML roles, six fresh workers, no native subagents |
@@ -224,6 +225,8 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 Model names throughout are examples; availability depends on your provider.
 
 The [E2E guide](e2e/README.md) explains the evidence and the mechanisms it covers. Tests and evidence live outside the installed skills. The [verification summary](e2e/evidence/verification.json) keeps versions, source hashes, and historical attribution: core/setup runs predate the release's final delivery gate. The later `agent_prompt_stalled` failures were traced to a Pi trust dialog misclassified as idle by Herdr; see the [reproduction and fix](e2e/startup-findings.md). The new guard passed its [real startup test](e2e/evidence/pi-startup.json), and the relocated driver has a [fresh full-loop pass](e2e/evidence/startup-fixed-review.json). The [original release receipt](e2e/evidence/review-e2e.json) and failed relocation receipt remain unchanged. Live runtime tests used Linux; macOS has not been measured.
+
+Both new Codex-controller scenarios completed successfully, but their original driver invocations failed in the transcript auditor. The corrected auditor passes both retained traces: six unbounded waits per run, continued process handles, and delivery before result reads. The [separate reanalysis receipt](e2e/evidence/controller-reanalysis.json) preserves those failures and identifies the final auditor hash; it is not a fresh integrated rerun after the parser corrections.
 
 ### Reproduce the review loop
 

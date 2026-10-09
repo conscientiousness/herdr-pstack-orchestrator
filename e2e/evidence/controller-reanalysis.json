@@ -1,0 +1,74 @@
+{
+  "schema": "horch/controller-transcript-reanalysis/v1",
+  "verdict": "pass",
+  "date": "2026-10-09",
+  "scope": "Post-run verification of two real Codex controllers following the current skill. Both completed the six-task scenario, but their original driver invocations failed in transcript parsing. This reanalysis does not relabel those receipts or represent a fresh integrated rerun.",
+  "auditor": {
+    "file": "e2e/controller_loop.py",
+    "sha256": "40a3e84562fa7ae8c4916e2ac8ad066b7318662e35ed28aa036729383ae7ee9e"
+  },
+  "horch_sha256": "40de0067638e0fb276280b900f140fac63ce08eb29b386d96a837c152fcfa6b7",
+  "runs": [
+    {
+      "original_evidence": "controller-audit-initial.json",
+      "original_evidence_sha256": "8dda00f57fc4f7c3c76eaf2111bf566c318b1cd1d6d3ef0312c69af27a6c82f2",
+      "original_verdict": "fail",
+      "original_failure_categories": [
+        "delivery_dynamic_read_unproven"
+      ],
+      "seconds": 952.457,
+      "scenario_assertions": {
+        "passed": 46,
+        "total": 46
+      },
+      "all_six_tasks_delivered_and_closed_before_cleanup": true,
+      "transcript_sha256": "8bd034e907e321bcf46989e50a29a6a61f111a38ed9eb8fb16c91d8a04f2835f",
+      "audit_verdict": "pass",
+      "counts": {
+        "tool_calls": 56,
+        "shell_calls": 32,
+        "wait_launches": 6,
+        "short_waits": 0,
+        "yielded_waits": 6,
+        "handle_resumes": 33,
+        "rejected_wait_requests": 0
+      }
+    },
+    {
+      "original_evidence": "controller-audit-second.json",
+      "original_evidence_sha256": "c6f98da273285953006a2a6e5518f67a5a687dcbc73ed5cf6c89dfb3d5dd80ab",
+      "original_verdict": "fail",
+      "original_failure_categories": [
+        "transcript_dynamic_arguments"
+      ],
+      "seconds": 1216.881,
+      "scenario_assertions": {
+        "passed": 46,
+        "total": 46
+      },
+      "all_six_tasks_delivered_and_closed_before_cleanup": true,
+      "transcript_sha256": "80458ec9bc6d21442c41d3e5d23904442375be35574b73ba321073e660b8fa41",
+      "audit_verdict": "pass",
+      "counts": {
+        "tool_calls": 88,
+        "shell_calls": 33,
+        "wait_launches": 6,
+        "short_waits": 0,
+        "yielded_waits": 6,
+        "handle_resumes": 28,
+        "rejected_wait_requests": 1
+      }
+    }
+  ],
+  "corrections": [
+    "Distinguish quoted brief-writing heredocs from reading results.",
+    "Safely fold literal string addition without executing JS.",
+    "Keep ordered tool-output frames across a yielded exec cell and its subsequent wait calls.",
+    "Count the observed invalid_task_id rejection separately; it provides no delivery evidence."
+  ],
+  "limits": [
+    "Literal command and tool-output audit, not a proof of arbitrary shell or JavaScript semantics.",
+    "Original receipts retain the hashes exercised by each live scenario. Only the post-run auditor changed for this reanalysis.",
+    "Full transcripts and task reports remain local. A new authenticated run can be reproduced with the public controller driver."
+  ]
+}

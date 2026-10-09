@@ -87,7 +87,16 @@ def output_objects(text):
 
 
 def literal_calls(source):
-    """Extract literal JS object arguments; reject expressions rather than eval JS."""
+    """Extract fixed arguments, including string sums, without evaluating JS."""
+    class StringSums(ast.NodeTransformer):
+        def visit_BinOp(self, node):
+            node = self.generic_visit(node)
+            if (isinstance(node.op, ast.Add)
+                    and isinstance(node.left, ast.Constant) and isinstance(node.left.value, str)
+                    and isinstance(node.right, ast.Constant) and isinstance(node.right.value, str)):
+                return ast.Constant(node.left.value + node.right.value)
+            return node
+
     calls = []
     for match in re.finditer(r'tools\.(exec_command|write_stdin)\s*\(', source):
         i = match.end()
@@ -132,7 +141,7 @@ def literal_calls(source):
         masked = re.sub(r'\b(true|false|null)\b', lambda m: {'true':'True','false':'False','null':'None'}[m[0]], masked)
         masked = re.sub(r'__STRING_(\d+)__', lambda m: repr(strings[int(m[1])]), masked)
         try:
-            args = ast.literal_eval(masked)
+            args = ast.literal_eval(StringSums().visit(ast.parse(masked, mode='eval')))
         except (ValueError, SyntaxError):
             raise Failure('transcript_dynamic_arguments') from None
         calls.append((match[1], args))
@@ -170,10 +179,11 @@ def transcript_path(session, cwd, started):
 def audit_transcript(path, tasks, counts, delivered_at=None):
     """Ordering is tool-call/output order, never assistant narrative or report."""
     pending, live, done, reads = {}, {}, set(), set()
-    cell_calls = {}
+    cell_calls, cell_ordered = {}, {}
     observation_handles = set()
     counts.update({'tool_calls': 0, 'shell_calls': 0, 'wait_launches': 0,
-                   'short_waits': 0, 'yielded_waits': 0, 'handle_resumes': 0})
+                   'short_waits': 0, 'yielded_waits': 0, 'handle_resumes': 0,
+                   'rejected_wait_requests': 0})
     short = set()
     cell_live = set()
     ordered_cells = set()
@@ -267,7 +277,6 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                         raise Failure('transcript_combined_waits')
                     waiting = bool(waits)
                     if waiting:
-                        counts['wait_launches'] += 1
                         tail = waits[0][1]
                         ids = set(re.findall(r't-[0-9a-f]{6}', tail)) or {t['task_id'] for t in tasks if t['task_id'] not in done}
                         if any(ids & v for v in live.values()):
@@ -290,10 +299,23 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
             calls = pending.pop(item.get('call_id'), None)
             if calls is None:
                 raise Failure('transcript_output_unmatched')
-            segments = [(calls, text_output(item.get('output', '')))]
-            if len(calls) > 1 and item.get('call_id') in ordered_cells:
+            ordered = item.get('call_id') in ordered_cells
+            prior_cell = None
+            if len(calls) == 1 and calls[0][0] == 'cell':
+                prior_cell = calls[0][1]
+                calls = cell_calls.pop(prior_cell)
+                ordered = cell_ordered.pop(prior_cell)
+                cell_live.discard(prior_cell)
+            output = text_output(item.get('output', ''))
+            cells = set(re.findall(r'Script running with cell ID ([\w-]+)', output))
+            if len(cells) > 1 or (prior_cell and cells and cells != {prior_cell}):
+                raise Failure('transcript_cell_changed')
+            segments = [(calls, output)]
+            remaining = calls
+            if (len(calls) > 1 and ordered) or cells:
                 frames = []
-                for part in item.get('output', []):
+                parts = item.get('output', [])
+                for part in parts if isinstance(parts, list) else []:
                     try:
                         frame = json.loads(part.get('text', ''))
                     except (ValueError, AttributeError):
@@ -302,35 +324,36 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                         frame = frame.get('value')
                     if isinstance(frame, dict) and 'chunk_id' in frame:
                         frames.append(frame)
-                if len(frames) != len(calls):
+                if (len(frames) > len(calls) or (not cells and len(frames) != len(calls))
+                        or (frames and len(calls) > 1 and not ordered)):
                     raise Failure('transcript_output_mapping_ambiguous')
                 segments = [([call], json.dumps(frame)) for call, frame in zip(calls, frames)]
+                remaining = calls[len(frames):]
+            for cell in cells:
+                # Yielded cells return only new output. Keep the unprinted calls
+                # in order so later frames cannot repeat or skip an observation.
+                cell_calls[cell], cell_ordered[cell] = remaining, ordered
+                cell_live.add(cell)
             for calls, output in segments:
                 sessions = set(re.findall(r'"session_id"\s*:\s*(\d+)|Process running with session ID (\d+)', output))
                 handles = {a or b for a, b in sessions}
-                cells = set(re.findall(r'Script running with cell ID ([\w-]+)', output))
-                if len(calls) > 1 and (handles or cells or any(c[0] == 'launch' for c in calls)):
+                if len(calls) > 1 and (handles or any(c[0] == 'launch' for c in calls)):
                     raise Failure('transcript_output_mapping_ambiguous')
-                if cells:
-                    for cell in cells:
-                        if calls and calls[0][0] == 'cell':
-                            prior = calls[0][1]
-                            if cell != prior:
-                                raise Failure('transcript_cell_changed')
-                        else:
-                            cell_calls[cell] = calls
-                    cell_live.update(cells)
-                    continue
-                expanded = []
-                for action, data in calls:
-                    if action == 'cell':
-                        expanded.extend(cell_calls.pop(data, []))
-                        cell_live.discard(data)
-                    else:
-                        expanded.append((action, data))
                 delivery_output = False
-                for action, data in expanded:
+                for action, data in calls:
                     if action in ('launch', 'shell', 'observe'):
+                        if action == 'launch':
+                            # Argument validation can reject a mistyped task ID
+                            # before entering the wait loop. It proves no delivery.
+                            events = list(output_objects(output))
+                            if (not handles and re.search(r'"exit_code"\s*:\s*1\b|Process exited with code 1\b', output)
+                                    and any(e.get('error') == 'invalid_task_id' for e in events)
+                                    and not any(e.get('state') == 'done' for e in events)):
+                                counts['rejected_wait_requests'] += 1
+                                continue
+                            if any(data & v for v in live.values()):
+                                raise Failure('overlapping_wait_handles')
+                            counts['wait_launches'] += 1
                         if handles and action == 'launch':
                             counts['yielded_waits'] += 1
                         if action in ('launch', 'observe'):
