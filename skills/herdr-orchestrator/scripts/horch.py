@@ -9,6 +9,7 @@ errors are one {"error": code, "message": text} object with exit status 1.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import re
@@ -16,8 +17,10 @@ import secrets
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import tomllib
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -25,6 +28,8 @@ HARNESSES = ("pi", "codex", "claude")
 CONFIG_TOP_KEYS = {"max_active_workers", "notify_after_minutes", "workers", "roles"}
 WORKER_KEYS = {"harness", "model", "provider", "effort", "args"}
 WORKER_NAME_RE = re.compile(r"[a-z][a-z0-9-]{0,15}")
+TASK_ID_RE = re.compile(r"t-[0-9a-f]{6}")
+MISSING_PANE_CODES = {"pane_not_found", "tab_not_found", "workspace_not_found"}
 
 SETTLED_STATES = {
     "done",
@@ -193,8 +198,27 @@ def tasks_root():
     return root / "herdr-orchestrator" / "tasks"
 
 
+def validate_task_id(task_id):
+    if not isinstance(task_id, str) or not TASK_ID_RE.fullmatch(task_id):
+        fail("invalid_task_id", f"task ID must match t-[0-9a-f]{{6}}: {task_id!r}")
+
+
 def task_dir(task_id):
+    validate_task_id(task_id)
     return tasks_root() / task_id
+
+
+@contextmanager
+def task_store_lock():
+    """Serialize allocation and startup across run/check processes on this store."""
+    root = tasks_root()
+    root.mkdir(parents=True, exist_ok=True)
+    with (root / ".start.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
 
 
 def read_json(path):
@@ -205,7 +229,18 @@ def read_json(path):
 
 
 def write_json(path, obj):
-    Path(path).write_text(json.dumps(obj, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    path = Path(path)
+    text = json.dumps(obj, indent=2, ensure_ascii=False) + "\n"
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         prefix=f".{path.name}.", delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(text)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def iso_now():
@@ -239,17 +274,21 @@ def all_task_ids():
     root = tasks_root()
     if not root.is_dir():
         return []
-    return sorted(d.name for d in root.iterdir() if d.is_dir() and (d / "task.json").is_file())
+    return sorted(
+        d.name for d in root.iterdir()
+        if TASK_ID_RE.fullmatch(d.name) and d.is_dir() and (d / "task.json").is_file()
+    )
 
 
 def active_task_count():
-    # A task counts while its pane is not closed, whatever its recorded state.
+    # Count incomplete reservations too: a publication failure may leave a pane
+    # whose task.json could not be written. Only confirmed closure frees a slot.
     root = tasks_root()
     if not root.is_dir():
         return 0
     count = 0
     for directory in root.iterdir():
-        if not directory.is_dir() or not (directory / "task.json").is_file():
+        if not TASK_ID_RE.fullmatch(directory.name) or not directory.is_dir():
             continue
         stored = read_json(directory / "state.json")
         if isinstance(stored, dict) and stored.get("closed") is True:
@@ -357,21 +396,28 @@ def workspace_panes(workspace):
     return pairs
 
 
-def pane_exists(pane_id, workspace):
-    return any(pane == pane_id for pane, _ in workspace_panes(workspace))
+def herdr_error_code(exc):
+    error = exc.payload.get("error") if isinstance(exc.payload, dict) else None
+    return error.get("code") if isinstance(error, dict) else None
 
 
 def close_pane(pane_id):
-    """Close a pane; returns "closed" or "already_gone", raises HerdrError when herdr cannot say."""
-    workspace = os.environ.get("HERDR_WORKSPACE_ID")
-    if not pane_exists(pane_id, workspace):
-        return "already_gone"
+    """Close the authoritative pane, independent of the caller's workspace."""
     try:
-        herdr("pane", "close", pane_id, timeout=30.0)
-    except HerdrError:
-        if pane_exists(pane_id, workspace):
-            raise  # the pane is still there, so the close really failed
-        return "already_gone"  # it vanished between the two calls
+        pane = herdr_path(herdr("pane", "get", pane_id, timeout=30.0), "result", "pane")
+    except HerdrError as exc:
+        if herdr_error_code(exc) in MISSING_PANE_CODES:
+            return "already_gone"
+        raise
+    target = pane.get("pane_id") if isinstance(pane, dict) else None
+    if not isinstance(target, str) or not target:
+        raise HerdrError("herdr pane get has a pane without pane_id")
+    try:
+        herdr("pane", "close", target, timeout=30.0)
+    except HerdrError as exc:
+        if herdr_error_code(exc) in MISSING_PANE_CODES:
+            return "already_gone"  # it vanished after pane get
+        raise
     return "closed"
 
 
@@ -498,7 +544,13 @@ def cmd_run(args):
     emit(start_task(config, args.worker, brief_text, resolve_cwd(args.cwd)))
 
 
-def start_task(config, worker_name, brief_text, cwd):
+def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False):
+    # Startup includes placement, publication, and acknowledgement, never completion.
+    with task_store_lock():
+        return _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full)
+
+
+def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
     """Start one worker on one task and return the run object; fail() on contract errors."""
     workspace = require_workspace()
     worker = config["workers"].get(worker_name)
@@ -508,6 +560,8 @@ def start_task(config, worker_name, brief_text, cwd):
     max_active = config["max_active_workers"]
     active = active_task_count()
     if active >= max_active:
+        if skip_if_full:
+            return None
         fail(
             "worker_limit",
             f"worker limit reached: {active} active tasks, max_active_workers = {max_active}",
@@ -524,14 +578,20 @@ def start_task(config, worker_name, brief_text, cwd):
 
     directory = root / task_id
     directory.mkdir(parents=True)
-    write_brief(directory, brief_text, task_id, nonce)
-
+    try:
+        write_brief(directory, brief_text, task_id, nonce)
+    except BaseException:
+        shutil.rmtree(directory, ignore_errors=True)
+        raise
     try:
         pane_id, tab_id = place_pane(workspace, cwd, os.environ.get("HERDR_TAB_ID"))
     except HerdrError as exc:
-        # Nothing was started; do not leave a stale half-built task directory.
-        shutil.rmtree(directory, ignore_errors=True)
-        fail("herdr_error", f"pane placement failed: {exc}", exc.payload)
+        # A timeout or malformed creation response may hide a newly created pane.
+        # Keep the reservation until the controller can inspect and remove it.
+        raise HerdrError(
+            f"pane placement failed: {exc}; incomplete reservation retained at {directory}",
+            exc.payload,
+        ) from exc
 
     task = {
         "task_id": task_id,
@@ -549,9 +609,20 @@ def start_task(config, worker_name, brief_text, cwd):
         "argv": launch_args(worker, directory),
         "created_at": iso_now(),
     }
-    write_json(directory / "task.json", task)
     state = default_state()
-    save_state(directory, state)
+    try:
+        write_json(directory / "task.json", task)
+        save_state(directory, state)
+    except BaseException:
+        # If publication fails, close the unused pane. If close is uncertain,
+        # retain/publish its reservation so a later launch cannot reuse the slot.
+        try:
+            close_pane(pane_id)
+        except HerdrError:
+            write_json(directory / "task.json", task)
+        else:
+            shutil.rmtree(directory, ignore_errors=True)
+        raise
 
     def run_object(state_name):
         return {
@@ -689,8 +760,9 @@ def evaluate_task(info, agent, config):
             try:
                 close_pane(task["pane_id"])
                 state["closed"] = True
-            except HerdrError:
-                pass  # herdr cannot say whether the pane is gone; horch close can retry
+            except HerdrError as exc:
+                state["problem"] = f"pane cleanup failed: {exc}; retry with horch close {task_id}"
+                notify(title, state["problem"])
             return "done"
         if verdict == "missing":
             state["state"] = "result_missing"
@@ -838,9 +910,6 @@ def cmd_close(args):
     if not isinstance(task, dict) or not isinstance(task.get("pane_id"), str):
         fail("unknown_task", f"no such task: {args.task_id}")
     state = load_state(directory)
-    if state.get("closed"):
-        emit({"task_id": args.task_id, "closed": True, "pane": "already_gone"})
-        return
     outcome = close_pane(task["pane_id"])
     state["closed"] = True
     save_state(directory, state)
@@ -918,16 +987,17 @@ def cmd_check(args):
     started = {}
     settled_at = {}
     while pending or any(info["state"]["state"] not in SETTLED_STATES for info, _ in started.values()):
-        free = config["max_active_workers"] - active_task_count()
-        while pending and free > 0 and time.monotonic() < deadline:
-            name = pending.pop(0)
+        while pending and time.monotonic() < deadline:
+            name = pending[0]
             began = time.monotonic()
-            run = start_task(config, name, CHECK_BRIEF, cwd)
+            run = start_task(config, name, CHECK_BRIEF, cwd, skip_if_full=True)
+            if run is None:
+                break  # another run/check may have claimed the last slot
+            pending.pop(0)
             info = make_info(run["task_id"])
             started[name] = (info, began)
             if info["state"]["state"] in SETTLED_STATES:
                 settled_at[name] = time.monotonic()
-            free -= 1
         waiting = [info for info, _ in started.values() if info["state"]["state"] not in SETTLED_STATES]
         if time.monotonic() >= deadline or (not waiting and pending):
             break  # out of time, or problem panes hold every slot
@@ -1008,6 +1078,10 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     try:
+        for task_id in getattr(args, "task_ids", []):
+            validate_task_id(task_id)
+        if hasattr(args, "task_id"):
+            validate_task_id(args.task_id)
         args.func(args)
     except HerdrError as exc:
         fail("herdr_error", str(exc), exc.payload)
