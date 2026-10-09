@@ -1,0 +1,41 @@
+name: Pstack upstream
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - skills/pstack-herdr/references/upstream.json
+      - scripts/check_upstream.py
+      - .github/workflows/upstream.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compare pinned bundle with upstream
+        run: python scripts/check_upstream.py --output upstream-result.json
+      - name: Publish check result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pstack-upstream-result
+          path: upstream-result.json
+          if-no-files-found: warn
+      - name: Show failure summary
+        if: failure()
+        run: |
+          echo '## Pstack upstream check did not pass' >> "$GITHUB_STEP_SUMMARY"
+          echo 'An update may be required, or the check could not complete. See the checker summary, logs, and JSON artifact; a failed check does not mean current.' >> "$GITHUB_STEP_SUMMARY"
