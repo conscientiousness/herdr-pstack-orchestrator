@@ -23,13 +23,13 @@ On setup, ask which configured workers should fill each role. For example:
 "interrogate reviewers" = ["ds", "haiku"]
 ```
 
-For Claude Code, replace the role lines in `pstack-models.md` with one `@` import of the resolved `workers.toml` path. Keep `session hook: off` in `pstack-models.md` itself if the user has disabled that hook, because the hook does not follow imports. On Codex and Pi, read `[roles]` directly from TOML; their pstack role-sheet loaders do not expand the Claude import. The TOML file is authoritative in every runtime.
+For Claude Code, update the user's own `pstack-models.md` role sheet, after preserving any other user settings, to import the resolved `workers.toml` path with `@`. Never edit a role-sheet template inside an installed pstack package. Keep `session hook: off` in the user sheet itself if the user has disabled that hook, because the hook does not follow imports. On Codex and Pi, read `[roles]` directly from TOML; their pstack role-sheet loaders do not expand the Claude import. The TOML file is authoritative in every runtime.
 
 ## Review loop
 
 1. State the intended behavior and create a git worktree for the implementing worker. Give it a complete brief, including the base revision, scope, constraints, verification, and output files. Dispatch the configured implementation worker with `horch run <worker> --cwd <worktree> --brief <file>`. Wait for a valid result, inspect its files and diff, and verify the changed behavior.
 2. Read pstack's `interrogate` reviewer prompt and rubric. State the intent and fix the review target to a commit or other stable revision. Use a detached snapshot if the branch may move during review. Send the same complete review brief to every `interrogate reviewers` worker. Tell them to make no file changes. Start all of them with separate `horch run` calls before waiting, subject to the configured worker limit.
-3. Wait for every reviewer. Read each `result.json` and listed report. Synthesize the findings using pstack's `interrogate` lead judgment. Check concrete claims against the code. A completed task is not automatically a passing review.
+3. Wait until `horch wait` reports `state: "done"` for every reviewer. A report already on disk does not finish a `running` task; keep waiting, and never close an unfinished reviewer to pass the gate. Read each `result.json` and listed report. Synthesize the findings using pstack's `interrogate` lead judgment. Check concrete claims against the code. A completed task is not automatically a passing review.
 4. If a finding needs a fix, start a fresh implementation worker on the same branch after the prior writer has finished. Include the original goal, all accepted findings, prior reports, and current revision in its brief. Verify its result and changed behavior. Run the reviewer panel again on the new revision; do not reuse a reviewer session.
 5. Finish when the independent review has no unresolved blocking finding. Report the final revision, verification, reviewer outcomes, and any remaining concerns. If a worker reports a problem, follow `herdr-orchestrator` problem handling and keep the review gate open.
 

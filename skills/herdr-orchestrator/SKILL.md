@@ -23,18 +23,20 @@ You are the controller. You start worker agents in other herdr panes with `horch
 python3 <skill-dir>/scripts/horch.py <command> ...
 ```
 
-It needs Python 3.11 or later and must run inside a herdr pane (`HERDR_ENV=1`). Every command prints JSON on stdout. An error is one object `{"error": "<code>", "message": "<text>"}` with exit status 1.
+It needs Python 3.11 or later on a POSIX system (Linux or macOS) and must run inside a herdr pane (`HERDR_ENV=1`). Operational commands print JSON on stdout. An error is one object `{"error": "<code>", "message": "<text>"}` with exit status 1. CLI help and argument errors use normal argparse output.
 
 | Command | What it does |
 |---|---|
 | `run <worker> --brief <file> [--cwd <dir>]` | Start a worker in a new pane and give it the task. Returns at once. |
-| `wait [<task-id> ...] [--max-seconds <n>]` | Block until a waited task changes state, then print one line per task. No IDs means every unsettled task. |
+| `wait [<task-id> ...] [--max-seconds <n>] [--recheck]` | Block until a waited task changes state, then print one line per task. No IDs means every unsettled task. `--recheck` requires IDs and checks existing unclosed problem tasks again without resending prompts. |
 | `list` | Print every task with its worker, pane, and state. |
 | `close <task-id>` | Close the pane of a task. |
 | `detect` | Print installed harnesses, versions, and the Pi providers. |
 | `check [<worker> ...] [--cwd <dir>] [--max-seconds <n>]` | Start each selected worker once on a tiny task and report whether it works. Default wait cap 300 seconds. |
 
 Workers open in tabs labeled `horch` in your workspace, at most four panes per tab, without taking focus. Your own tab never gets a worker pane.
+
+Processes sharing a task store serialize startup to enforce `max_active_workers`; workers execute concurrently after launch. Use the same state directory for controllers that should share one worker limit. `horch close` resolves a recorded pane directly, even when the caller is in another workspace.
 
 `check` batches at `max_active_workers` and ignores repeated worker names. Each row has `worker`, `task_id`, `state`, `ok`, `pane_id`, `seconds`, and `message`. A worker that cannot start before the wait cap or has no free slot is `not_checked`, with null task, pane, and duration. Unfinished or problem tasks keep their panes; read `message` before deciding what to do.
 
@@ -90,10 +92,10 @@ These appear before the worker reads its task. `horch` reports `start_failed` an
 5. Wait with `horch wait <task-id> ...`. It returns when any waited task changes state. Call it again until every task you need is settled. Tasks can run for hours, and `horch` has no timeout.
    - Claude Code: run `horch wait` as a background command and continue when it finishes.
    - Codex and Pi: run `horch wait <task-id> ... --max-seconds 45` and call it again while tasks are still `running`, so you can give the user progress updates between waits.
-6. When a task is `done`, read `result_path` and the files that `files` lists. They are relative to the directory of `result_path`. If `question` is not null, the worker stopped to ask something. Relay it to the user, then start a new task with the answer.
+6. Only consume a task's result after `horch wait` reports `state: "done"`. An existing report or `result.json` with `status: "completed"` is not completion evidence while the task is `running` or `long_running`; keep waiting. Never use `horch close` to finish an unsettled task: it cancels the worker and does not satisfy a completion or review gate. When a task is `done`, read `result_path` and the files that `files` lists. They are relative to the directory of `result_path`. Inspect the result's `status`: `done` confirms delivery, while `completed`, `failed`, or `blocked` describes the worker's outcome. If `question` is not null, relay it to the user, then start a new task with the answer. If `closed` is false, read `message` and retry cleanup with `horch close <task-id>`; its slot remains occupied until closure is confirmed.
 7. Check what the worker claims before you report it. Read the diff, run the tests, or give the work to a second worker on a different model to review.
 
-Each `horch wait` line has `task_id`, `state`, `summary`, `result_path`, `files`, and `question`.
+Each `horch wait` line has `task_id`, `state`, `summary`, `result_path`, `files`, `question`, `closed`, and `message`. Until the task is `done` with a valid result, `summary` and `question` are null and `files` is empty. `result_path` always identifies the expected file location; its presence does not signal completion. A valid result must include matching identity, a supported status, a string summary, a list of file names, and a question only when blocked.
 
 ## States
 
@@ -101,9 +103,9 @@ Each `horch wait` line has `task_id`, `state`, `summary`, `result_path`, `files`
 |---|---|---|
 | `running` | The worker is working. | Wait again. |
 | `long_running` | The task passed `notify_after_minutes`. Reported once. | Tell the user, then wait again. |
-| `done` | The turn ended with a valid `result.json`. `horch` closed the pane. | Read the result. |
+| `done` | The turn ended with a valid `result.json`. | Read the result and check `closed` / `message`. |
 | `start_failed` | The harness did not start, usually a dialog. | See "Problems". |
-| `not_started` | The worker did not begin within 15 seconds of the task. | See "Problems". |
+| `not_started` | Herdr did not observe acknowledgement within the prompt wait. The task may still be running. | See "Problems". |
 | `blocked` | The worker waits at a dialog or permission prompt. | See "Problems". |
 | `exited` | The worker process is gone. | See "Problems". |
 | `result_missing` | The turn ended without a valid `result.json`, often after a provider API error. | See "Problems". |
@@ -116,6 +118,10 @@ Each `horch wait` line has `task_id`, `state`, `summary`, `result_path`, `files`
 1. Read the pane before anything closes it: `herdr pane read <pane_id> --source recent --lines 40`. It prints plain text.
 2. Tell the user the state, the task, and what the pane shows. Never answer the dialog yourself.
 3. When the user has decided, run `horch close <task-id>`. If they want to retry, start a new task.
+
+If inspection shows a previously unacknowledged task started, or a dialog was cleared, use `horch wait <task-id> --recheck --max-seconds 45` to resume observation. This never resends the prompt or restarts the process. Ordinary waits return stored problem states without re-polling them. Closed and completed tasks are not reopened. A result from an exited process stays on disk for inspection, but without turn-completion evidence it is not promoted to `done`.
+
+A pane-placement error can leave an empty pane when Herdr's response was lost. No worker has been started at that point. Inspect Herdr before removing any empty pane; never close an unrelated pane. A `task_invalid` record requires inspection of its task directory before repair or removal.
 
 ## Configuration
 

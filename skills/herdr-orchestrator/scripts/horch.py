@@ -878,12 +878,14 @@ def poll_round(infos, previous, config):
 
 
 def wait_line(info):
-    parsed = read_json(info["dir"] / "result.json")
-    parsed = parsed if validate_result(parsed, info["task"]) == "valid" else None
     state = load_state(info["dir"])
+    reported = state["state"] if state["closed"] or state["state"] == "done" else info["reported"]
+    # A worker may write its result before its turn ends. Do not deliver it yet.
+    parsed = read_json(info["dir"] / "result.json") if reported == "done" else None
+    parsed = parsed if validate_result(parsed, info["task"]) == "valid" else None
     return {
         "task_id": info["task_id"],
-        "state": state["state"] if state["closed"] else info["reported"],
+        "state": reported,
         "closed": bool(state["closed"]),
         "message": state["problem"],
         "summary": parsed.get("summary") if parsed else None,

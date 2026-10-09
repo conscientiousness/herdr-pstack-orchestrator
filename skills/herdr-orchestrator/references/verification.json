@@ -1,0 +1,91 @@
+{
+  "schema": "herdr-pstack-orchestrator/release-verification/v1",
+  "date": "2026-10-09",
+  "platform": "Linux",
+  "versions": {
+    "herdr": "0.9.3",
+    "python": "3.14.7",
+    "pi": "1.1.0",
+    "codex-cli": "0.162.0",
+    "claude-code": "2.1.295",
+    "skills-installer": "1.7.1"
+  },
+  "source": {
+    "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144"
+  },
+  "checks": {
+    "core": {
+      "passed": 65,
+      "total": 65,
+      "horch_sha256": "98960e6dba0b2fb526f9879774b1d204e259f014dd748764a4de1e9e81f60bb3"
+    },
+    "setup": {
+      "passed": 14,
+      "total": 14,
+      "horch_sha256": "98960e6dba0b2fb526f9879774b1d204e259f014dd748764a4de1e9e81f60bb3"
+    },
+    "lifecycle": {
+      "passed": 8,
+      "total": 8,
+      "commit": "f40c90a"
+    },
+    "recovery": {
+      "passed": 13,
+      "total": 13,
+      "horch_sha256": "98960e6dba0b2fb526f9879774b1d204e259f014dd748764a4de1e9e81f60bb3"
+    },
+    "public_review_loop": {
+      "passed": 27,
+      "total": 27,
+      "seconds": 439,
+      "evidence": "review-e2e.json",
+      "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144"
+    },
+    "codex_controller": {
+      "passed": 10,
+      "total": 10,
+      "seconds": 990,
+      "tool_audit": {
+        "tool_counts": {
+          "exec": 88
+        },
+        "no_native_subagents": true,
+        "no_pane_input": true,
+        "read_workers_toml": true,
+        "bounded_waits": true,
+        "horch_dispatch": true
+      },
+      "source_note": "Run crossed a compatible update from f40c90a to 7507d6f; predates the final result-delivery gate."
+    },
+    "claude_controller_baseline": {
+      "skill_assertions": "19/19",
+      "review_loop_assertions": "21/21",
+      "commit": "17a75336c8240c574d7fc11a77053c86a6c6b496"
+    },
+    "independent_release_review": {
+      "verdict": "PASS",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "commit": "7507d6f"
+    },
+    "completion_delivery": {
+      "passed": 10,
+      "total": 10,
+      "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+      "scenario": "Real active workers with provisional valid completed results: withhold fields while running, deliver final report after turn completion, and keep cancelled early results unresolved."
+    },
+    "completion_gate_review": {
+      "verdict": "PASS",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+      "scope": "wait_line and completion/cancellation instructions; code review, separate from real-worker E2E evidence."
+    }
+  },
+  "limits": [
+    "Automatic approval denial was not deliberately triggered.",
+    "Worker completion after more than 30 minutes was not tested.",
+    "Only the pstack implementation/review/fix/re-review workflow was exercised; Arena and other upstream workflows are not advertised as verified.",
+    "macOS runtime behavior has not been measured.",
+    "Native-subagent avoidance is a skill instruction, not a sandbox guarantee."
+  ],
+  "privacy": "This summary and the public review-loop evidence omit credentials, local absolute paths, briefs, and transcripts. Other development evidence remains local."
+}
