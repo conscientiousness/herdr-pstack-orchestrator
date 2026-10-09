@@ -25,9 +25,9 @@ jobs:
           node-version: '22'
       - name: Check Python syntax and CLI entry points
         run: |
-          python -m compileall -q skills
+          python -m compileall -q skills e2e
           python skills/herdr-orchestrator/scripts/horch.py --help
-          python skills/herdr-orchestrator/scripts/e2e.py --help
+          python e2e/review_loop.py --help
       - name: Parse example configuration
         run: |
           python - <<'PY'
@@ -43,6 +43,12 @@ jobs:
           cd "$package_check"
           npx --yes skills@1.7.1 add "$GITHUB_WORKSPACE" -s herdr-orchestrator -s pstack-herdr -a claude-code -a codex -a pi -y
           python .agents/skills/herdr-orchestrator/scripts/horch.py --help
-          python .agents/skills/herdr-orchestrator/scripts/e2e.py --help
+          test ! -e .agents/skills/herdr-orchestrator/scripts/e2e.py
+          test ! -e .agents/skills/herdr-orchestrator/e2e
+          test ! -e .agents/skills/herdr-orchestrator/references/verification.json
+          test ! -e .agents/skills/herdr-orchestrator/references/review-e2e.json
+          test -f .agents/skills/herdr-orchestrator/references/setup.md
+          test -f .agents/skills/herdr-orchestrator/references/lifecycle.md
+          test -f .agents/skills/pstack-herdr/references/compatibility.md
           test -f .agents/skills/pstack-herdr/references/herdr-tools.md
           test -f .claude/skills/herdr-orchestrator/SKILL.md

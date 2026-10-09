@@ -155,10 +155,10 @@ Start the worker and wait:
 horch run gpt --brief /tmp/fix-login.md --cwd ~/src/myapp-fix-login
 # prints JSON with task_id, pane_id, and state
 
-horch wait t-0a1b2c --max-seconds 45  # use the task_id returned by run
+horch wait t-0a1b2c  # use the task_id returned by run
 ```
 
-`horch wait` has no timeout — tasks can run for hours. Call it again while the state is `running`; with Codex and Pi controllers pass `--max-seconds 45` so you can post progress between waits. When the task is `done`, read `result.json` and the files it lists (their paths are relative to the result file's directory). To run tasks in parallel, make one `horch run` per task first, then wait on all the IDs.
+`horch wait` has no default time cap. Prefer a background command or yielded shell session so the controller can post updates while the same wait process runs; use completion notifications when the harness provides them. With a blocking-only shell, use `--max-seconds 300` and a tool timeout above 300 seconds, or a shorter cap required by the runtime or update cadence. A wait cap never stops the worker. After each state change, handle the result and wait again for the remaining running tasks. When a task is `done`, read `result.json` and its listed files (paths are relative to the result directory). To run tasks in parallel, make one `horch run` per task first, then wait on all the IDs.
 
 ## Task states and result status
 
@@ -171,13 +171,21 @@ horch wait t-0a1b2c --max-seconds 45  # use the task_id returned by run
 | `done` | Turn ended with a valid `result.json`; check `closed` and `message` for pane cleanup. |
 | `blocked`, `start_failed`, `not_started`, `exited`, `result_missing`, `result_invalid` | Problems; the pane stays open for inspection. |
 
-`done` is a delivery receipt, not a verdict: it says the worker's turn ended and `result.json` matches this task. The `status` field inside — `completed`, `blocked`, or `failed` — is the worker's own claim. Neither approves the code. Read the diff, run the tests, or hand the work to a second worker on a different model before you trust it.
+`done` means the worker's turn ended and a valid result was delivered. It is retained for compatibility with v0.1.0 clients and stored task records. Read the separate `status` inside `result.json`:
+
+| Task state | Result status | Next action |
+|---|---|---|
+| `done` | `completed` | Verify the worker's claimed success and any review verdict. |
+| `done` | `failed` | Inspect and report the worker's failure. |
+| `done` | `blocked` | Relay the worker's question, then start a fresh task with the answer. |
+
+Read the diff, run the tests, or request an independent review before accepting the work. A delivered review can still find blocking defects.
 
 Wait for `state: "done"` before consuming a result. A worker can write files while its turn is still running, so `horch wait` withholds result summaries, files, and questions until completion. Closing a running worker cancels it; it does not complete the task or satisfy a review gate.
 
 ## Optional: the pstack review loop
 
-If you run pstack, the `pstack-herdr` skill routes its delegation through your configured workers. Map pstack roles to workers in `workers.toml`:
+The mapping was verified with **pstack-claude 0.9.73** (`interrogate` workflow). Other versions are unverified; see the [compatibility notes](skills/pstack-herdr/references/compatibility.md) before upgrading. Map pstack roles to workers in `workers.toml`:
 
 ```toml
 [roles]
@@ -212,14 +220,14 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 
 Model names throughout are examples; availability depends on your provider.
 
-The [verification summary](skills/herdr-orchestrator/references/verification.json) records versions, counts, source hashes, and limits. Core and setup runs predate the final completion-delivery change; the public loop and focused lifecycle check cover the final CLI. The [public E2E evidence](skills/herdr-orchestrator/references/review-e2e.json) contains the observed invoice outputs and every assertion. Live runtime tests used Linux; macOS has not been measured.
+The [E2E guide](e2e/README.md) explains the evidence and the mechanisms it covers. Tests and evidence live outside the installed skills. The [verification summary](e2e/evidence/verification.json) records versions, counts, source hashes, and limits. Core and setup runs predate the final completion-delivery change; the public loop and focused lifecycle check cover the final CLI. The [public E2E evidence](e2e/evidence/review-e2e.json) contains the observed invoice outputs and every assertion. Live runtime tests used Linux; macOS has not been measured.
 
 ### Reproduce the review loop
 
 From a clone inside Herdr, select one configured writer and two reviewers with different model definitions:
 
 ```bash
-python3 skills/herdr-orchestrator/scripts/e2e.py \
+python3 e2e/review_loop.py \
   --writer gpt --reviewer glm --reviewer haiku \
   --repo . --output /tmp/horch-evidence
 ```
@@ -240,7 +248,7 @@ This public driver controls `horch` directly. Tests of an AI controller followin
 | Worker stops at a dialog (`blocked` / `start_failed`) | Trust dialogs are cleared once per location, by you in the pane: Codex asks "Trust this folder?" for each new git repository, and Claude Code asks to trust folders and about external `CLAUDE.md` imports. The controller never answers them. Afterwards run `horch close <task-id>` and start a new task. |
 | Claude Code prompts when reading config or task directories | Add `~/.config/herdr-orchestrator` and `~/.local/state/herdr-orchestrator` to `permissions.additionalDirectories` in your Claude Code settings. |
 | `result_missing` / `result_invalid` | Inspect the problem pane and task files. If the user wants a retry, close the old task and start a new one. |
-| `not_started` | Herdr did not observe the prompt acknowledgement. The task may still be running. Inspect it before deciding; `horch wait <task-id> --recheck --max-seconds 45` checks the existing task again without resending anything. |
+| `not_started` | Herdr did not observe the prompt acknowledgement. The task may still be running. Inspect it before deciding; `horch wait <task-id> --recheck` checks the existing task again without resending anything. |
 | `done` with `closed: false` | Read `message`, then retry cleanup with `horch close <task-id>`. The task still consumes a slot until closure is confirmed. |
 | A task runs very long | `horch` has no timeout; you are notified once after `notify_after_minutes`. Keep waiting, or close the task and start a fresh one with a narrower brief. |
 
@@ -249,7 +257,7 @@ This public driver controls `horch` directly. Tests of an AI controller followin
 Issues and pull requests are welcome.
 
 - **Bug reports**: include the error code, reproduction steps, and harness versions. Remove credentials, private paths, proprietary briefs, and full worker transcripts before posting.
-- **Verification**: use real end-to-end behavior tests for complex changes. Include a reproducible scenario and sanitized evidence with your pull request. Start with the [public driver](skills/herdr-orchestrator/scripts/e2e.py); no unit test suite is required.
+- **Verification**: use real end-to-end behavior tests for complex changes. Include a reproducible scenario and sanitized evidence with your pull request. Start with the [public driver](e2e/review_loop.py); no unit test suite is required.
 - **Scope**: the product is two skills, the CLI, and its reproducible E2E driver. Keep changes small and behavior-focused. Write code, documentation, and commit messages in English.
 
 ## Credits

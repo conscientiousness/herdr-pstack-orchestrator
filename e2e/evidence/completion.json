@@ -1,0 +1,90 @@
+{
+  "schema": "horch/development-e2e-summary/v1",
+  "date": "2026-10-09",
+  "scenario": "completion",
+  "original_artifact_sha256": "e985f1feca28d1ed066fbbc53034928b27af374e52c12378b18e55654d4212ff",
+  "verdict": "pass",
+  "source_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+  "assertions": [
+    {
+      "name": "worker started",
+      "ok": true
+    },
+    {
+      "name": "early completed result is still running",
+      "ok": true
+    },
+    {
+      "name": "early fields withheld",
+      "ok": true
+    },
+    {
+      "name": "real completion delivered and closed",
+      "ok": true
+    },
+    {
+      "name": "actual final report delivered",
+      "ok": true
+    },
+    {
+      "name": "worker started",
+      "ok": true
+    },
+    {
+      "name": "early completed result is still running",
+      "ok": true
+    },
+    {
+      "name": "early fields withheld",
+      "ok": true
+    },
+    {
+      "name": "cancellation is not completion",
+      "ok": true
+    },
+    {
+      "name": "cancelled early result stays withheld",
+      "ok": true
+    }
+  ],
+  "observations": [
+    {
+      "task_id": "t-3256bd",
+      "state": "running",
+      "closed": false,
+      "message": null,
+      "summary": null,
+      "files": [],
+      "question": null
+    },
+    {
+      "task_id": "t-3256bd",
+      "state": "done",
+      "closed": true,
+      "message": null,
+      "summary": "FINAL: computed the invoice arithmetic (936 and 1900 line amounts, 2891 total) and documented it in arithmetic.md after the 50-second lifecycle sleep.",
+      "files": [
+        "arithmetic.md"
+      ],
+      "question": null
+    },
+    {
+      "task_id": "t-3857ae",
+      "state": "running",
+      "closed": false,
+      "message": null,
+      "summary": null,
+      "files": [],
+      "question": null
+    },
+    {
+      "task_id": "t-3857ae",
+      "state": "running",
+      "closed": true,
+      "message": null,
+      "summary": null,
+      "files": [],
+      "question": null
+    }
+  ]
+}

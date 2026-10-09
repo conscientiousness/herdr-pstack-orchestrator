@@ -8,7 +8,8 @@
     "pi": "1.1.0",
     "codex-cli": "0.162.0",
     "claude-code": "2.1.295",
-    "skills-installer": "1.7.1"
+    "skills-installer": "1.7.1",
+    "pstack-claude": "0.9.73"
   },
   "source": {
     "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144"
@@ -27,12 +28,14 @@
     "lifecycle": {
       "passed": 8,
       "total": 8,
-      "commit": "f40c90a"
+      "commit": "f40c90a",
+      "evidence": "lifecycle.json"
     },
     "recovery": {
       "passed": 13,
       "total": 13,
-      "horch_sha256": "98960e6dba0b2fb526f9879774b1d204e259f014dd748764a4de1e9e81f60bb3"
+      "horch_sha256": "98960e6dba0b2fb526f9879774b1d204e259f014dd748764a4de1e9e81f60bb3",
+      "evidence": "recovery.json"
     },
     "public_review_loop": {
       "passed": 27,
@@ -71,7 +74,8 @@
       "passed": 10,
       "total": 10,
       "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
-      "scenario": "Real active workers with provisional valid completed results: withhold fields while running, deliver final report after turn completion, and keep cancelled early results unresolved."
+      "scenario": "Real active workers with provisional valid completed results: withhold fields while running, deliver final report after turn completion, and keep cancelled early results unresolved.",
+      "evidence": "completion.json"
     },
     "completion_gate_review": {
       "verdict": "PASS",
@@ -117,5 +121,5 @@
     "macOS runtime behavior has not been measured.",
     "Native-subagent avoidance is a skill instruction, not a sandbox guarantee."
   ],
-  "privacy": "This summary and the public review-loop evidence omit credentials, local absolute paths, briefs, and transcripts. Other development evidence remains local."
+  "privacy": "Public evidence omits credentials, local absolute paths, briefs, and transcripts. Other development artifacts and historical probe drivers remain local."
 }

@@ -1,0 +1,62 @@
+{
+  "schema": "horch/development-e2e-summary/v1",
+  "date": "2026-10-09",
+  "scenario": "recovery",
+  "original_artifact_sha256": "9f22416213ee224df3c1e4f5ac16714af8bf885764677a0f7bc8c4b6f21ff234",
+  "verdict": "pass",
+  "assertions": [
+    {
+      "name": "placement failure reports a clear error",
+      "ok": true
+    },
+    {
+      "name": "worker started with available capacity",
+      "ok": true
+    },
+    {
+      "name": "invalid result schema keeps pane open",
+      "ok": true
+    },
+    {
+      "name": "invalid result fields are suppressed",
+      "ok": true
+    },
+    {
+      "name": "normal wait preserves problem state",
+      "ok": true
+    },
+    {
+      "name": "explicit recheck recovers original task",
+      "ok": true
+    },
+    {
+      "name": "recheck requires explicit IDs",
+      "ok": true
+    },
+    {
+      "name": "worker started with available capacity",
+      "ok": true
+    },
+    {
+      "name": "explicit close succeeds during wait",
+      "ok": true
+    },
+    {
+      "name": "background poll preserves confirmed closure",
+      "ok": true
+    },
+    {
+      "name": "background wait exposes closure",
+      "ok": true
+    },
+    {
+      "name": "corrupt record does not hide healthy history",
+      "ok": true
+    },
+    {
+      "name": "targeted corrupt record gives task_invalid",
+      "ok": true
+    }
+  ],
+  "source_sha256": "98960e6dba0b2fb526f9879774b1d204e259f014dd748764a4de1e9e81f60bb3"
+}
