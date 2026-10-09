@@ -73,10 +73,3 @@ An evidence audit should distinguish a naturally observed failure, a deliberate 
 | Withhold results until turn completion | `verification.json`: Pi controller's `prior_failure`; `completion.json`: early fields, final delivery, cancellation | A real controller previously consumed early reports and closed unfinished reviewers. A later focused probe deliberately injected provisional results and verified withholding. A fresh controller loop passed after the fix. |
 
 These findings support retaining the mechanisms rather than deleting them by line count. They do not establish that every defensive branch was triggered. Deliberate approval denial, turns longer than 30 minutes, macOS runtime, and pstack workflows outside the review loop remain unverified.
-
-## Next verification round
-
-These scenarios are planned, not verified:
-
-- **Automatic approval denial:** use a disposable checkout and an explicit approval policy that rejects a scoped action. Retain the real denial, task state, and controller response; verify no pane input, automatic retry, or worker substitution, then confirm owned-pane cleanup. Successful automatic approvals do not cover this case.
-- **A worker turn longer than 30 minutes:** run real bounded work beyond 30 minutes with a configured earlier notification threshold. Verify one `long_running` notification, continued observation of the same task and wait process, no repeated model dispatch, eventual nonce-bound delivery, and cleanup. Record actual elapsed time and process/source identity; a fabricated timestamp or fast simulation does not qualify.
