@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "generator": {
+    "name": "Archify",
+    "version": "3.0.1",
+    "repository": "https://github.com/tt-a1i/archify",
+    "revision": "bb990b17b886e83d633e273221615eb259a92c78"
+  },
+  "source_revision": "2350959bfc1ed8c08764bfebb19b40884f602edb",
+  "artifacts": [
+    {
+      "path": "assets/workflow.json",
+      "sha256": "d785c46f4fb76d8c6fe539c0f21963f51f8eba21d1c8d25939e26778f7c5e797",
+      "bytes": 5269
+    },
+    {
+      "path": "assets/workflow.html",
+      "sha256": "b73bddd85f880573992cd40a12077df135e6c8426223e212e020218eeb494331",
+      "bytes": 752472
+    },
+    {
+      "path": "assets/workflow-light.svg",
+      "sha256": "332fa49ce401bdc17ae3d37472fb4659482617eda29305f4236531cef6e65cdb",
+      "bytes": 144306
+    },
+    {
+      "path": "assets/workflow-dark.svg",
+      "sha256": "3af16dc2f244f2ae81ffa5b6f06fc13e4a50d585b394e37019995b3c83aec085",
+      "bytes": 144325
+    }
+  ],
+  "validation": {
+    "checksPassed": 9,
+    "checkCount": 9,
+    "compositionProfile": "showcase",
+    "compositionStatus": "pass",
+    "errors": 0,
+    "warnings": 0
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "browser_evidence": {
+    "status": "pass",
+    "provenance": "current",
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 900,
+        "theme": "light",
+        "overflowX": false,
+        "overflowY": false,
+        "ok": true
+      },
+      {
+        "width": 1600,
+        "height": 1000,
+        "theme": "light",
+        "overflowX": false,
+        "overflowY": false,
+        "ok": true
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "theme": "light",
+        "overflowX": false,
+        "overflowY": false,
+        "ok": true
+      },
+      {
+        "width": 2048,
+        "height": 1320,
+        "theme": "light",
+        "overflowX": false,
+        "overflowY": false,
+        "ok": true
+      }
+    ]
+  },
+  "visual_review": {
+    "status": "passed",
+    "scope": [
+      "1440x900 light and dark viewer captures",
+      "896px-wide README SVG embedding in both themes"
+    ],
+    "observations": [
+      "No clipped labels or crossing connectors.",
+      "Fixes return to a fresh reviewer panel.",
+      "The README picture selects the expected theme asset."
+    ]
+  },
+  "readme_preview": [
+    {
+      "theme": "light",
+      "source": "workflow-light.svg",
+      "width": 974,
+      "height": 404,
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "source": "workflow-dark.svg",
+      "width": 974,
+      "height": 404,
+      "overflow": false
+    }
+  ],
+  "runtime_tests": "Not rerun: documentation and generated artwork only."
+}

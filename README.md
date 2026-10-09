@@ -11,6 +11,16 @@
 
 **Run a visible team of coding agents from one conversation.** One model implements, other models review, and you can inspect every worker in [Herdr](https://herdr.dev).
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/workflow-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/workflow-light.svg">
+  <img alt="Your controller briefs an implementation worker, verifies its diff, and dispatches independent reviewers. After all reviewers finish, the controller assesses findings. Accepted findings go to a fresh fix worker and a fresh review panel; no unresolved blockers leads to a verified result." src="assets/workflow-light.svg" width="100%">
+</picture>
+
+**Delegate → implement → review → fix → review again.** Every worker runs in a visible Herdr pane. The optional `pstack-herdr` skill adds the review loop shown above.
+
+[Download the interactive diagram](https://github.com/conscientiousness/herdr-pstack-orchestrator/raw/refs/heads/main/assets/workflow.html) and open it in your browser · [Diagram source and reproduction](assets/workflow.md)
+
 Two Agent Skills connect your controller to Pi, Codex CLI, and Claude Code. Each task gets a fresh process, a complete brief, and a structured result. The `horch` CLI uses Python's standard library; no server or API integration is required beyond Herdr and your existing agent subscriptions or provider accounts.
 
 - **herdr-orchestrator** — the core skill. Delegates work to Pi, Codex CLI, and Claude Code workers through a small CLI (`horch`), with first-use setup, setup checks, task states, and problem handling.
@@ -114,17 +124,7 @@ Other keys: `max_active_workers` (default 4), `notify_after_minutes` (default 18
 
 ## How delegation works
 
-```mermaid
-flowchart LR
-    you["You"] --> ctrl["Controller agent in a Herdr pane"]
-    ctrl --> w1["Worker: Pi glm-5.3-flash"]
-    ctrl --> w2["Worker: Codex gpt-6.1-sol"]
-    ctrl --> w3["Worker: Claude Code haiku"]
-    w1 --> out["Task directory: result.json and files"]
-    w2 --> out
-    w3 --> out
-    ctrl -->|"horch wait"| out
-```
+The controller chooses a configured Pi, Codex CLI, or Claude Code worker, sends a complete brief with `horch run`, and waits for its structured result with `horch wait`. It verifies the outcome before reporting back.
 
 A manual example: first create a separate checkout and branch for the writer. A worktree separates edits; it is not a security sandbox.
 
@@ -256,6 +256,7 @@ Issues and pull requests are welcome.
 
 - [Herdr](https://herdr.dev) — the terminal multiplexer for coding agents that hosts every worker pane; `horch` drives its CLI.
 - The banner uses Herdr's ram icon as its visual reference. See the [generation prompt and provenance](assets/banner-prompt.md).
+- The workflow diagram is generated with [Archify](https://github.com/tt-a1i/archify). Its standalone viewer includes Archify's MIT-licensed code; see [diagram provenance and notices](assets/workflow.md).
 - pstack — original pstack by Lauren Tan (poteto), MIT, in the [cursor/plugins](https://github.com/cursor/plugins) repository. The `pstack-herdr` skill maps its workflows onto Herdr via the [pstack-claude](https://github.com/michael-denyer/pstack-claude) port by Michael Denyer.
 
 ## License

@@ -1,0 +1,4 @@
+# Preserve canonical Archify output, including renderer whitespace.
+assets/workflow.html linguist-generated=true whitespace=-blank-at-eol
+assets/workflow-light.svg linguist-generated=true whitespace=-blank-at-eol
+assets/workflow-dark.svg linguist-generated=true whitespace=-blank-at-eol
