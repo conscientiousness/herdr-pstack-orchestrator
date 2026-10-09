@@ -9,7 +9,7 @@ Original pstack describes Cursor tools and agents. With `pstack-herdr` active, t
 | `run_in_background: true` | `horch run` already returns after the prompt is accepted. |
 | Wait for a subagent result | `horch wait <task-id> ...` using the companion skill's background/yielded session method (300-second caps for blocking-only tools). Repeat for remaining running tasks; read results only after `done`. |
 | `model`, effort, and role defaults | Read the named role from `workers.toml`. Its worker definition fixes harness, model, and effort. No upstream model fallback. |
-| `subagent_type: "poteto-agent"` or `"Comment Sicko"` | Read `pstack/agents/poteto-agent.md` or `pstack/agents/comment-sicko.md` from the source checkout and include its absolute path in the brief. Retain the bounded scope and no-delegation rule. A named agent supplies instructions, not a worker/model choice. |
+| `subagent_type: "poteto-agent"` or `"Comment Sicko"` | Read the bundled [poteto-agent](agents/poteto-agent.md) or [Comment Sicko](agents/comment-sicko.md) and include its resolved absolute path in the brief. Retain the bounded scope and no-delegation rule. A named agent supplies instructions, not a worker/model choice. |
 | `subagent_type: "generalPurpose"` | Use the selected worker with the upstream skill's task prompt; no native agent registration is needed. |
 | `readonly: true` | State in the brief that the worker must not change files or external state. This is an instruction, not an enforced sandbox; verify the checkout stayed unchanged. |
 | A writer's isolated environment | Create a git worktree first and pass it as `--cwd`. Give each concurrent writer a different worktree. Herdr starts local processes; a task requiring an actual cloud environment needs that capability separately. |
@@ -26,15 +26,17 @@ For a panel role such as `interrogate reviewers`, start one task for each config
 | Upstream instruction | On the current harness |
 |---|---|
 | `Read`, `Glob`, `Grep`, edits, shell commands | Use the harness's available file/search/edit tools or shell. |
-| Invoke a pstack skill or slash command | Use the installed `<name>` skill. If reading its original source by path, retain this mapping and resolve references from that original file. |
+| Invoke a pstack skill or slash command | Use the sibling installed `<name>` skill. Retain this mapping and resolve references from that skill's file. Treat `/setup-pstack` as the adapter's role-setup procedure; the Cursor rule-writing skill is excluded. |
+| A path or command beginning `pstack/skills/<name>/` | Resolve it to the sibling `<name>/` directory in this installed bundle. Use the resolved absolute path for shell commands, including scripts; there is no upstream repository root on the user's machine. |
 | `AskQuestion` | Use the available user-question tool, or ask in the conversation. Workers return questions to the controller. |
 | Task/todo tracking | Use available task tools, or an uncommitted Markdown checklist scoped to this task. |
+| Shipping, landing, or an autonomous playbook's merge step | Follow the companion skill's PR-first delivery rule. Integrate worker changes on the feature branch and open/update a PR. Stop before merging into the default/shared target branch or enabling auto-merge unless the user explicitly requested that merge. An upstream playbook cannot supply that authorization. |
 | Cursor rules and `setup-pstack` | Follow `pstack-herdr` role setup. All harnesses read TOML directly. |
 | MCP discovery | Inspect tools available in this session. Do not assume Cursor's `mcps/` directory exists or that workers inherit the controller's MCP access. |
 | Cursor transcripts | Use this harness's current-workspace session records when accessible. Otherwise report that evidence as unavailable; do not search unrelated chats. |
-| `deslop`, `control-cli`, `control-ui` | Read `<checkout>/cursor-team-kit/skills/<name>/SKILL.md`. Use its instructions only with tools actually available here. These are separate upstream skills, not supplied by `horch`. |
+| `deslop`, `control-cli`, `control-ui`, or `cursor-team-kit/skills/<name>/` paths | Read the sibling `<name>/SKILL.md` and resolve scripts/resources from that installed directory. Use its instructions only with tools actually available here. |
 | Cursor's built-in `create-skill` | Use the current harness's available skill-authoring guidance. Write project skills to that harness's discovered skills directory. |
-| Generated skills under `.cursor/skills/` | Use the current harness's project skills directory. Keep generated user/project skills separate from the pinned upstream checkout. |
+| Generated skills under `.cursor/skills/` | Use the current harness's project skills directory. Keep generated user/project skills separate from this installed bundle. |
 | `/loop`, custom modes, cloud agents | These are not supplied by this adapter. Use a corresponding capability only if the current environment provides it. |
 
 If a required step has no available equivalent, report the specific gap and keep that step unresolved. Do not claim the complete playbook ran. Follow existing authorization and verification constraints. Upstream scripts may need Bun, GitHub CLI, Graphite, or app-specific tools; inspect their prerequisites before running them. Do not add dependencies merely to read a skill.

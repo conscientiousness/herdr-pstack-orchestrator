@@ -2,7 +2,11 @@
   "repository": "https://github.com/cursor/plugins.git",
   "revision": "ccb5507cec1546dc88135c1139c811e6c59115ba",
   "version": "0.15.15",
-  "team_kit_skills": ["control-cli", "control-ui", "deslop"],
+  "team_kit_skills": [
+    "control-cli",
+    "control-ui",
+    "deslop"
+  ],
   "adapted_skills": [
     "architect",
     "arena",
@@ -13,17 +17,19 @@
     "how",
     "interrogate",
     "maintain-verification-skill",
-    "make-bot-ui",
     "no-comments",
-    "poteto-help",
     "poteto-mode",
     "principle-guard-the-context-window",
     "recall",
     "reflect",
-    "setup-pstack",
     "show-me-your-work",
     "swarm",
     "teach",
     "why"
-  ]
+  ],
+  "excluded_skills": {
+    "make-bot-ui": "Requires unavailable Cursor Routines and secret-request tools; no coding workflow depends on it.",
+    "poteto-help": "Cursor-specific setup and navigation duplicate the adapter docs and require unbundled guide pages; no workflow depends on it.",
+    "setup-pstack": "Writes Cursor model rules. Herdr uses the existing adapter setup and workers.toml roles instead."
+  }
 }

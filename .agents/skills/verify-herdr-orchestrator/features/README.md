@@ -4,7 +4,7 @@ Commands run from the repository root, using `repo` and `proof` from [Launch](..
 
 | Feature | Driver | Preconditions and scope |
 |---|---|---|
-| [Skill installation and discovery](discovery.md) | `prepare.py`, `skill_catalogs.py` | Pinned source, npm, Pi, Codex; no models |
+| [Skill installation and discovery](discovery.md) | `skill_catalogs.py` | Bundled skills, npm, Pi, Codex; no models |
 | [Worker review loop](workers.md) | `review_loop.py` | Authenticated workers, two free slots; six real tasks |
 | [AI controller loop](controller.md) | `controller_loop.py` | Configured Codex controller plus workers; transcript audit |
 | [Pi integration and startup](pi.md) | `pi_preflight.py`, `pi_startup.py` | Select the reproduced failure; different prerequisites |

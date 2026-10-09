@@ -9,6 +9,7 @@ You are the controller. Delegate one task to each fresh worker process through `
 
 ## Required rules
 
+- **Deliver repository changes as a PR by default.** Work on a feature branch, integrate verified worker commits there, then push and open or update the PR. Merge into `main` (or the default/shared target branch), push changes directly there, or enable auto-merge only when the user explicitly asks to merge that work. Task completion, passing checks, and autonomous playbooks do not grant merge authorization. Include this limit in worker briefs.
 - Delegate only through `horch`; never use your harness's native subagents while acting as this controller. Workers may use their own subagents.
 - Never answer worker dialogs, send keys/text to worker panes, or send `/model`. A new task uses a fresh process with its configured model.
 - **Wait for task `state: "done"` before consuming any result.** An early report or `result.json` does not finish a running task. Closing an unfinished worker cancels it and cannot pass a review gate.
