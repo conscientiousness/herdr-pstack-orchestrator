@@ -1,37 +1,37 @@
 # Repository banners
 
-Generated with the built-in `image_gen` tool on 2026-10-09 and revised from the owner's visual feedback. Both themes show a Border Collie controller behind a laptop and eight awake Herdr sheep workers with distinct poses and no props. The README selects a theme with `<picture>`; light is the fallback.
+Generated with the built-in `image_gen` tool on 2026-10-09 and revised from the owner's visual feedback. Both themes show a Border Collie controller centered behind a laptop, with four awake Herdr sheep workers on each side. The sheep have distinct poses and no props. The README selects a theme with `<picture>`; light is the fallback.
 
 Style reference: [Herdr's ram icon](https://herdr.dev/_astro/logo.DM81885K_Z1HYzg2.svg), provided by the repository owner. The reference belongs to Herdr; these are generated illustrations for an independent integration project, not official Herdr banners. Unselected drafts are not distributed.
 
-The final edit replaces the earlier controller and removes worker props while preserving the two-row layout. The dark variant preserves the dog's natural black-and-white markings from the light image, with a muted contour for contrast against the dark background.
-
-## Light prompt
-
-Use case: precise-object-edit
-Asset type: LIGHT THEME 3:1 GitHub repository banner.
-Input image is the edit target. Preserve its panoramic framing, flat charcoal-on-pale-warm-gray palette, left controller laptop position, and eight simple terminal pane frames in two rows.
-LEFT CONTROLLER: replace the cat with a cute BORDER COLLIE SHEEPDOG, facing front and sitting behind the same laptop. Soft rounded head, recognizable white central forehead blaze and white muzzle, dark patches around friendly eyes, black rounded nose, one perky and one slightly folded ear. The sheepdog's gaze is down toward its screen, focused and cheerful. Only its head and two small paws are visible above the laptop; small rounded shoulders remain mostly hidden. No imposing human torso. Keep the existing >_ terminal emblem on the laptop lid and clean baseline. Make it recognizable as a charming capable sheep-herding dog, not a cat or wolf. Black/charcoal and pale negative-space details only.
-RIGHT WORKERS: remove EVERY prop from ALL eight worker panes: no mini laptops, magnifying glasses, checklists, checkmarks, boxes, tools or objects. Each pane contains ONLY ONE Herdr-style ram, like the original simple curled-horn sheep icon. Keep the familiar spiral horns, sculptural rounded wool silhouettes and tiny terminal-face motif. Differentiate purely by body pose, not accessories.
-Exactly eight distinct AWAKE poses:
-Top row left to right: (1) classic standing left-profile ram; (2) seated upright ram in a three-quarter view; (3) lively walking ram facing right with one front leg raised and visible stepping hind legs; (4) joyful long horizontal leap, all four legs off ground.
-Bottom row left to right: (5) deep forward stretch with front legs long and low and rear high; (6) rear-facing ram looking back over its shoulder; (7) ram standing with its head and nose tilted conspicuously upward as if watching something overhead, awake and curious; (8) comfortably reclining ram with its body low and legs tucked, but its neck upright and face alert, NOT sleeping.
-All eight awake. No curled-up sleeping ram, no closed sleepy eyes, no sleep symbols. Make the silhouettes easy to tell apart and avoid duplicate poses. Characters fit comfortably in their existing panes with ample blank space and consistent optical scale.
-No additional characters, props, connecting lines, arrows, cables, words, titles, watermark, texture, gradients, shadow, 3D or clothing. Clean minimal brand illustration.
+The dark edit recenters the controller and softens the sheep and pane colors. The light variant follows that composition. Both preserve the dog's natural black-and-white markings rather than inverting its fur.
 
 ## Dark prompt
 
 Use case: precise-object-edit
-Asset type: 3:1 GitHub dark-theme repository banner.
-Input image 1 is the DARK BANNER EDIT TARGET. Input image 2 is the LIGHT BANNER REFERENCE, used only to restore the controller Border Collie's correct fur markings.
-Change ONLY the left controller dog and its laptop colors. Keep the entire right-hand grid of EIGHT sheep and terminal frames absolutely unchanged in geometry, color, position and pose. Keep the dark background #0d1117, framing, whitespace, and all proportions.
-The dog was mistakenly made into a photographic negative. Correct it to the NORMAL black-and-white Border Collie markings seen in input 2:
-- The large outer head, cheeks, ears, and patches surrounding its eyes are DARK CHARCOAL #30363a, never white.
-- The narrow central forehead blaze running down the bridge of its nose is WARM WHITE.
-- The muzzle around the mouth is WARM WHITE.
-- The rounded nose and little smiling mouth are DARK.
-- The two little paws are WARM WHITE with small dark toe lines.
-Keep the original face, ear shape, pose, proportions, and cute expression from the light reference. Keep its small pale oval eyes readable against the dark eye patches. This should read immediately as the same black-and-white dog in the light banner.
-For dark-background legibility, give the outer silhouette of the dark fur a subtle thin warm-gray contour, sufficient to separate it from the background, especially along the ears. No glow or halo, no shaded fur.
-Make the laptop lid DARK GRAPHITE with a restrained thin warm-gray outline, and retain a small warm-white circular terminal emblem with a dark >_ glyph. Keep the existing laptop shape and position. Make the baseline muted warm gray instead of bright white.
-Flat crisp brand illustration with solid fills. Do not invert the dog's biological markings. No gradients, textures, shadows, 3D, new objects, new lettering or watermarks. The sheep and their frames must stay exactly as they are in input 1.
+Asset type: DARK THEME GitHub repository banner, panoramic 3:1.
+Input image: the current dark banner, edit target.
+Recompose this same illustration with the Border Collie controller and laptop EXACTLY IN THE HORIZONTAL CENTER. Preserve the cute dog's identity, normal black-and-white fur markings, expressive ears, front-facing pose behind its laptop, small paws and >_ laptop emblem. The centered dog is the clear visual focal point and slightly larger than the individual sheep. It has no terminal frame around it.
+Arrange the EIGHT worker terminal panes symmetrically around the controller: FOUR on the LEFT in a 2-by-2 grid, FOUR on the RIGHT in a 2-by-2 grid. Equal pane sizes, generous outer margins and clean wide gutters between the central laptop and the two pane groups. Balanced, calm, professional composition. All panes and controller fit fully within the same 3:1 canvas with comfortable vertical margins.
+Retain all eight distinctive awake Herdr-style ram poses, one sheep per pane, no props:
+Left group top row: classic standing left-profile; seated upright three-quarter.
+Left group bottom row: deep forward stretch with rear high; rear-facing looking back.
+Right group top row: lively walking right with raised foreleg; long horizontal leap.
+Right group bottom row: standing with nose tilted up curiously; reclining with upright neck and alert face.
+Maintain their sculptural spiral horns, clean flat wool silhouettes and small terminal-face details. No sleeping or curled sleeping sheep.
+DARK PALETTE REFINEMENT: The worker sheep should be a restrained medium-light warm stone gray around #aaa99f, noticeably softer and less luminous than the current ivory sheep. Use dark cutouts for horns and faces. Make pane outlines muted slate gray #50585e and header bars deeper slate #252d33, with small subdued gray window dots; avoid big bright cream header bars. Pane interiors match the very dark #0d1117 background. The controller's white central forehead blaze, white muzzle, white paws and light laptop emblem remain soft ivory #e6e4dd, with charcoal #30363a head/ears/eye patches and a DARK nose. Its graphite laptop has a thin muted contour. The dog must keep natural markings, never a negative-image inversion. Contrast hierarchy: controller is most salient, sheep second, window frames quietest.
+Flat crisp graphic illustration; solid colors, no gradients, grain, glow, shading or 3D. No connectors, lines between characters, arrows, cables, extra objects, clothing, labels, titles, words or watermark. Only the existing terminal marks. Preserve the overall simple Herdr icon design language.
+
+## Light prompt
+
+Use case: precise-object-edit
+Asset type: LIGHT THEME counterpart of a centered GitHub repository banner.
+Input image 1 is the centered dark banner EDIT TARGET. Input image 2 is the earlier light banner, COLOR AND DOG-MARKING REFERENCE ONLY; do not copy its old left-controller layout.
+Keep the exact centered composition from image 1: Border Collie behind laptop in the middle, four worker panes in a 2-by-2 grid to the left and four in a 2-by-2 grid to the right. Keep every position, proportion, pose, character identity, ear shape, spiral horn, laptop, pane and margin. Preserve the wide 3:1 framing. All eight sheep remain awake, with distinct poses and no props.
+Convert only the palette to a calm light theme:
+- Uniform pale warm-gray background #f5f4f0, also inside the worker panes.
+- Sheep silhouettes dark graphite #30363a; horn and facial cutouts pale background color.
+- Pane outlines medium neutral gray #858a8b, subtle light gray header bars #dedfdb, darker gray small window dots. Keep frames visually quieter than the characters.
+- Controller dog's outer head, ears and eye patches remain DARK charcoal. Its central forehead blaze, muzzle and paws remain WARM WHITE, with a DARK rounded nose and small smiling mouth. Match its normal markings to reference image 2. Do not invert its fur.
+- Graphite laptop with a pale circular >_ terminal emblem. Remove any unnecessary pale rim around the dog against the light background. Keep the short centered baseline in muted charcoal.
+Flat solid-color illustration with crisp graphic edges. No shadows, gradients, texture, glow, new props, connectors, text, titles or watermark. Change colors only; do not revert to the old left-controller composition.

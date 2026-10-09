@@ -1,7 +1,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="assets/banner-light.png">
-  <img alt="A Border Collie controller behind its laptop, with eight awake Herdr sheep workers in distinct poses inside terminal panes" src="assets/banner-light.png" width="100%">
+  <img alt="A Border Collie controller centered behind its laptop, with four awake Herdr sheep workers in terminal panes on each side" src="assets/banner-light.png" width="100%">
 </picture>
 
 # herdr-pstack-orchestrator
