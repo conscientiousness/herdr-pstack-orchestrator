@@ -569,6 +569,9 @@ def cmd_run(args):
     if brief_source is None or not brief_source.is_file():
         fail("brief_not_found", f"brief file not found: {args.brief}")
     brief_text = brief_source.read_text(encoding="utf-8", errors="replace")
+    worker = config["workers"].get(args.worker)
+    if worker is not None and worker["harness"] == "pi":
+        require_pi_integration()
     emit(start_task(config, args.worker, brief_text, resolve_cwd(args.cwd)))
 
 
@@ -1078,6 +1081,34 @@ def pi_providers():
     return [{"provider": provider, "models": count} for provider, count in counts.items()]
 
 
+def pi_integration_status():
+    """Read Herdr's local plaintext protocol without exposing paths or diagnostics."""
+    try:
+        proc = subprocess.run(["herdr", "integration", "status"],
+                              capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired, UnicodeError):
+        return {"status": "unavailable", "version": None}
+    if proc.returncode != 0:
+        return {"status": "unavailable", "version": None}
+    lines = [line for line in proc.stdout.splitlines() if line.startswith("pi:")]
+    if len(lines) == 1:
+        match = re.fullmatch(
+            r"pi: (?:not installed|(?:current|needs repair) \((?:v[0-9]+|legacy)\)"
+            r"|outdated \((?:v[0-9]+|legacy) < v[0-9]+\)) \(.+\)", lines[0])
+        if match:
+            state = lines[0][4:].split(" (")[0].replace(" ", "_")
+            version = re.match(r"pi: [a-z ]+ \(v([0-9]+)\b", lines[0])
+            return {"status": state,
+                    "version": int(version[1]) if state != "not_installed" and version else None}
+    return {"status": "unknown", "version": None}
+
+
+def require_pi_integration():
+    if pi_integration_status()["status"] == "not_installed":
+        fail("pi_integration_missing",
+             "Pi requires the Herdr integration; install it with herdr integration install pi")
+
+
 def cmd_detect(args):
     harnesses = {name: tool_version(name) for name in HARNESSES}
     emit({
@@ -1086,6 +1117,7 @@ def cmd_detect(args):
         "python": ".".join(str(part) for part in sys.version_info[:3]),
         "harnesses": harnesses,
         "pi_providers": pi_providers() if harnesses["pi"] else [],
+        "pi_integration": pi_integration_status(),
         "config": {"path": str(config_path()), "exists": config_path().is_file()},
     })
 
@@ -1098,6 +1130,8 @@ def cmd_check(args):
     unknown = [name for name in names if name not in config["workers"]]
     if unknown:
         fail("unknown_worker", f"no worker named {', '.join(unknown)} in {config_path()}")
+    if any(config["workers"][name]["harness"] == "pi" for name in names):
+        require_pi_integration()
     cwd = resolve_cwd(args.cwd)
     deadline = time.monotonic() + args.max_seconds
     pending = list(names)

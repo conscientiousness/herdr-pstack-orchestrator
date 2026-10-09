@@ -1,0 +1,110 @@
+{
+  "schema": "horch/pi-preflight-e2e/v1",
+  "verdict": "pass",
+  "seconds": 47.66,
+  "source_hashes": {
+    "horch.py": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+    "pi_preflight.py": "e9be949c0d72cb4d1af4c482fe5dfb4e9318e01f96c4782f7f1b4788777741ad"
+  },
+  "observations": {
+    "installed_integration": {
+      "status": "current",
+      "version": 9
+    },
+    "missing_integration": {
+      "status": "not_installed",
+      "version": null
+    },
+    "missing-check": {
+      "error": "pi_integration_missing",
+      "seconds": 0.052
+    },
+    "missing-run": {
+      "error": "pi_integration_missing",
+      "seconds": 0.053
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "t-2f04d5",
+      "worker": "ds",
+      "state": "done",
+      "closed_before_cleanup": true
+    },
+    {
+      "task_id": "t-b1fcf9",
+      "worker": "gpt",
+      "state": "done",
+      "closed_before_cleanup": true
+    },
+    {
+      "task_id": "t-ddb01f",
+      "worker": "glm",
+      "state": "done",
+      "closed_before_cleanup": true
+    }
+  ],
+  "assertions": [
+    {
+      "name": "detect reports the installed Pi integration",
+      "ok": true
+    },
+    {
+      "name": "real Herdr observes the isolated missing integration",
+      "ok": true
+    },
+    {
+      "name": "detect reports not_installed",
+      "ok": true
+    },
+    {
+      "name": "missing-check rejects promptly with install guidance",
+      "ok": true
+    },
+    {
+      "name": "missing-run rejects promptly with install guidance",
+      "ok": true
+    },
+    {
+      "name": "missing integration allocated no task or agent",
+      "ok": true
+    },
+    {
+      "name": "non-Pi check works while Pi integration is absent",
+      "ok": true
+    },
+    {
+      "name": "installed Pi workers deliver and close",
+      "ok": true
+    },
+    {
+      "name": "real result identity and completion",
+      "ok": true
+    },
+    {
+      "name": "real result identity and completion",
+      "ok": true
+    },
+    {
+      "name": "real result identity and completion",
+      "ok": true
+    },
+    {
+      "name": "exactly three real worker tasks",
+      "ok": true
+    },
+    {
+      "name": "owned panes confirmed absent",
+      "ok": true
+    },
+    {
+      "name": "installed integration unchanged",
+      "ok": true
+    },
+    {
+      "name": "source and configuration unchanged",
+      "ok": true
+    }
+  ],
+  "problem_category": null
+}

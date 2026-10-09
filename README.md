@@ -34,7 +34,7 @@ Workers open in tabs labeled `horch` (at most four panes per tab) without steali
 - Python 3.11 or later on Linux or macOS (standard library only, including POSIX file locks)
 - Node.js/npm for `npx skills add`; a manual clone needs neither
 - The harnesses you want as workers — `pi`, `codex`, and/or `claude` — installed and authenticated with your provider
-- For Pi workers: Herdr's Pi integration (`herdr integration install pi`); task submission waits for its session readiness signal
+- For Pi workers: Herdr's Pi integration (`herdr integration install pi`); `horch detect` reports its status, missing integration fails before worker allocation, and task submission waits for its session readiness signal
 - For the review loop only: pstack installed separately (see [Credits](#credits)); the two skills are installed independently of each other and of pstack
 
 ## Install

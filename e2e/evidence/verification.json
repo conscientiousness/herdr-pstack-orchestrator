@@ -101,7 +101,8 @@
         "horch_dispatch": true,
         "wait_calls": 18
       },
-      "prior_failure": "An earlier run closed two reviewers after consuming reports while their task states were still running. The CLI now withholds early fields and the skills require done; this fresh six-worker rerun passed."
+      "prior_failure": "An earlier run closed two reviewers after consuming reports while their task states were still running. The CLI now withholds early fields and the skills require done; this fresh six-worker rerun passed.",
+      "evidence": "pi-controller.json"
     },
     "package_ci": {
       "python": [
@@ -224,6 +225,14 @@
         "scope": "Read-only code review plus independent replay of both real traces, including a separate raw-row scan of delivery and handle ordering. Replay was judged sufficient for parser-only changes.",
         "subsequent_change": "The parent restored the existing launch-time overlap check alongside the output-time check so ordered concurrent results cannot erase overlap at launch. Both real traces passed again with unchanged counts on the final auditor hash recorded above."
       }
+    },
+    "pi_preflight": {
+      "passed": 15,
+      "total": 15,
+      "seconds": 47.66,
+      "evidence": "pi-preflight.json",
+      "horch_sha256": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+      "scope": "Real Herdr missing integration via supported PI_CODING_AGENT_DIR; mixed batch and direct run reject before allocation; non-Pi and two installed Pi workers complete; owned panes absent."
     }
   },
   "limits": [

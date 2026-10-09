@@ -1,0 +1,176 @@
+{
+  "schema": "horch/pi-controller-e2e/v1",
+  "date": "2026-10-09",
+  "scenario": "pi-controller",
+  "historical": true,
+  "scope": "Release-era Pi controller run from the v0.1.0 development line on 2026-10-09. This is a sanitized receipt of that original run, not a new test of the forthcoming v0.1.1 source.",
+  "verdict": "pass",
+  "seconds": 962,
+  "harness": "pi",
+  "original_artifact_sha256": "4b166f662a831917d44fddd56b8b26148101db70b4191eea822657164ed6de5d",
+  "tool_audit_sha256": "58797d5f962516484fb72c48dabf00ee935415e34b0ccbb9b336b6007fe4ce99",
+  "controller_report_sha256": "f87e967f0c314f7cd63425342b5131a9e38efed8d74a5b279bbe933a2d507ecf",
+  "source_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+  "source_attribution": "The original evidence.json does not embed a source hash. The value above is taken from the release verification summary and the public e2e/evidence/verification.json pi_controller entry. It matches skills/herdr-orchestrator/scripts/horch.py at the v0.1.0 tag commit c22e16858670e498464662acd8b6fd759b0910ef and release feature head 9e3d3340ea2a72231bf4f1be77579bf46ebfb98a. This is historical v0.1.0 attribution, not a test of v0.1.1.",
+  "runtime": {
+    "herdr": "0.9.3",
+    "pi": "1.1.0",
+    "python": "3.14.7",
+    "attribution": "Development environment versions from the public verification.json versions table; the original evidence.json records only harness \"pi\"."
+  },
+  "controller_model": {
+    "provider": "zai",
+    "model": "glm-5.3-flash",
+    "thinking": "max",
+    "attribution": "Controller session model_change and thinking_level_change events; not present in the original evidence.json."
+  },
+  "worker_configuration": {
+    "max_active_workers": 3,
+    "workers": {
+      "glm": {
+        "harness": "pi",
+        "provider": "zai",
+        "model": "glm-5.3-flash",
+        "effort": "max"
+      },
+      "ds": {
+        "harness": "pi",
+        "provider": "commandcode",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "effort": "max"
+      }
+    },
+    "roles": {
+      "feature, refactoring": "glm",
+      "interrogate reviewers": [
+        "ds",
+        "glm"
+      ]
+    },
+    "attribution": "Isolated workers.toml read by the controller; matches the six run invocations in the transcript."
+  },
+  "assertions": [
+    {
+      "name": "controller accepted task",
+      "ok": true
+    },
+    {
+      "name": "controller completed report",
+      "ok": true
+    },
+    {
+      "name": "six distinct workers",
+      "ok": true
+    },
+    {
+      "name": "configured writer roles",
+      "ok": true
+    },
+    {
+      "name": "configured reviewer roles",
+      "ok": true
+    },
+    {
+      "name": "all done and closed",
+      "ok": true
+    },
+    {
+      "name": "first FAIL final PASS",
+      "ok": true
+    },
+    {
+      "name": "review reports support verdicts",
+      "ok": true
+    },
+    {
+      "name": "actual final CLI result",
+      "ok": true
+    },
+    {
+      "name": "controller cleaned every worker",
+      "ok": true
+    }
+  ],
+  "first_verdict": "FAIL",
+  "final_verdict": "PASS",
+  "tasks": [
+    {
+      "task_id": "t-b79c7c",
+      "worker": "glm",
+      "role": "writer",
+      "phase": "implementation",
+      "outcome": "done and closed",
+      "commit": "bc5aecc87e832f63e413d7ffc76d0265de2188d4"
+    },
+    {
+      "task_id": "t-5ab94a",
+      "worker": "ds",
+      "role": "reviewer",
+      "phase": "first review",
+      "outcome": "FAIL; critical finding: invoice_total_cents dropped the final line",
+      "commit": "bc5aecc87e832f63e413d7ffc76d0265de2188d4"
+    },
+    {
+      "task_id": "t-abbc91",
+      "worker": "glm",
+      "role": "reviewer",
+      "phase": "first review",
+      "outcome": "FAIL; independently reproduced the same critical finding",
+      "commit": "bc5aecc87e832f63e413d7ffc76d0265de2188d4"
+    },
+    {
+      "task_id": "t-67cf41",
+      "worker": "glm",
+      "role": "writer",
+      "phase": "fix",
+      "outcome": "done and closed",
+      "commit": "e0b28c060128d60b1465d7f3d0f7944a6344a33e"
+    },
+    {
+      "task_id": "t-00e4f5",
+      "worker": "ds",
+      "role": "reviewer",
+      "phase": "second review",
+      "outcome": "PASS",
+      "commit": "e0b28c060128d60b1465d7f3d0f7944a6344a33e"
+    },
+    {
+      "task_id": "t-c78d50",
+      "worker": "glm",
+      "role": "reviewer",
+      "phase": "second review",
+      "outcome": "PASS",
+      "commit": "e0b28c060128d60b1465d7f3d0f7944a6344a33e"
+    }
+  ],
+  "tool_audit": {
+    "tool_counts": {
+      "read": 16,
+      "bash": 31,
+      "write": 5
+    },
+    "no_native_subagents": true,
+    "no_pane_input": true,
+    "read_workers_toml": true,
+    "bounded_waits": true,
+    "horch_dispatch": true,
+    "wait_calls": 18
+  },
+  "observations": [
+    "All ten named assertions passed; assertion names and outcomes are preserved from the original evidence.json.",
+    "Six-task review loop: one implementation writer, two independent first-round reviewers, one fix writer, and two second-round reviewers. Both first-round reviewers returned FAIL and both second-round reviewers returned PASS.",
+    "Six distinct task IDs appear in the controller transcript; the final horch list shows each state done and closed true.",
+    "The controller read the isolated workers.toml directly and dispatched through horch with six run invocations in four shell cells.",
+    "All 18 waits used 30-second caps; this historical run predates the updated wait guidance.",
+    "No native subagents and no pane input were used.",
+    "Accepted defect: invoice_total_cents summed lines[:-1], dropping the final line from the subtotal; the fix commit sums every line.",
+    "The original artifacts carry no source hash and no model; both are attributed as noted above rather than taken from the original evidence."
+  ],
+  "provenance": {
+    "original_run": "controller-pi-1791541877972241718",
+    "private_transcript_sha256": "659084cdb76383dd5d329c7aa49cd3d3cf4b10ae704900f33cad3b481b509b69",
+    "private_transcript_note": "The controller transcript stays in the harness's local store and is not published; the hash pins the private artifact used for the direct corroboration above.",
+    "prior_failure": "An earlier Pi controller run from the same release era (duration 1197 s) passed 9/10; 'all done and closed' failed because two reviewers were closed after their reports were consumed while their task states were still running. That failure is preserved, and this fresh six-worker rerun passed after the CLI withheld early result fields."
+  },
+  "privacy": "Sanitized: no local absolute paths, working-directory paths, briefs, prompts, full reports, transcripts, credentials, or account-specific metadata. Task IDs, fixture commit hashes, model IDs, and artifact hashes are retained for attribution."
+}

@@ -26,8 +26,19 @@ The controller run copies the existing worker configuration and isolates task st
 
 Pi workers require the Herdr Pi integration. A git worktree can still need a separate Pi trust decision when its directory inherits project resources. The [startup investigation](startup-findings.md) explains the reproduced failure and provides a real dialog-preservation test.
 
+To verify Pi preflight against real Herdr, including a mixed batch that must allocate no workers when Pi integration is absent:
+
+```bash
+python3 e2e/pi_preflight.py --pi ds --pi glm --other gpt \
+  --cwd . --output /tmp/horch-pi-preflight
+```
+
+The driver uses Herdr's supported `PI_CODING_AGENT_DIR` override with an empty directory. It does not uninstall the user's integration. It checks immediate rejection of `run` and a mixed `check`, then completes a non-Pi task under the same missing-integration environment and two Pi tasks with the normal installation. It validates nonce-bound results, cleanup, and unchanged sources/configuration/integration. Use an existing trusted checkout, two free slots, and stop other dispatchers. Only its sanitized receipt should be published; diagnostic outputs stay local.
+
 ## Evidence and source attribution
 
+- [pi-preflight.json](evidence/pi-preflight.json): 15/15 real integration-preflight and worker-delivery checks, with missing integration rejected in about 0.05 seconds before allocation.
+- [pi-controller.json](evidence/pi-controller.json): the original historical Pi-controller 10/10 receipt, with original artifact hashes and explicit source attribution. It predates the updated wait guidance and is not a v0.1.1 test.
 - [verification.json](evidence/verification.json): development runs, tested versions, source hashes, and limits.
 - [review-e2e.json](evidence/review-e2e.json): the release-era public six-task driver pass and its observed outputs.
 - [relocation-e2e.json](evidence/relocation-e2e.json): the historical failing attempt after moving the driver. It failed at initial worker acknowledgement (`not_started` / Herdr `agent_prompt_stalled`), before implementation. Three attempts stopped there. The [subsequent investigation](startup-findings.md) identified the trust-dialog cause; this receipt remains unchanged.
@@ -57,3 +68,10 @@ An evidence audit should distinguish a naturally observed failure, a deliberate 
 | Withhold results until turn completion | `verification.json`: Pi controller's `prior_failure`; `completion.json`: early fields, final delivery, cancellation | A real controller previously consumed early reports and closed unfinished reviewers. A later focused probe deliberately injected provisional results and verified withholding. A fresh controller loop passed after the fix. |
 
 These findings support retaining the mechanisms rather than deleting them by line count. They do not establish that every defensive branch was triggered. Deliberate approval denial, turns longer than 30 minutes, macOS runtime, and pstack workflows outside the review loop remain unverified.
+
+## Next verification round
+
+These scenarios are planned, not verified:
+
+- **Automatic approval denial:** use a disposable checkout and an explicit approval policy that rejects a scoped action. Retain the real denial, task state, and controller response; verify no pane input, automatic retry, or worker substitution, then confirm owned-pane cleanup. Successful automatic approvals do not cover this case.
+- **A worker turn longer than 30 minutes:** run real bounded work beyond 30 minutes with a configured earlier notification threshold. Verify one `long_running` notification, continued observation of the same task and wait process, no repeated model dispatch, eventual nonce-bound delivery, and cleanup. Record actual elapsed time and process/source identity; a fabricated timestamp or fast simulation does not qualify.
