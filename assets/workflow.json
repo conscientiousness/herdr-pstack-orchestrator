@@ -1,0 +1,235 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "One conversation. A visible coding team.",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": "assets/workflow.html",
+    "repository": {
+      "url": "git@github.com:conscientiousness/herdr-pstack-orchestrator.git",
+      "revision": "2350959bfc1ed8c08764bfebb19b40884f602edb",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "mode": "hidden"
+    }
+  },
+  "lanes": [
+    {
+      "id": "controller",
+      "label": "Controller"
+    },
+    {
+      "id": "workers",
+      "label": "Herdr workers"
+    }
+  ],
+  "mainPath": [
+    "dispatch",
+    "implement",
+    "review",
+    "assess",
+    "deliver"
+  ],
+  "nodes": [
+    {
+      "id": "dispatch",
+      "lane": "controller",
+      "col": 0,
+      "type": "frontend",
+      "icon": "backend",
+      "label": "Your controller",
+      "sublabel": "Brief + dispatch",
+      "width": 154,
+      "sources": [
+        {
+          "path": "skills/herdr-orchestrator/SKILL.md",
+          "line": 77,
+          "end_line": 91,
+          "label": "Complete briefs + horch run"
+        },
+        {
+          "path": "README.md",
+          "line": 13,
+          "end_line": 15,
+          "label": "What this repo does"
+        }
+      ]
+    },
+    {
+      "id": "implement",
+      "lane": "workers",
+      "col": 0,
+      "type": "backend",
+      "icon": "briefcase",
+      "label": "Implement",
+      "sublabel": "Own git worktree",
+      "width": 154,
+      "sources": [
+        {
+          "path": "skills/pstack-herdr/SKILL.md",
+          "line": 30,
+          "end_line": 30,
+          "label": "Implement + verify"
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "lane": "workers",
+      "col": 2,
+      "type": "cloud",
+      "icon": "security",
+      "label": "Review panel",
+      "sublabel": "Distinct models",
+      "width": 154,
+      "sources": [
+        {
+          "path": "skills/pstack-herdr/SKILL.md",
+          "line": 31,
+          "end_line": 32,
+          "label": "Independent review panel"
+        },
+        {
+          "path": "skills/pstack-herdr/references/herdr-tools.md",
+          "line": 18,
+          "end_line": 20,
+          "label": "Model diversity"
+        }
+      ]
+    },
+    {
+      "id": "assess",
+      "lane": "controller",
+      "col": 4,
+      "type": "security",
+      "icon": "security",
+      "label": "Assess findings",
+      "sublabel": "All reviewers done",
+      "width": 154,
+      "sources": [
+        {
+          "path": "skills/pstack-herdr/SKILL.md",
+          "line": 32,
+          "end_line": 34,
+          "label": "Lead judgment + review gate"
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "lane": "workers",
+      "col": 4,
+      "type": "backend",
+      "icon": "briefcase",
+      "label": "Fresh fix worker",
+      "sublabel": "Accepted findings",
+      "width": 154,
+      "sources": [
+        {
+          "path": "skills/pstack-herdr/SKILL.md",
+          "line": 33,
+          "end_line": 36,
+          "label": "Fresh fix + fresh reviewers"
+        }
+      ]
+    },
+    {
+      "id": "deliver",
+      "lane": "controller",
+      "col": 5,
+      "type": "backend",
+      "icon": "success",
+      "label": "Verified result",
+      "sublabel": "Changes + evidence",
+      "width": 154,
+      "sources": [
+        {
+          "path": "skills/pstack-herdr/SKILL.md",
+          "line": 34,
+          "end_line": 34,
+          "label": "Final report"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "delegate",
+      "from": "dispatch",
+      "to": "implement",
+      "label": "horch run",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "inspect",
+      "from": "implement",
+      "to": "review",
+      "label": "verify diff",
+      "variant": "emphasis"
+    },
+    {
+      "id": "collect",
+      "from": "review",
+      "to": "assess",
+      "label": "horch wait",
+      "variant": "emphasis"
+    },
+    {
+      "id": "finish",
+      "from": "assess",
+      "to": "deliver",
+      "label": "no blockers",
+      "variant": "emphasis"
+    },
+    {
+      "id": "changes",
+      "from": "assess",
+      "to": "fix",
+      "label": "needs fixes",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "rereview",
+      "from": "fix",
+      "to": "review",
+      "label": "fresh panel",
+      "variant": "dashed",
+      "role": "return",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "route": "bottom-channel"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Your agents, together",
+      "items": [
+        "Pi \u00b7 Codex CLI \u00b7 Claude Code",
+        "Choose a harness, model, and effort per worker."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Visible from start to finish",
+      "items": [
+        "Every task starts a fresh process in a Herdr pane.",
+        "The controller verifies each completed result."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "pstack review loop \u00b7 optional",
+      "items": [
+        "pstack-herdr routes the review loop through horch.",
+        "Fixes get a fresh panel; done alone is not a pass."
+      ]
+    }
+  ]
+}
