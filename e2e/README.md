@@ -37,6 +37,7 @@ The driver uses Herdr's supported `PI_CODING_AGENT_DIR` override with an empty d
 
 ## Evidence and source attribution
 
+- [controller-e2e.json](evidence/controller-e2e.json): a fresh invocation of the final driver passed 47/47 in 736.836 seconds. The six-task scenario, original transcript audit, source/configuration integrity, and actual pane cleanup passed together. Six yielded waits resumed through 23 handle calls, with no short caps. This supersedes the earlier verification gap without changing the historical failed receipts.
 - [pi-preflight.json](evidence/pi-preflight.json): 15/15 real integration-preflight and worker-delivery checks, with missing integration rejected in about 0.05 seconds before allocation.
 - [pi-controller.json](evidence/pi-controller.json): the original historical Pi-controller 10/10 receipt, with original artifact hashes and explicit source attribution. It predates the updated wait guidance and is not a v0.1.1 test.
 - [verification.json](evidence/verification.json): development runs, tested versions, source hashes, and limits.

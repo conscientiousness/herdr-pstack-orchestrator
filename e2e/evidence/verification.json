@@ -270,7 +270,44 @@
         "evidence": "controller-array-reanalysis.json",
         "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
         "scope": "Three unchanged real traces; earlier wait/handle counts preserved. Not a fresh integrated pass."
+      },
+      "independent_review": {
+        "verdict": "PASS",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "commit": "706a47bba856e37245b6b290beec455499ee6db0",
+        "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+        "scope": "Read-only review of literal-array mapping and redundant verification gates, three real trace replays, and raw-row delivery-time checks. Array-map yielded continuations were statically reviewed, not exercised."
       }
+    },
+    "fresh_controller_e2e": {
+      "verdict": "pass",
+      "passed": 47,
+      "total": 47,
+      "seconds": 736.836,
+      "evidence": "controller-e2e.json",
+      "tested_commit": "706a47bba856e37245b6b290beec455499ee6db0",
+      "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+      "horch_sha256": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+      "counts": {
+        "tool_calls": 53,
+        "shell_calls": 36,
+        "wait_launches": 6,
+        "short_waits": 0,
+        "yielded_waits": 6,
+        "handle_resumes": 23,
+        "rejected_wait_requests": 0
+      },
+      "scope": "Fresh final-driver invocation; six distinct workers, initial FAIL/final PASS panels, real committed CLI outputs, original transcript wait/delivery audit, unchanged source/configuration, and actual pane cleanup all passed together. No post-run parser correction or receipt relabeling."
+    },
+    "release_011_package_ci": {
+      "verdict": "PASS",
+      "python": [
+        "3.11",
+        "3.14"
+      ],
+      "commit": "706a47bba856e37245b6b290beec455499ee6db0",
+      "run": "https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/runs/37952944013",
+      "scope": "Reviewed final runtime and E2E driver code; subsequent changes add the fresh receipt and documentation."
     }
   },
   "limits": [

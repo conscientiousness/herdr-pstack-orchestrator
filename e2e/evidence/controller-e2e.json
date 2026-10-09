@@ -1,0 +1,307 @@
+{
+  "schema": "horch/controller-e2e/v1",
+  "verdict": "pass",
+  "seconds": 736.836,
+  "hashes": {
+    "e2e/controller_loop.py": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+    "e2e/review_loop.py": "ccb1aebd417c6c6960926c353c6adb3aa1290372f00c04a8cef33d69cc980cb5",
+    "skills/herdr-orchestrator/scripts/horch.py": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+    "skills/herdr-orchestrator/SKILL.md": "4d12637fac7d76486ff24207112cfcfa5e1b3c909d7b8f03e07e0ecb2ef14f1b",
+    "skills/herdr-orchestrator/references/lifecycle.md": "f2266937f35bc17fa74cb225f4e72e5d12867352d805ade44d4c3339f09a64d0",
+    "skills/herdr-orchestrator/references/setup.md": "164483d367e572c28ee4020e6399c5321fec27a1c97975b6288b2d50f1cd8df4",
+    "skills/herdr-orchestrator/references/workers.example.toml": "bb885254944c4667ab5c2e29fff11b586b904e05d1d69e090306684638b2492a"
+  },
+  "config_sha256": "21c0d2e3e01b6faa8e1dfaf71aa4fab5d2483be8a88879c79a4d8b81bda69538",
+  "models": {
+    "controller": "gpt-6.1-sol",
+    "writer": "glm-5.3-flash",
+    "reviewer_1": "deepseek/deepseek-v4.1-flash",
+    "reviewer_2": "glm-5.3-flash"
+  },
+  "tasks": [
+    {
+      "task_id": "t-4518bd",
+      "state": "done",
+      "closed_before_cleanup": true
+    },
+    {
+      "task_id": "t-4c8f6f",
+      "state": "done",
+      "closed_before_cleanup": true
+    },
+    {
+      "task_id": "t-5ba552",
+      "state": "done",
+      "closed_before_cleanup": true
+    },
+    {
+      "task_id": "t-69e8c6",
+      "state": "done",
+      "closed_before_cleanup": true
+    },
+    {
+      "task_id": "t-752484",
+      "state": "done",
+      "closed_before_cleanup": true
+    },
+    {
+      "task_id": "t-deeedc",
+      "state": "done",
+      "closed_before_cleanup": true
+    }
+  ],
+  "revisions": {
+    "base": "0a1c89a9c8e7d364f4bcbf349e02c31730b5d086",
+    "initial": "2db790f33c7ab098f82e2c0cc616e21d93cac0b1",
+    "final": "46964bf3774bbb9bf1371b06b4bb4c2c31918362"
+  },
+  "assertions": [
+    {
+      "name": "global_capacity",
+      "ok": true
+    },
+    {
+      "name": "base_defects",
+      "ok": true
+    },
+    {
+      "name": "controller_started",
+      "ok": true
+    },
+    {
+      "name": "controller_acknowledged",
+      "ok": true
+    },
+    {
+      "name": "six_fresh_tasks",
+      "ok": true
+    },
+    {
+      "name": "configured_phase_roles",
+      "ok": true
+    },
+    {
+      "name": "delivered_and_closed_before_cleanup",
+      "ok": true
+    },
+    {
+      "name": "isolated_task_paths",
+      "ok": true
+    },
+    {
+      "name": "result_identity_and_status",
+      "ok": true
+    },
+    {
+      "name": "isolated_task_paths",
+      "ok": true
+    },
+    {
+      "name": "result_identity_and_status",
+      "ok": true
+    },
+    {
+      "name": "isolated_task_paths",
+      "ok": true
+    },
+    {
+      "name": "result_identity_and_status",
+      "ok": true
+    },
+    {
+      "name": "isolated_task_paths",
+      "ok": true
+    },
+    {
+      "name": "result_identity_and_status",
+      "ok": true
+    },
+    {
+      "name": "isolated_task_paths",
+      "ok": true
+    },
+    {
+      "name": "result_identity_and_status",
+      "ok": true
+    },
+    {
+      "name": "isolated_task_paths",
+      "ok": true
+    },
+    {
+      "name": "result_identity_and_status",
+      "ok": true
+    },
+    {
+      "name": "fresh_phase_order",
+      "ok": true
+    },
+    {
+      "name": "fresh_phase_order",
+      "ok": true
+    },
+    {
+      "name": "fresh_phase_order",
+      "ok": true
+    },
+    {
+      "name": "exact_two_commits",
+      "ok": true
+    },
+    {
+      "name": "artifact_revision_pin",
+      "ok": true
+    },
+    {
+      "name": "review_verdict",
+      "ok": true
+    },
+    {
+      "name": "artifact_revision_pin",
+      "ok": true
+    },
+    {
+      "name": "review_verdict",
+      "ok": true
+    },
+    {
+      "name": "artifact_revision_pin",
+      "ok": true
+    },
+    {
+      "name": "artifact_revision_pin",
+      "ok": true
+    },
+    {
+      "name": "review_verdict",
+      "ok": true
+    },
+    {
+      "name": "artifact_revision_pin",
+      "ok": true
+    },
+    {
+      "name": "review_verdict",
+      "ok": true
+    },
+    {
+      "name": "artifact_revision_pin",
+      "ok": true
+    },
+    {
+      "name": "exact_commit_scope",
+      "ok": true
+    },
+    {
+      "name": "exact_commit_scope",
+      "ok": true
+    },
+    {
+      "name": "linear_history",
+      "ok": true
+    },
+    {
+      "name": "clean_checkout",
+      "ok": true
+    },
+    {
+      "name": "initial_line_fixed_invoice_bug_remains",
+      "ok": true
+    },
+    {
+      "name": "final_invoice",
+      "ok": true
+    },
+    {
+      "name": "final_edge_case",
+      "ok": true
+    },
+    {
+      "name": "final_edge_case",
+      "ok": true
+    },
+    {
+      "name": "final_edge_case",
+      "ok": true
+    },
+    {
+      "name": "final_edge_case",
+      "ok": true
+    },
+    {
+      "name": "optional_report_crosscheck",
+      "ok": true
+    },
+    {
+      "name": "transcript_waits_and_delivery",
+      "ok": true
+    },
+    {
+      "name": "source_and_config_integrity",
+      "ok": true
+    },
+    {
+      "name": "actual_pane_cleanup",
+      "ok": true
+    }
+  ],
+  "counts": {
+    "tool_calls": 53,
+    "shell_calls": 36,
+    "wait_launches": 6,
+    "short_waits": 0,
+    "yielded_waits": 6,
+    "handle_resumes": 23,
+    "rejected_wait_requests": 0
+  },
+  "observations": {
+    "first_line": {
+      "total_cents": 936
+    },
+    "first_invoice": {
+      "subtotal_cents": 936,
+      "total_cents": 991
+    },
+    "final_invoice": {
+      "subtotal_cents": 2836,
+      "total_cents": 2891
+    },
+    "edge_0": [
+      {
+        "total_cents": 199
+      },
+      {
+        "subtotal_cents": 199,
+        "total_cents": 216
+      }
+    ],
+    "edge_1": [
+      {
+        "total_cents": 667
+      },
+      {
+        "subtotal_cents": 667,
+        "total_cents": 684
+      }
+    ],
+    "edge_2": [
+      {
+        "total_cents": 0
+      },
+      {
+        "subtotal_cents": 0,
+        "total_cents": 17
+      }
+    ],
+    "edge_3": [
+      {
+        "total_cents": 0
+      },
+      {
+        "subtotal_cents": 0,
+        "total_cents": 17
+      }
+    ]
+  },
+  "failure_categories": []
+}
