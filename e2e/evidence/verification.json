@@ -232,7 +232,22 @@
       "seconds": 47.66,
       "evidence": "pi-preflight.json",
       "horch_sha256": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
-      "scope": "Real Herdr missing integration via supported PI_CODING_AGENT_DIR; mixed batch and direct run reject before allocation; non-Pi and two installed Pi workers complete; owned panes absent."
+      "scope": "Real Herdr missing integration via supported PI_CODING_AGENT_DIR; mixed batch and direct run reject before allocation; non-Pi and two installed Pi workers complete; owned panes absent.",
+      "independent_review": {
+        "verdict": "PASS",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "commit": "c4d1e17",
+        "scope": "Read-only runtime/preflight-driver review and independent historical Pi receipt provenance audit."
+      }
+    },
+    "controller_release_attempt": {
+      "verdict": "fail",
+      "seconds": 1214.182,
+      "evidence": "controller-stalled.json",
+      "auditor_sha256": "40a3e84562fa7ae8c4916e2ac8ad066b7318662e35ed28aa036729383ae7ee9e",
+      "cause": "First GLM worker remained working without visible progress. After about 20 minutes the controller asked whether to retry; Herdr reported blocked and the driver stopped. No six-task scenario or transcript audit completed.",
+      "cleanup": "Source/config integrity and actual owned-pane cleanup passed.",
+      "root_cause": "Worker/provider stall cause remains undetermined; no approval denial or startup trust dialog was observed."
     }
   },
   "limits": [
