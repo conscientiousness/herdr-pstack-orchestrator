@@ -138,6 +138,12 @@
         "cleanup": "All panes owned by the three attempts were closed.",
         "separate_observations": "A GLM horch check completed in 30 seconds. Manual dispatch of the same brief in the same worktree completed with status completed. Root cause of the startup discrepancy remains undetermined.",
         "scope": "The third attempt used a local observer around command execution to retain startup state before cleanup. Command results and test assertions were unchanged. No fresh six-task pass is claimed."
+      },
+      "independent_review": {
+        "verdict": "PASS",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "commit": "62f316668d9234a1ad5b5a35b57759397450f25c",
+        "scope": "Read-only review of controller instructions, package layout, relocation import, evidence attribution, and unchanged CLI. Later evidence-only updates were outside the pinned review."
       }
     }
   },

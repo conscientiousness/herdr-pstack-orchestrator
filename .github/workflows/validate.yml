@@ -47,6 +47,7 @@ jobs:
           test ! -e .agents/skills/herdr-orchestrator/e2e
           test ! -e .agents/skills/herdr-orchestrator/references/verification.json
           test ! -e .agents/skills/herdr-orchestrator/references/review-e2e.json
+          test -f .agents/skills/herdr-orchestrator/references/workers.example.toml
           test -f .agents/skills/herdr-orchestrator/references/setup.md
           test -f .agents/skills/herdr-orchestrator/references/lifecycle.md
           test -f .agents/skills/pstack-herdr/references/compatibility.md
