@@ -61,6 +61,8 @@ Historical evidence keeps its original source attribution. Moving the driver cha
 
 ## Reproduce original skill discovery
 
+[skill-discovery.json](evidence/skill-discovery.json) records the real 56-entry Pi/Codex catalog checks, preserved original content/resources/licenses, a fresh original `how` invocation with four delivered and closed workers, and real current/older-pin upstream comparisons. The receipt discloses the evaluation controller's corrected tab placement, the user's mid-run role change, and the limited scope of the source walkthrough. The trace review was manual; full transcripts remain private. These results do not validate other original workflows.
+
 Follow [source preparation and installation](../skills/pstack-herdr/references/compatibility.md#install-discoverable-skills). For an isolated installation, use a new directory and omit `-g`:
 
 ```bash

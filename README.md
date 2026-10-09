@@ -213,7 +213,7 @@ The controller dispatches an implementation worker in a worktree, sends the same
 
 The README source badge identifies the pinned version, not a release of this repository. The upstream CI badge checks daily at 02:23 UTC for changes in `pstack/` or `cursor-team-kit/`. A failed check means an update needs review or the check failed; open its summary for the distinction. Detection never upgrades installed skills automatically.
 
-The original-source mapping has been inspected, but live original-pstack playbooks are **unverified**. Earlier review-loop results retain their [historical source attribution](e2e/README.md#historical-pstack-source). Cursor modes, `/loop`, cloud execution, and unavailable MCP or app-driving tools are not supplied by this adapter; it reports a missing required capability instead of claiming the workflow finished.
+Native Pi and Codex discovery passed for all 56 package entries. A fresh Pi controller directly invoked original `how` and completed three explorer tasks plus one explainer task through Herdr, with delivery-before-read and cleanup confirmed in the [receipt](e2e/evidence/skill-discovery.json). Other original skills and `poteto-mode` playbooks remain **runtime unverified**; discovery alone does not prove a workflow works. Earlier review-loop results retain their [historical source attribution](e2e/README.md#historical-pstack-source). Cursor modes, `/loop`, cloud execution, and unavailable MCP or app-driving tools are not supplied by this adapter; it reports a missing required capability instead of claiming the workflow finished.
 
 ## Verification
 
@@ -238,7 +238,9 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 | Codex and Pi as workers | Starting and completing real tasks verified |
 | Permission-denial handling | Unverified |
 | Completions longer than 30 minutes | Unverified |
-| Original pstack 0.15.15 playbooks | Source mapping inspected; runtime unverified |
+| Original pstack skill discovery | All 56 package entries discovered in native Pi and Codex catalogs; Claude installation links checked |
+| Original pstack 0.15.15 `how` | Fresh Pi controller loaded the installed skill and mapping; 4/4 delegated tasks delivered and closed |
+| Other original pstack 0.15.15 workflows | Runtime unverified |
 | Historical Pi controller, pstack review loop | 10/10 passed on the release CLI; direct TOML roles, six fresh workers, no native subagents |
 
 Model names throughout are examples; availability depends on your provider.
