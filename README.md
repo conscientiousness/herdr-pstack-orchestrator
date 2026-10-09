@@ -208,7 +208,7 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 | Permission-denial handling | Unverified |
 | Completions longer than 30 minutes | Unverified |
 | pstack workflows other than the review loop (for example Arena) | Not tested |
-| Pi controller, full pstack review loop | Verification in progress for this release |
+| Pi controller, full pstack review loop | 10/10 passed on the final CLI; direct TOML roles, six fresh workers, no native subagents |
 
 Model names throughout are examples; availability depends on your provider.
 

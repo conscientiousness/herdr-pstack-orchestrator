@@ -78,6 +78,36 @@
       "model": "deepseek/deepseek-v4.1-flash",
       "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
       "scope": "wait_line and completion/cancellation instructions; code review, separate from real-worker E2E evidence."
+    },
+    "pi_controller": {
+      "passed": 10,
+      "total": 10,
+      "seconds": 962,
+      "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+      "tool_audit": {
+        "tool_counts": {
+          "read": 16,
+          "bash": 31,
+          "write": 5
+        },
+        "no_native_subagents": true,
+        "no_pane_input": true,
+        "read_workers_toml": true,
+        "bounded_waits": true,
+        "horch_dispatch": true,
+        "wait_calls": 18
+      },
+      "prior_failure": "An earlier run closed two reviewers after consuming reports while their task states were still running. The CLI now withholds early fields and the skills require done; this fresh six-worker rerun passed."
+    },
+    "package_ci": {
+      "python": [
+        "3.11",
+        "3.14"
+      ],
+      "verdict": "PASS",
+      "run": "https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/runs/37919075768",
+      "commit": "b4a5284d45ffd5c782169904b75bd28757cdebda",
+      "scope": "Python syntax and CLI entry points, example TOML parsing, installation of both skills for Claude Code, Codex, and Pi."
     }
   },
   "limits": [
