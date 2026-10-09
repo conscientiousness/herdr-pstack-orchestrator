@@ -61,7 +61,7 @@ It must be one JSON object with exactly these keys:
       "nonce": "{nonce}",
       "status": "completed",
       "summary": "One or two sentences.",
-      "files": ["report.md"],
+      "files": [],
       "question": null
     }}
 
