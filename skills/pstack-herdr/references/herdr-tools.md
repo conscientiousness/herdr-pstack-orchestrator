@@ -1,6 +1,6 @@
 # Herdr tool mapping for pstack
 
-Original pstack describes Cursor tools and agents. With `pstack-herdr` active, the controller uses the mapping below on Claude Code, Codex, and Pi. Read upstream instructions by path; they do not require a native plugin loader.
+Original pstack describes Cursor tools and agents. With `pstack-herdr` active, the controller uses the mapping below on Claude Code, Codex, and Pi. Installed workflow skill entries load this mapping before their upstream instructions. They use normal harness skill discovery, without a Cursor plugin loader.
 
 | pstack action | Herdr equivalent |
 |---|---|
@@ -26,7 +26,7 @@ For a panel role such as `interrogate reviewers`, start one task for each config
 | Upstream instruction | On the current harness |
 |---|---|
 | `Read`, `Glob`, `Grep`, edits, shell commands | Use the harness's available file/search/edit tools or shell. |
-| Invoke a pstack skill or slash command | Read `pstack/skills/<name>/SKILL.md` from the same checkout and follow it with this mapping. |
+| Invoke a pstack skill or slash command | Use the installed `<name>` skill. If reading its original source by path, retain this mapping and resolve references from that original file. |
 | `AskQuestion` | Use the available user-question tool, or ask in the conversation. Workers return questions to the controller. |
 | Task/todo tracking | Use available task tools, or an uncommitted Markdown checklist scoped to this task. |
 | Cursor rules and `setup-pstack` | Follow `pstack-herdr` role setup. All harnesses read TOML directly. |

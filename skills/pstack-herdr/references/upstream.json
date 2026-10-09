@@ -1,0 +1,29 @@
+{
+  "repository": "https://github.com/cursor/plugins.git",
+  "revision": "ccb5507cec1546dc88135c1139c811e6c59115ba",
+  "version": "0.15.15",
+  "team_kit_skills": ["control-cli", "control-ui", "deslop"],
+  "adapted_skills": [
+    "architect",
+    "arena",
+    "automate-me",
+    "blast-radius",
+    "create-verification-skill",
+    "figure-it-out",
+    "how",
+    "interrogate",
+    "maintain-verification-skill",
+    "make-bot-ui",
+    "no-comments",
+    "poteto-help",
+    "poteto-mode",
+    "principle-guard-the-context-window",
+    "recall",
+    "reflect",
+    "setup-pstack",
+    "show-me-your-work",
+    "swarm",
+    "teach",
+    "why"
+  ]
+}

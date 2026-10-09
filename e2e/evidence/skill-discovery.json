@@ -1,0 +1,313 @@
+{
+  "date": "2026-10-10",
+  "source": {
+    "repository": "https://github.com/cursor/plugins.git",
+    "revision": "ccb5507cec1546dc88135c1139c811e6c59115ba",
+    "version": "0.15.15"
+  },
+  "implementation_commit": "d3c857693f1c138493e07ae4a5b1664cec93fbbd",
+  "catalog_driver_commit": "17a93b7eefa53e4b1ec31fc8bb3a27f04a0ffe7a",
+  "source_sha256": {
+    "skills/pstack-herdr/scripts/prepare.py": "7da66fbd7df853ad96a874677a10264fbebd1c4ad91d7546e10af97201a4aa6b",
+    "skills/pstack-herdr/SKILL.md": "d85228cbcb1b1ee74d04102ccc1b6ad822a411a254c35af9b0315e866f7359ae",
+    "skills/pstack-herdr/references/herdr-tools.md": "3e11866a0b17bd663a46326d88fcaba9f8ddb4d32894d977368f7e7e622e28b6",
+    "skills/pstack-herdr/references/upstream.json": "013386b090018127b25e4d89fe29a45aee7dc6fb5eba23a1aa82da81accb96d4",
+    "skills/herdr-orchestrator/scripts/horch.py": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+    "scripts/check_upstream.py": "2987f459f6049beb8759d65b466e40e22251ee530d11b4c9fd38bdea26788f43",
+    "e2e/skill_catalogs.py": "ad6564f3c388e8e4fc8ec5597842491ee685bc7f40c27cfdaa63035f83ed25b0"
+  },
+  "installation": {
+    "pstack_skills": 51,
+    "team_kit_skills": 3,
+    "companion_skills": 2,
+    "adapted_entries": 21,
+    "global_installation": {
+      "installed_from_package": 55,
+      "existing_unslop_preserved": true
+    },
+    "claude_runtime_discovery": "not measured",
+    "preservation_checks": {
+      "original_bodies": 54,
+      "upstream_licenses": 54,
+      "skill_resource_trees": 54,
+      "claude_installation_links": 54,
+      "verdict": "pass"
+    }
+  },
+  "native_catalogs": {
+    "verdict": "pass",
+    "checks": {
+      "pi_catalog": true,
+      "codex_catalog": true,
+      "codex_no_errors": true
+    },
+    "expected_skills": [
+      "architect",
+      "arena",
+      "automate-me",
+      "benchmark-checklist",
+      "blast-radius",
+      "bro",
+      "control-cli",
+      "control-ui",
+      "correct",
+      "create-verification-skill",
+      "deslop",
+      "figure-it-out",
+      "herdr-orchestrator",
+      "how",
+      "interrogate",
+      "maintain-verification-skill",
+      "make-bot-ui",
+      "no-comments",
+      "poteto-help",
+      "poteto-mode",
+      "principle-attack-the-premise",
+      "principle-boundary-discipline",
+      "principle-build-the-lever",
+      "principle-encode-lessons-in-structure",
+      "principle-exhaust-the-design-space",
+      "principle-experience-first",
+      "principle-explain-the-number",
+      "principle-fix-root-causes",
+      "principle-foundational-thinking",
+      "principle-guard-the-context-window",
+      "principle-laziness-protocol",
+      "principle-make-operations-idempotent",
+      "principle-migrate-callers-then-delete-legacy-apis",
+      "principle-minimize-reader-load",
+      "principle-model-the-domain",
+      "principle-never-block-on-the-human",
+      "principle-outcome-oriented-execution",
+      "principle-prove-it-works",
+      "principle-redesign-from-first-principles",
+      "principle-separate-before-serializing-shared-state",
+      "principle-sequence-verifiable-units",
+      "principle-subtract-before-you-add",
+      "principle-test-behavior-not-implementation",
+      "principle-type-system-discipline",
+      "pstack-herdr",
+      "recall",
+      "reflect",
+      "setup-pstack",
+      "show-me-your-work",
+      "swarm",
+      "tdd",
+      "teach",
+      "technical-writing",
+      "typescript-best-practices",
+      "unslop",
+      "why"
+    ],
+    "pi_discovered": 56,
+    "codex_discovered": 56,
+    "original_receipt_sha256": "fb172d4ea8fdab3200795d4205b02062767aec7d718397bac941325ec0ea7b24",
+    "reproduce": "python3 e2e/skill_catalogs.py <disposable-consumer-directory>"
+  },
+  "upstream_monitor": {
+    "current_pin": {
+      "status": "current",
+      "compared_paths": [
+        "pstack/",
+        "cursor-team-kit/"
+      ],
+      "repository": "https://github.com/cursor/plugins.git",
+      "pinned_revision": "ccb5507cec1546dc88135c1139c811e6c59115ba",
+      "pinned_version": "0.15.15",
+      "default_branch": "main",
+      "upstream_revision": "ccb5507cec1546dc88135c1139c811e6c59115ba",
+      "compare_url": "https://github.com/cursor/plugins/compare/ccb5507cec1546dc88135c1139c811e6c59115ba...ccb5507cec1546dc88135c1139c811e6c59115ba",
+      "upstream_version": "0.15.15",
+      "changed_files": []
+    },
+    "real_historical_pin": {
+      "status": "update_required",
+      "compared_paths": [
+        "pstack/",
+        "cursor-team-kit/"
+      ],
+      "repository": "https://github.com/cursor/plugins.git",
+      "pinned_revision": "1e56b2913469f05101e4ffd4d437c2e6fd2c1b8d",
+      "pinned_version": "0.15.14",
+      "default_branch": "main",
+      "upstream_revision": "ccb5507cec1546dc88135c1139c811e6c59115ba",
+      "compare_url": "https://github.com/cursor/plugins/compare/1e56b2913469f05101e4ffd4d437c2e6fd2c1b8d...ccb5507cec1546dc88135c1139c811e6c59115ba",
+      "upstream_version": "0.15.15",
+      "changed_files": [
+        "pstack/.cursor-plugin/plugin.json",
+        "pstack/README.md",
+        "pstack/docs/guide/01-setup.md",
+        "pstack/docs/guide/04-design.md",
+        "pstack/skills/architect/SKILL.md",
+        "pstack/skills/architect/references/runner-prompt.md",
+        "pstack/skills/arena/SKILL.md",
+        "pstack/skills/blast-radius/SKILL.md",
+        "pstack/skills/how/SKILL.md",
+        "pstack/skills/interrogate/SKILL.md",
+        "pstack/skills/poteto-help/SKILL.md",
+        "pstack/skills/poteto-mode/SKILL.md",
+        "pstack/skills/poteto-mode/scripts/orch/orch.test.ts",
+        "pstack/skills/reflect/SKILL.md",
+        "pstack/skills/setup-pstack/SKILL.md",
+        "pstack/skills/why/SKILL.md"
+      ]
+    }
+  },
+  "independent_review": {
+    "worker": "gpt-deep",
+    "task_id": "t-769018",
+    "commit": "d3c857693f1c138493e07ae4a5b1664cec93fbbd",
+    "verdict": "PASS",
+    "scope": "Generator, classification, installed artifacts, installation guidance and upstream checker/workflow. Native catalog driver was added afterwards and run against both real harnesses."
+  },
+  "limitations": [
+    "One workflow cannot establish compatibility with every original pstack playbook.",
+    "Cursor custom modes, hooks, cloud execution and unavailable routine/secret-request tools are not supplied.",
+    "Scheduled execution requires the workflow on the default branch; local monitor checks do not prove a hosted schedule has fired."
+  ],
+  "live_how": {
+    "verdict": "pass",
+    "controller": {
+      "harness": "pi",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "effort": "medium"
+    },
+    "prompt": "Use how to explain the worker lifecycle across configuration, startup, task delivery and cleanup, with source citations. Read-only scope and a local output file; no skill file path or dispatch sequence supplied.",
+    "tasks": [
+      {
+        "task_id": "t-4ed290",
+        "worker": "luna",
+        "harness": "pi",
+        "model": "gpt-6-luna",
+        "argv": [
+          "--provider",
+          "openai",
+          "--model",
+          "gpt-6-luna",
+          "--thinking",
+          "max"
+        ],
+        "created_at": "2026-10-09T17:23:17Z",
+        "state": "done",
+        "closed": true,
+        "result_status": "completed",
+        "report_sha256": {
+          "findings.md": "899f37aae4b49288b5a37f16bbe086785eab926a6e67de8acf0497136ee97f76"
+        }
+      },
+      {
+        "task_id": "t-c6759e",
+        "worker": "luna",
+        "harness": "pi",
+        "model": "gpt-6-luna",
+        "argv": [
+          "--provider",
+          "openai",
+          "--model",
+          "gpt-6-luna",
+          "--thinking",
+          "max"
+        ],
+        "created_at": "2026-10-09T17:23:21Z",
+        "state": "done",
+        "closed": true,
+        "result_status": "completed",
+        "report_sha256": {
+          "findings.md": "6d70e61065dd67e2859c59599207c13f5e68f4a642d7d890f60093290c33f905"
+        }
+      },
+      {
+        "task_id": "t-992e98",
+        "worker": "luna",
+        "harness": "pi",
+        "model": "gpt-6-luna",
+        "argv": [
+          "--provider",
+          "openai",
+          "--model",
+          "gpt-6-luna",
+          "--thinking",
+          "max"
+        ],
+        "created_at": "2026-10-09T17:23:24Z",
+        "state": "done",
+        "closed": true,
+        "result_status": "completed",
+        "report_sha256": {
+          "findings.md": "155ae2b9267d7b99d6b8137f8dcf56a5aebc3f5992435bd26c3ff3908e51a463"
+        }
+      },
+      {
+        "task_id": "t-7a2918",
+        "worker": "glm",
+        "harness": "pi",
+        "model": "glm-5.3",
+        "argv": [
+          "--provider",
+          "zai",
+          "--model",
+          "glm-5.3",
+          "--thinking",
+          "max"
+        ],
+        "created_at": "2026-10-09T17:31:14Z",
+        "state": "done",
+        "closed": true,
+        "result_status": "completed",
+        "report_sha256": {
+          "explanation.md": "c2bb9490d488f37d082173c84ecf64654b2a80c2daaf57d12259590b697b6768"
+        }
+      }
+    ],
+    "top_level_tool_calls": {
+      "read": 2,
+      "codemode": 10,
+      "bash": 2
+    },
+    "controller_trace_sha256": "7f902c7514443612caafa214d324ed7bfb4647130c6239669d6f15d054ec17af",
+    "original_explanation_sha256": "a727e4998ecddec3e33557a1f7142741234c66c7f36f39f0dfd4b0c7c4e8056b",
+    "retained_explanation_sha256": "c7189222f2784744909aecd33e297295fd67464a77dfcf73a47faea4cf9b9e5f",
+    "manual_trace_review": {
+      "installed_how_loaded_first": true,
+      "adapter_loaded_before_dispatch": true,
+      "original_explorer_and_explainer_templates_read": true,
+      "three_explorers_dispatched_before_waiting": true,
+      "delivered_results_read_before_explainer_dispatch": true,
+      "all_four_tasks_delivered_and_closed": true,
+      "no_native_delegation_or_pane_input": true
+    },
+    "operational_notes": [
+      "The test controller was mistakenly created in the root controller tab, then moved intact to a dedicated tab; the root tab was restored. Worker tasks used separate horch tabs. No process was restarted or prompt resent.",
+      "The user removed Luna and changed how explorer to ds after the three explorers had started. Their actual models remain attributed to Luna; this is not a new DeepSeek-role workflow run.",
+      "The walkthrough target runtime and routing files remained unchanged. The parent added a catalog test and changed documentation during the read-only run.",
+      "The parent replaced one unsupported external Herdr URL in the retained prose with the project website. Worker reports and the original controller output are retained unchanged privately."
+    ],
+    "scope": "Direct original how invocation, template loading, Herdr delegation, delivery and cleanup. This source walkthrough does not verify product behavior or every poteto-mode playbook.",
+    "cleanup": {
+      "all_four_worker_panes_absent": true,
+      "evaluation_controller_pane_closed": true,
+      "root_controller_tab_single_pane": true,
+      "workspace_has_only_root_controller": true
+    },
+    "delivery_trace_times": {
+      "t-4ed290": {
+        "done_observed": "2026-10-09T17:27:37.313Z",
+        "first_result_read": "2026-10-09T17:27:43.356Z"
+      },
+      "t-c6759e": {
+        "done_observed": "2026-10-09T17:27:57.514Z",
+        "first_result_read": "2026-10-09T17:31:14.239Z"
+      },
+      "t-992e98": {
+        "done_observed": "2026-10-09T17:30:51.116Z",
+        "first_result_read": "2026-10-09T17:31:14.239Z"
+      },
+      "t-7a2918": {
+        "done_observed": "2026-10-09T17:35:12.371Z",
+        "first_result_read": "2026-10-09T17:35:18.924Z"
+      }
+    }
+  },
+  "verdict": "pass"
+}
