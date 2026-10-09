@@ -266,8 +266,47 @@ def load_state(directory):
     return state
 
 
+@contextmanager
+def task_state_lock(directory):
+    """Serialize short state transactions; never hold across herdr calls."""
+    with (directory / ".state.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
 def save_state(directory, state):
-    write_json(directory / "state.json", state)
+    with task_state_lock(directory):
+        current = load_state(directory)
+        merged = dict(current if current["closed"] or current["state"] == "done" else state)
+        for key in ("closed", "saw_working", "long_notified"):
+            merged[key] = bool(current[key] or state[key])
+        write_json(directory / "state.json", merged)
+        state.update(merged)
+
+
+class TaskInvalidError(Exception):
+    pass
+
+
+def load_task(directory, task_id):
+    path = directory / "task.json"
+    if not path.is_file():
+        fail("unknown_task", f"no such task: {task_id}")
+    task = read_json(path)
+    required = ("nonce", "worker", "agent", "pane_id", "result_path", "created_at")
+    if (not isinstance(task, dict) or task.get("task_id") != task_id
+            or any(not isinstance(task.get(key), str) or not task[key] for key in required)):
+        raise TaskInvalidError(f"task {task_id} has an invalid task.json")
+    try:
+        created = datetime.fromisoformat(task["created_at"].replace("Z", "+00:00"))
+        if created.tzinfo is None:
+            raise ValueError("missing timezone")
+    except ValueError as exc:
+        raise TaskInvalidError(f"task {task_id} has an invalid created_at in task.json") from exc
+    return task
 
 
 def all_task_ids():
@@ -281,20 +320,7 @@ def all_task_ids():
 
 
 def active_task_count():
-    # Count incomplete reservations too: a publication failure may leave a pane
-    # whose task.json could not be written. Only confirmed closure frees a slot.
-    root = tasks_root()
-    if not root.is_dir():
-        return 0
-    count = 0
-    for directory in root.iterdir():
-        if not TASK_ID_RE.fullmatch(directory.name) or not directory.is_dir():
-            continue
-        stored = read_json(directory / "state.json")
-        if isinstance(stored, dict) and stored.get("closed") is True:
-            continue
-        count += 1
-    return count
+    return sum(not load_state(task_dir(task_id))["closed"] for task_id in all_task_ids())
 
 
 # ---------------------------------------------------------------------------
@@ -374,6 +400,8 @@ def agent_index():
     try:
         agents = herdr_path(herdr("agent", "list", timeout=30.0), "result", "agents")
     except HerdrError:
+        return None
+    if not isinstance(agents, list):
         return None
     index = {}
     for agent in agents:
@@ -585,13 +613,11 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
         raise
     try:
         pane_id, tab_id = place_pane(workspace, cwd, os.environ.get("HERDR_TAB_ID"))
-    except HerdrError as exc:
-        # A timeout or malformed creation response may hide a newly created pane.
-        # Keep the reservation until the controller can inspect and remove it.
-        raise HerdrError(
-            f"pane placement failed: {exc}; incomplete reservation retained at {directory}",
-            exc.payload,
-        ) from exc
+    except BaseException as exc:
+        shutil.rmtree(directory, ignore_errors=True)
+        print(f"warning: pane placement failed: {exc}; an empty pane may exist "
+              "after an ambiguous placement failure", file=sys.stderr)
+        raise
 
     task = {
         "task_id": task_id,
@@ -618,8 +644,15 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
         # retain/publish its reservation so a later launch cannot reuse the slot.
         try:
             close_pane(pane_id)
-        except HerdrError:
-            write_json(directory / "task.json", task)
+        except HerdrError as exc:
+            state["state"] = "start_failed"
+            state["problem"] = f"task publication failed; unused pane cleanup failed: {exc}"
+            try:
+                write_json(directory / "task.json", task)
+                save_state(directory, state)
+            except OSError as recovery_error:
+                print(f"warning: cannot preserve task {task_id} for pane {pane_id}: "
+                      f"{recovery_error}", file=sys.stderr)
         else:
             shutil.rmtree(directory, ignore_errors=True)
         raise
@@ -659,9 +692,17 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
 
     index = agent_index()
     entry = (index or {}).get(agent)
-    if entry is not None and isinstance(entry.get("state_change_seq"), int):
-        state["baseline_seq"] = entry["state_change_seq"]
+    baseline = entry.get("state_change_seq") if isinstance(entry, dict) else None
+    if isinstance(baseline, bool) or not isinstance(baseline, int) or baseline < 0:
+        state["state"] = "start_failed"
+        state["problem"] = "could not capture a usable agent baseline; prompt was not submitted"
         save_state(directory, state)
+        notify(f"horch: {task_id} start_failed", state["problem"])
+        return run_object(state["state"])
+    state["baseline_seq"] = baseline
+    save_state(directory, state)
+    if state["closed"] or state["state"] == "done":
+        return run_object(state["state"])
 
     pointer = f"New task {task_id}. Read {directory / 'brief.md'} in full and follow it exactly."
     try:
@@ -689,10 +730,10 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
             notify(f"horch: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
         else:
             state["state"] = "not_started"
-            state["problem"] = str(exc)
+            state["problem"] = f"prompt acknowledgement not observed: {exc}"
             notify(
                 f"horch: {task_id} not_started",
-                f"worker {worker_name} never reported working within {ACK_TIMEOUT_MS // 1000}s: {exc}",
+                f"worker {worker_name} prompt acknowledgement not observed within {ACK_TIMEOUT_MS // 1000}s: {exc}",
             )
     save_state(directory, state)
     return run_object(state["state"])
@@ -720,12 +761,24 @@ def result_verdict(directory, task):
     path = directory / "result.json"
     if not path.is_file():
         return "missing"
-    parsed = read_json(path)
+    return validate_result(read_json(path), task)
+
+
+def validate_result(parsed, task):
     if not isinstance(parsed, dict):
         return "invalid"
-    if parsed.get("task_id") == task.get("task_id") and parsed.get("nonce") == task.get("nonce"):
-        return "valid"
-    return "invalid"
+    keys = {"task_id", "nonce", "status", "summary", "files", "question"}
+    if (set(parsed) != keys or parsed["task_id"] != task["task_id"]
+            or parsed["nonce"] != task["nonce"]
+            or parsed["status"] not in ("completed", "blocked", "failed")
+            or not isinstance(parsed["summary"], str)
+            or not isinstance(parsed["files"], list)
+            or not all(isinstance(item, str) for item in parsed["files"])):
+        return "invalid"
+    question = parsed["question"]
+    if parsed["status"] == "blocked":
+        return "valid" if isinstance(question, str) and question.strip() else "invalid"
+    return "valid" if question is None else "invalid"
 
 
 def ran_longer_than(task, minutes):
@@ -738,12 +791,9 @@ def ran_longer_than(task, minutes):
 
 def evaluate_task(info, agent, config):
     state, task = info["state"], info["task"]
-    task_id = info["task_id"]
-    title = f"horch: {task_id}"
     if agent is None:
         state["state"] = "exited"
         state["problem"] = f"worker {task['worker']} ({task['agent']}) is gone from herdr"
-        notify(title, state["problem"])
         return "exited"
     status = agent.get("agent_status")
     if status == "working":
@@ -751,36 +801,27 @@ def evaluate_task(info, agent, config):
     if status == "blocked":
         state["state"] = "blocked"
         state["problem"] = f"worker {task['worker']} is waiting at a dialog in pane {task['pane_id']}"
-        notify(title, state["problem"])
         return "blocked"
     if turn_ended(agent, state):
         verdict = result_verdict(info["dir"], task)
         if verdict == "valid":
             state["state"] = "done"
-            try:
-                close_pane(task["pane_id"])
-                state["closed"] = True
-            except HerdrError as exc:
-                state["problem"] = f"pane cleanup failed: {exc}; retry with horch close {task_id}"
-                notify(title, state["problem"])
+            state["problem"] = None
             return "done"
         if verdict == "missing":
             state["state"] = "result_missing"
             state["problem"] = f"turn ended without a valid result.json ({task['result_path']})"
-            notify(title, state["problem"])
             return "result_missing"
         state["state"] = "result_invalid"
-        state["problem"] = f"result.json is invalid or does not match task_id/nonce ({task['result_path']})"
-        notify(title, state["problem"])
+        state["problem"] = f"result.json does not match the result schema or task_id/nonce ({task['result_path']})"
         return "result_invalid"
     if not state["long_notified"] and ran_longer_than(task, config["notify_after_minutes"]):
         state["long_notified"] = True
-        notify(
-            title,
-            f"worker {task['worker']} has run longer than {config['notify_after_minutes']} minutes; still waiting",
-        )
+        state["state"] = "running"
+        state["problem"] = None
         return "long_running"
     state["state"] = "running"
+    state["problem"] = None
     return "running"
 
 
@@ -791,11 +832,44 @@ def poll_round(infos, previous, config):
         return False, False
     changed = False
     for info in infos:
-        state = info["state"]
-        if state["state"] in SETTLED_STATES:
-            continue
-        reported = evaluate_task(info, index.get(info["task"]["agent"]), config)
-        save_state(info["dir"], state)
+        directory = info["dir"]
+        notice = None
+        cleanup = False
+        with task_state_lock(directory):
+            state = load_state(directory)
+            info["state"] = state
+            old_state = state["state"]
+            if state["closed"] or old_state == "done" or (
+                    old_state in SETTLED_STATES and not info.pop("recheck", False)):
+                reported = old_state
+            else:
+                reported = evaluate_task(info, index.get(info["task"]["agent"]), config)
+                cleanup = reported == "done"
+                if reported == "long_running":
+                    notice = (f"worker {info['task']['worker']} has run longer than "
+                              f"{config['notify_after_minutes']} minutes; still waiting")
+                elif state["problem"] and old_state != state["state"]:
+                    notice = state["problem"]
+                write_json(directory / "state.json", state)
+        if cleanup:
+            cleanup_error = None
+            try:
+                close_pane(info["task"]["pane_id"])
+            except HerdrError as exc:
+                cleanup_error = f"pane cleanup failed: {exc}; retry with horch close {info['task_id']}"
+            with task_state_lock(directory):
+                state = load_state(directory)
+                if not state["closed"]:
+                    state["closed"] = cleanup_error is None
+                    if state["problem"] != cleanup_error:
+                        notice = cleanup_error
+                    state["problem"] = cleanup_error
+                    write_json(directory / "state.json", state)
+                info["state"] = state
+        # Notices are claimed in the state transaction, sent outside the lock.
+        # Suppress a notice if a concurrent close has already completed.
+        if notice and not load_state(directory)["closed"]:
+            notify(f"horch: {info['task_id']}", notice)
         info["reported"] = reported
         if previous.get(info["task_id"]) != reported:
             previous[info["task_id"]] = reported
@@ -805,10 +879,13 @@ def poll_round(infos, previous, config):
 
 def wait_line(info):
     parsed = read_json(info["dir"] / "result.json")
-    parsed = parsed if isinstance(parsed, dict) else None
+    parsed = parsed if validate_result(parsed, info["task"]) == "valid" else None
+    state = load_state(info["dir"])
     return {
         "task_id": info["task_id"],
-        "state": info["reported"],
+        "state": state["state"] if state["closed"] else info["reported"],
+        "closed": bool(state["closed"]),
+        "message": state["problem"],
         "summary": parsed.get("summary") if parsed else None,
         "result_path": str(info["dir"] / "result.json"),
         "files": parsed.get("files") if parsed and isinstance(parsed.get("files"), list) else [],
@@ -818,7 +895,7 @@ def wait_line(info):
 
 def make_info(task_id):
     directory = task_dir(task_id)
-    task = read_json(directory / "task.json")
+    task = load_task(directory, task_id)
     state = load_state(directory)
     return {"task_id": task_id, "dir": directory, "task": task, "state": state, "reported": state["state"]}
 
@@ -826,6 +903,8 @@ def make_info(task_id):
 def cmd_wait(args):
     require_herdr_env()
     config = load_config()
+    if args.recheck and not args.task_ids:
+        fail("invalid_arguments", "wait --recheck requires explicit task IDs")
     if args.task_ids:
         seen = []
         for task_id in args.task_ids:
@@ -840,11 +919,16 @@ def cmd_wait(args):
         infos = []
         for task_id in all_task_ids():
             info = make_info(task_id)
-            if info["state"]["state"] not in SETTLED_STATES:
+            if not info["state"]["closed"] and info["state"]["state"] not in SETTLED_STATES:
                 infos.append(info)
     if not infos:
         return
 
+    if args.recheck:
+        for info in infos:
+            if (not info["state"]["closed"] and info["state"]["state"] in SETTLED_STATES
+                    and info["state"]["state"] != "done"):
+                info["recheck"] = True
     wait_until_change(infos, config, args.max_seconds)
     for info in infos:
         emit(wait_line(info))
@@ -852,7 +936,8 @@ def cmd_wait(args):
 
 def wait_until_change(infos, config, max_seconds):
     """Poll until a waited task changes state or max_seconds pass; no-op when all are settled."""
-    if all(info["state"]["state"] in SETTLED_STATES for info in infos):
+    if all((info["state"]["closed"] or info["state"]["state"] in SETTLED_STATES)
+           and not info.get("recheck") for info in infos):
         return
     deadline = None if max_seconds is None else time.monotonic() + max(0.0, max_seconds)
     previous = {info["task_id"]: info["state"]["state"] for info in infos}
@@ -862,7 +947,8 @@ def wait_until_change(infos, config, max_seconds):
         failures = 0 if polled else failures + 1
         if failures >= 3:
             fail("herdr_error", "could not poll herdr agent list")
-        if changed:
+        if changed or (polled and all(info["state"]["closed"] or
+                                     info["state"]["state"] in SETTLED_STATES for info in infos)):
             return
         now = time.monotonic()
         if deadline is not None and now >= deadline:
@@ -881,7 +967,12 @@ def cmd_list(args):
     require_herdr_env()
     rows = []
     for task_id in all_task_ids():
-        task = read_json(task_dir(task_id) / "task.json")
+        try:
+            task = load_task(task_dir(task_id), task_id)
+        except TaskInvalidError as exc:
+            rows.append(("", task_id, {"task_id": task_id, "state": "task_invalid",
+                                      "error": "task_invalid", "message": str(exc)}))
+            continue
         state = load_state(task_dir(task_id))
         rows.append(
             (
@@ -906,13 +997,13 @@ def cmd_list(args):
 def cmd_close(args):
     require_herdr_env()
     directory = task_dir(args.task_id)
-    task = read_json(directory / "task.json")
-    if not isinstance(task, dict) or not isinstance(task.get("pane_id"), str):
-        fail("unknown_task", f"no such task: {args.task_id}")
-    state = load_state(directory)
+    task = load_task(directory, args.task_id)
     outcome = close_pane(task["pane_id"])
-    state["closed"] = True
-    save_state(directory, state)
+    with task_state_lock(directory):
+        current = load_state(directory)
+        current["closed"] = True
+        current["problem"] = None
+        write_json(directory / "state.json", current)
     emit({"task_id": args.task_id, "closed": True, "pane": outcome})
 
 
@@ -986,7 +1077,8 @@ def cmd_check(args):
     pending = list(names)
     started = {}
     settled_at = {}
-    while pending or any(info["state"]["state"] not in SETTLED_STATES for info, _ in started.values()):
+    while pending or any(not info["state"]["closed"] and info["state"]["state"] not in SETTLED_STATES
+                         for info, _ in started.values()):
         while pending and time.monotonic() < deadline:
             name = pending[0]
             began = time.monotonic()
@@ -996,14 +1088,15 @@ def cmd_check(args):
             pending.pop(0)
             info = make_info(run["task_id"])
             started[name] = (info, began)
-            if info["state"]["state"] in SETTLED_STATES:
+            if info["state"]["closed"] or info["state"]["state"] in SETTLED_STATES:
                 settled_at[name] = time.monotonic()
-        waiting = [info for info, _ in started.values() if info["state"]["state"] not in SETTLED_STATES]
+        waiting = [info for info, _ in started.values()
+                   if not info["state"]["closed"] and info["state"]["state"] not in SETTLED_STATES]
         if time.monotonic() >= deadline or (not waiting and pending):
             break  # out of time, or problem panes hold every slot
         wait_until_change(waiting, config, deadline - time.monotonic())
         for name, (info, _) in started.items():
-            if name not in settled_at and info["state"]["state"] in SETTLED_STATES:
+            if name not in settled_at and (info["state"]["closed"] or info["state"]["state"] in SETTLED_STATES):
                 settled_at[name] = time.monotonic()
     for name in names:
         if name not in started:
@@ -1019,14 +1112,16 @@ def cmd_check(args):
         state = info["state"]["state"]
         message = info["state"]["problem"]
         if state == "done" and status != "completed":
-            message = f"worker result status is {status!r}; expected completed"
+            result_message = f"worker result status is {status!r}; expected completed"
+            message = f"{message}; {result_message}" if message else result_message
         elif state not in SETTLED_STATES and message is None:
             message = "check wait limit reached; task is still unsettled"
         emit({
             "worker": name,
             "task_id": info["task_id"],
             "state": state,
-            "ok": state == "done" and status == "completed",
+            "ok": state == "done" and status == "completed" and info["state"]["closed"]
+                  and result_verdict(info["dir"], info["task"]) == "valid",
             "pane_id": None if info["state"]["closed"] else info["task"]["pane_id"],
             "seconds": round(settled_at.get(name, time.monotonic()) - began),
             "message": message,
@@ -1053,6 +1148,7 @@ def build_parser():
 
     p_wait = sub.add_parser("wait", help="wait until at least one waited task changes state")
     p_wait.add_argument("task_ids", nargs="*", help="tasks to wait on (default: every task that is not settled)")
+    p_wait.add_argument("--recheck", action="store_true", help="re-poll named unclosed problem tasks")
     p_wait.add_argument("--max-seconds", type=int, default=None, help="return after at most this many seconds")
     p_wait.set_defaults(func=cmd_wait)
 
@@ -1083,6 +1179,8 @@ def main(argv=None):
         if hasattr(args, "task_id"):
             validate_task_id(args.task_id)
         args.func(args)
+    except TaskInvalidError as exc:
+        fail("task_invalid", str(exc))
     except HerdrError as exc:
         fail("herdr_error", str(exc), exc.payload)
     except KeyboardInterrupt:
