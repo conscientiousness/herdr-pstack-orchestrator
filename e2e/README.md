@@ -59,6 +59,34 @@ Historical evidence keeps its original source attribution. Moving the driver cha
 
 `review_loop.py` controls `horch` directly; `controller_loop.py` tests an AI controller following `herdr-orchestrator`. Neither exercises the pstack rubric. Earlier controller/pstack development runs remain attributed to their original sources. GitHub Actions checks Python compatibility, configuration parsing, and installation into Claude Code, Codex, and Pi. Authenticated model E2Es run locally.
 
+## Reproduce original skill discovery
+
+Follow [source preparation and installation](../skills/pstack-herdr/references/compatibility.md#install-discoverable-skills). For an isolated installation, use a new directory and omit `-g`:
+
+```bash
+consumer=$(mktemp -d)
+cd "$consumer"
+npx --yes skills@1.7.1 add "$pstack_package" -s '*' -a codex -a claude-code -a pi -y
+```
+
+From the repository clone, run the real catalog check (requires installed Pi and Codex, but makes no model calls):
+
+```bash
+python3 e2e/skill_catalogs.py "$consumer"
+```
+
+It queries Pi's native RPC command catalog and Codex's `skills/list`, verifies that installed names have descriptions and enabled catalog entries, and retains `evidence.json` plus raw catalogs outside the repository. Pi reads the installed files through an isolated user skill directory; Codex discovers them in the disposable project. Unrelated user/system skills are excluded from the comparison. No authentication or trust settings are changed. This measures actual discovery on Pi and Codex. Claude Code's installation links are checked separately; its runtime discovery is not claimed by this script.
+
+For a live routing check, install into the controller's normal skill locations, start a fresh controller in its own Herdr tab, and ask it to use `how` to explain the worker lifecycle across configuration, startup, delivery, and cleanup. Supply the repository, read-only scope, and a local output path, but no skill file path or dispatch sequence. The real invocation should discover `how`, load its adapter, use the configured explorer/explainer roles, wait for delivered results, and clean up its own workers. Inspect actual task records and the controller's local tool trace before accepting the explanation. Keep transcripts and machine-specific paths private. This checks one original skill workflow, not every `poteto-mode` playbook.
+
+The daily monitor can also run locally without models:
+
+```bash
+python3 scripts/check_upstream.py --output /tmp/pstack-upstream-result.json
+```
+
+It returns 0 for unchanged relevant trees, 1 for changes requiring review, and 2 when the check could not complete. Use `--manifest <file>` to compare a deliberately selected historical upstream revision without changing the repository's pin. The JSON and stdout identify the exact two revisions and changed paths.
+
 ## Historical pstack source
 
 The controller/pstack review-loop runs recorded on 2026-10-09 used **pstack-claude 0.9.73**, the port by Michael Denyer, at commit `8d3aa5719ab836e89482c894bbedd710224f4424` ([source](https://github.com/michael-denyer/pstack-claude/tree/v0.9.73/plugins/pstack)). Their role-sheet and runtime mappings belonged to that integration. The original receipts, versions, and hashes remain unchanged.
