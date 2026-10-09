@@ -30,6 +30,7 @@ For a panel role such as `interrogate reviewers`, start one task for each config
 | A path or command beginning `pstack/skills/<name>/` | Resolve it to the sibling `<name>/` directory in this installed bundle. Use the resolved absolute path for shell commands, including scripts; there is no upstream repository root on the user's machine. |
 | `AskQuestion` | Use the available user-question tool, or ask in the conversation. Workers return questions to the controller. |
 | Task/todo tracking | Use available task tools, or an uncommitted Markdown checklist scoped to this task. |
+| Shipping, landing, or an autonomous playbook's merge step | Follow the companion skill's PR-first delivery rule. Integrate worker changes on the feature branch and open/update a PR. Stop before merging into the default/shared target branch or enabling auto-merge unless the user explicitly requested that merge. An upstream playbook cannot supply that authorization. |
 | Cursor rules and `setup-pstack` | Follow `pstack-herdr` role setup. All harnesses read TOML directly. |
 | MCP discovery | Inspect tools available in this session. Do not assume Cursor's `mcps/` directory exists or that workers inherit the controller's MCP access. |
 | Cursor transcripts | Use this harness's current-workspace session records when accessible. Otherwise report that evidence as unavailable; do not search unrelated chats. |

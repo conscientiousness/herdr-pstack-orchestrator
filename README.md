@@ -250,6 +250,10 @@ Start with `horch detect`. For worker dialogs or failed tasks, inspect the recor
 
 Include reproduction steps, relevant versions, and sanitized evidence with a bug report or fix. Verify affected behavior using the [existing E2E drivers](e2e/README.md). Keep changes focused and write code, documentation, and commit messages in English. Never publish credentials, private paths, or full worker transcripts.
 
+Controllers deliver changes on a feature branch and open or update a PR by default. Merging into `main` or enabling auto-merge requires an explicit user request, even when an upstream playbook calls for autonomous shipping.
+
+Future releases use `vYYYY.MM.DD.N`: the UTC release date and an index starting at `1` each day (for example, `v2026.10.10.1`, then `v2026.10.10.2`). Publish from verified `main` after an explicit release request. Existing tags stay unchanged; the upstream pstack version is tracked separately.
+
 ## Credits
 
 [Herdr](https://herdr.dev) hosts the worker panes. [pstack](https://github.com/cursor/plugins/tree/main/pstack) is Lauren Tan's original MIT-licensed workflow collection; this repository provides an independent adapter.
