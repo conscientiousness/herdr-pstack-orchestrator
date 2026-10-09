@@ -1,0 +1,183 @@
+{
+  "schema": "horch/public-review-e2e/v1",
+  "verdict": "pass",
+  "seconds": 439,
+  "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+  "driver_sha256": "f0b0d375c6087ba245d269e8c5f5d28814a95c425556b185fc47eaffa326ca8c",
+  "workers": {
+    "writer": "glm",
+    "reviewers": [
+      "ds",
+      "glm"
+    ]
+  },
+  "models": {
+    "glm": {
+      "harness": "pi",
+      "provider": "zai",
+      "model": "glm-5.3-flash",
+      "effort": "max"
+    },
+    "ds": {
+      "harness": "pi",
+      "provider": "commandcode",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "effort": "max"
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "t-6c927b",
+      "worker": "glm"
+    },
+    {
+      "task_id": "t-d57c1f",
+      "worker": "ds"
+    },
+    {
+      "task_id": "t-840839",
+      "worker": "glm"
+    },
+    {
+      "task_id": "t-c51c6f",
+      "worker": "glm"
+    },
+    {
+      "task_id": "t-ce75a6",
+      "worker": "ds"
+    },
+    {
+      "task_id": "t-8a153f",
+      "worker": "glm"
+    }
+  ],
+  "revisions": {
+    "base": "2f8f33fd83e8c337f2c232f8523608ae324a6a56",
+    "initial": "47c395799e94378f0d78267f18e178276762f343",
+    "final": "d79f5b98a5c475a755f21dc9caa9149214ec4a8c"
+  },
+  "assertions": [
+    {
+      "name": "fixture exposes a real line calculation defect",
+      "ok": true
+    },
+    {
+      "name": "t-6c927b completed",
+      "ok": true
+    },
+    {
+      "name": "writer respected file scope",
+      "ok": true
+    },
+    {
+      "name": "first implementation fixes the line CLI",
+      "ok": true
+    },
+    {
+      "name": "full invoice still exposes a separate defect",
+      "ok": true
+    },
+    {
+      "name": "t-d57c1f completed",
+      "ok": true
+    },
+    {
+      "name": "t-840839 completed",
+      "ok": true
+    },
+    {
+      "name": "reviewers left checkout unchanged",
+      "ok": true
+    },
+    {
+      "name": "both reviewers returned FAIL",
+      "ok": true
+    },
+    {
+      "name": "t-c51c6f completed",
+      "ok": true
+    },
+    {
+      "name": "writer respected file scope",
+      "ok": true
+    },
+    {
+      "name": "final implementation fixes the full invoice",
+      "ok": true
+    },
+    {
+      "name": "line edge case 1",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 1",
+      "ok": true
+    },
+    {
+      "name": "line edge case 2",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 2",
+      "ok": true
+    },
+    {
+      "name": "line edge case 3",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 3",
+      "ok": true
+    },
+    {
+      "name": "line edge case 4",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 4",
+      "ok": true
+    },
+    {
+      "name": "t-ce75a6 completed",
+      "ok": true
+    },
+    {
+      "name": "t-8a153f completed",
+      "ok": true
+    },
+    {
+      "name": "reviewers left checkout unchanged",
+      "ok": true
+    },
+    {
+      "name": "both reviewers returned PASS",
+      "ok": true
+    },
+    {
+      "name": "six fresh tasks were used",
+      "ok": true
+    },
+    {
+      "name": "all test worker panes closed",
+      "ok": true
+    },
+    {
+      "name": "tested source stayed unchanged during the run",
+      "ok": true
+    }
+  ],
+  "observations": {
+    "first_line": {
+      "total_cents": 936
+    },
+    "first_invoice": {
+      "subtotal_cents": 936,
+      "total_cents": 991
+    },
+    "final_invoice": {
+      "subtotal_cents": 2836,
+      "total_cents": 2891
+    }
+  },
+  "problem": null
+}

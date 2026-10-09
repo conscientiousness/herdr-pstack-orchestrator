@@ -1,0 +1,48 @@
+name: Package validation
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Python syntax and CLI entry points
+        run: |
+          python -m compileall -q skills
+          python skills/herdr-orchestrator/scripts/horch.py --help
+          python skills/herdr-orchestrator/scripts/e2e.py --help
+      - name: Parse example configuration
+        run: |
+          python - <<'PY'
+          import pathlib, tomllib
+          path = pathlib.Path('skills/herdr-orchestrator/references/workers.example.toml')
+          tomllib.loads(path.read_text())
+          PY
+      - name: Install both skills into a disposable project
+        env:
+          DISABLE_TELEMETRY: '1'
+        run: |
+          package_check=$(mktemp -d)
+          cd "$package_check"
+          npx --yes skills@1.7.1 add "$GITHUB_WORKSPACE" -s herdr-orchestrator -s pstack-herdr -a claude-code -a codex -a pi -y
+          python .agents/skills/herdr-orchestrator/scripts/horch.py --help
+          python .agents/skills/herdr-orchestrator/scripts/e2e.py --help
+          test -f .agents/skills/pstack-herdr/references/herdr-tools.md
+          test -f .claude/skills/herdr-orchestrator/SKILL.md

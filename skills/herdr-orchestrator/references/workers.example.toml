@@ -1,0 +1,51 @@
+# workers.toml — configuration for the herdr-orchestrator skill.
+#
+# horch reads this file from:
+#
+#     $XDG_CONFIG_HOME/herdr-orchestrator/workers.toml
+#     (~/.config/herdr-orchestrator/workers.toml when XDG_CONFIG_HOME is unset)
+#
+# Copy it there, keep the workers you actually use, and adjust models,
+# efforts, and permission arguments. Model names below are examples;
+# what is available depends on the providers you have authenticated.
+#
+# After writing the file, verify every worker once:
+#
+#     python3 <skill-dir>/scripts/horch.py check --cwd /some/work/dir
+#
+# A worker name must match [a-z][a-z0-9-]{0,15}.
+
+# Most tasks with an open pane at one time. Default 4.
+max_active_workers = 4
+
+# When a task runs longer than this many minutes, horch wait notifies once.
+# Default 180.
+notify_after_minutes = 180
+
+[workers.glm]
+harness = "pi"
+provider = "zai"
+model = "glm-5.3-flash"
+effort = "max" # Pi thinking level: off, minimal, low, medium, high, xhigh, max
+
+[workers.gpt]
+harness = "codex"
+model = "gpt-6.1-sol"
+effort = "medium" # becomes Codex model_reasoning_effort
+# Writes in its cwd and the task directory without permission prompts
+# (verified 2026-10-09). The flags you choose are your authorization
+# for this worker.
+args = ["-s", "workspace-write", "-a", "on-request", "-c", 'approvals_reviewer="auto_review"']
+
+[workers.haiku]
+harness = "claude"
+model = "haiku"
+effort = "max" # passed as claude --effort
+args = ["--permission-mode", "auto"]
+
+# Optional. Read only by the pstack-herdr skill; horch itself ignores it.
+# A single role names one worker from [workers]; a panel role lists one
+# worker per review task.
+[roles]
+"feature, refactoring" = "gpt"
+"interrogate reviewers" = ["glm", "haiku"]

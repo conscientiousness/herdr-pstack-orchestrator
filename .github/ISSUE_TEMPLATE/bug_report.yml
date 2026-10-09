@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible orchestration or installation problem.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: Describe the task and what happened. Include the horch state or error code.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest useful brief and commands. Remove credentials, private paths, and proprietary code. Do not attach full worker transcripts.
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Environment
+      description: OS, Python, Herdr, harness versions, selected model, and permission mode. Redact paths from horch detect output.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Verification evidence
+      description: If available, attach the public E2E evidence.json or a sanitized task result. Explain whether the pane was working, blocked, or exited.
