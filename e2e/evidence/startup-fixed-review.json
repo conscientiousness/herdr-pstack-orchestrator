@@ -1,0 +1,215 @@
+{
+  "schema": "horch/public-review-e2e/v1",
+  "verdict": "pass",
+  "seconds": 431,
+  "horch_sha256": "40de0067638e0fb276280b900f140fac63ce08eb29b386d96a837c152fcfa6b7",
+  "driver_sha256": "3d3cbb01c928875192c1df772316578f4f9a06173bdab04dedaa7a5a08e561c0",
+  "workers": {
+    "writer": "glm",
+    "reviewers": [
+      "ds",
+      "glm"
+    ]
+  },
+  "models": {
+    "glm": {
+      "harness": "pi",
+      "provider": "zai",
+      "model": "glm-5.3-flash",
+      "effort": "max"
+    },
+    "ds": {
+      "harness": "pi",
+      "provider": "commandcode",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "effort": "max"
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "t-71b7b9",
+      "worker": "glm"
+    },
+    {
+      "task_id": "t-d4d0a8",
+      "worker": "ds"
+    },
+    {
+      "task_id": "t-e2000d",
+      "worker": "glm"
+    },
+    {
+      "task_id": "t-f0a7b5",
+      "worker": "glm"
+    },
+    {
+      "task_id": "t-0e6d70",
+      "worker": "ds"
+    },
+    {
+      "task_id": "t-371d99",
+      "worker": "glm"
+    }
+  ],
+  "revisions": {
+    "base": "68c1b60e822d2bdf9568007ae0381504f77c7d09",
+    "initial": "7542180266d069bacb99c3f27e72e89f0cff8eec",
+    "final": "210130eba03b1d2a1e51c4ac95ec55f5a9bc4bf8"
+  },
+  "assertions": [
+    {
+      "name": "fixture exposes a real line calculation defect",
+      "ok": true
+    },
+    {
+      "name": "t-71b7b9 completed",
+      "ok": true
+    },
+    {
+      "name": "writer respected file scope",
+      "ok": true
+    },
+    {
+      "name": "first implementation fixes the line CLI",
+      "ok": true
+    },
+    {
+      "name": "full invoice still exposes a separate defect",
+      "ok": true
+    },
+    {
+      "name": "t-d4d0a8 completed",
+      "ok": true
+    },
+    {
+      "name": "t-e2000d completed",
+      "ok": true
+    },
+    {
+      "name": "reviewers left checkout unchanged",
+      "ok": true
+    },
+    {
+      "name": "both reviewers returned FAIL",
+      "ok": true
+    },
+    {
+      "name": "t-f0a7b5 completed",
+      "ok": true
+    },
+    {
+      "name": "writer respected file scope",
+      "ok": true
+    },
+    {
+      "name": "final implementation fixes the full invoice",
+      "ok": true
+    },
+    {
+      "name": "line edge case 1",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 1",
+      "ok": true
+    },
+    {
+      "name": "line edge case 2",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 2",
+      "ok": true
+    },
+    {
+      "name": "line edge case 3",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 3",
+      "ok": true
+    },
+    {
+      "name": "line edge case 4",
+      "ok": true
+    },
+    {
+      "name": "single-line invoice edge case 4",
+      "ok": true
+    },
+    {
+      "name": "t-0e6d70 completed",
+      "ok": true
+    },
+    {
+      "name": "t-371d99 completed",
+      "ok": true
+    },
+    {
+      "name": "reviewers left checkout unchanged",
+      "ok": true
+    },
+    {
+      "name": "both reviewers returned PASS",
+      "ok": true
+    },
+    {
+      "name": "six fresh tasks were used",
+      "ok": true
+    },
+    {
+      "name": "all test worker panes closed",
+      "ok": true
+    },
+    {
+      "name": "tested source stayed unchanged during the run",
+      "ok": true
+    }
+  ],
+  "observations": {
+    "first_line": {
+      "total_cents": 936
+    },
+    "first_invoice": {
+      "subtotal_cents": 936,
+      "total_cents": 991
+    },
+    "final_invoice": {
+      "subtotal_cents": 2836,
+      "total_cents": 2891
+    },
+    "states_before_cleanup": [
+      {
+        "task_id": "t-71b7b9",
+        "state": "done",
+        "closed": true
+      },
+      {
+        "task_id": "t-d4d0a8",
+        "state": "done",
+        "closed": true
+      },
+      {
+        "task_id": "t-e2000d",
+        "state": "done",
+        "closed": true
+      },
+      {
+        "task_id": "t-f0a7b5",
+        "state": "done",
+        "closed": true
+      },
+      {
+        "task_id": "t-0e6d70",
+        "state": "done",
+        "closed": true
+      },
+      {
+        "task_id": "t-371d99",
+        "state": "done",
+        "closed": true
+      }
+    ]
+  },
+  "problem": null
+}

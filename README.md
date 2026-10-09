@@ -34,6 +34,7 @@ Workers open in tabs labeled `horch` (at most four panes per tab) without steali
 - Python 3.11 or later on Linux or macOS (standard library only, including POSIX file locks)
 - Node.js/npm for `npx skills add`; a manual clone needs neither
 - The harnesses you want as workers — `pi`, `codex`, and/or `claude` — installed and authenticated with your provider
+- For Pi workers: Herdr's Pi integration (`herdr integration install pi`); task submission waits for its session readiness signal
 - For the review loop only: pstack installed separately (see [Credits](#credits)); the two skills are installed independently of each other and of pstack
 
 ## Install
@@ -112,7 +113,7 @@ Model names are examples — what you can use depends on the providers you authe
 
 | Harness | Arguments |
 |---|---|
-| Pi | none needed (no prompts by default) |
+| Pi | no per-tool approval by default; project-trust dialogs still apply |
 | Codex | `-s workspace-write -a on-request -c 'approvals_reviewer="auto_review"'` |
 | Codex | `-s workspace-write -a never` (writes in its cwd and the task directory) |
 | Claude Code | `--permission-mode auto` |
@@ -207,8 +208,11 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 | First-use setup flow | 14/14 passed again on the release candidate |
 | Parallel starts, cross-workspace cleanup, repeated waits, notification | 8/8 passed |
 | Invalid results, explicit recheck, concurrent wait/close, corrupt records | 13/13 passed |
-| Early result delivery, final completion, cancellation | 10/10 passed on the final CLI |
-| Public six-task review-loop driver | 27/27 passed in 7m 19s, including two failing first reviews and two passing final reviews |
+| Early result delivery, final completion, cancellation | 10/10 passed on the release CLI |
+| Release-era public six-task review-loop driver | 27/27 passed in 7m 19s, including two failing first reviews and two passing final reviews |
+| Pi startup dialog guard | 11/11 passed; trust dialog and decisions remain untouched before task submission |
+| Fresh six-task loop after startup fix | 27/27 passed in 7m 11s, using the relocated public driver |
+| Codex controller, current skill (two real runs) | Each completed six tasks and passed 46 scenario/source/cleanup checks; wait and delivery audits passed after verifier corrections |
 | Claude Code controller, skill end-to-end | 19/19 passed |
 | Claude Code controller, pstack review loop end-to-end | 21/21 passed — the first reviewer panel FAILed the revision, and a fresh second panel PASSed it |
 | Codex controller, full pstack review loop | 10/10 passed; direct TOML roles, six fresh workers, no native subagents |
@@ -216,11 +220,13 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 | Permission-denial handling | Unverified |
 | Completions longer than 30 minutes | Unverified |
 | pstack workflows other than the review loop (for example Arena) | Not tested |
-| Pi controller, full pstack review loop | 10/10 passed on the final CLI; direct TOML roles, six fresh workers, no native subagents |
+| Pi controller, full pstack review loop | 10/10 passed on the release CLI; direct TOML roles, six fresh workers, no native subagents |
 
 Model names throughout are examples; availability depends on your provider.
 
-The [E2E guide](e2e/README.md) explains the evidence and the mechanisms it covers. Tests and evidence live outside the installed skills. The [verification summary](e2e/evidence/verification.json) records versions, counts, source hashes, and limits. Core and setup runs predate the final completion-delivery change; the public loop and focused lifecycle check cover the final CLI. The [release E2E evidence](e2e/evidence/review-e2e.json) contains the observed invoice outputs and every assertion. After relocating the driver, installation/CI passed, but fresh live attempts stopped at worker startup (`agent_prompt_stalled`); see the [latest attempt and limits](e2e/README.md#evidence-and-source-attribution). The historical 27/27 is not a fresh pass of the relocated driver. Live runtime tests used Linux; macOS has not been measured.
+The [E2E guide](e2e/README.md) explains the evidence and the mechanisms it covers. Tests and evidence live outside the installed skills. The [verification summary](e2e/evidence/verification.json) keeps versions, source hashes, and historical attribution: core/setup runs predate the release's final delivery gate. The later `agent_prompt_stalled` failures were traced to a Pi trust dialog misclassified as idle by Herdr; see the [reproduction and fix](e2e/startup-findings.md). The new guard passed its [real startup test](e2e/evidence/pi-startup.json), and the relocated driver has a [fresh full-loop pass](e2e/evidence/startup-fixed-review.json). The [original release receipt](e2e/evidence/review-e2e.json) and failed relocation receipt remain unchanged. Live runtime tests used Linux; macOS has not been measured.
+
+Both new Codex-controller scenarios completed successfully, but their original driver invocations failed in the transcript auditor. The corrected auditor passes both retained traces: six unbounded waits per run, continued process handles, and delivery before result reads. The [separate reanalysis receipt](e2e/evidence/controller-reanalysis.json) preserves those failures and identifies the final auditor hash; it is not a fresh integrated rerun after the parser corrections.
 
 ### Reproduce the review loop
 
@@ -236,7 +242,7 @@ This makes real model calls and requires two free worker slots. It creates a det
 
 The driver retains the worktree and writes `evidence.json` with task IDs, source hashes, revision IDs, CLI observations, and assertions. It cleans up only its own worker panes, including after failure. Reports stay in your local task store; transcripts are not copied into the evidence. Remove the retained checkout with `git worktree remove <printed-worktree-path>` when finished.
 
-This public driver controls `horch` directly. Tests of an AI controller following the skills are recorded separately in the matrix above. GitHub Actions checks Python compatibility, configuration parsing, and installation into all three agents; real model E2Es run locally because they need Herdr and authenticated providers.
+This driver controls `horch` directly. The [controller-level driver](e2e/README.md) instead starts a real Codex controller, asks it to follow the skill, and audits its tool transcript and actual work. GitHub Actions checks Python compatibility, configuration parsing, and installation into all three agents; real model E2Es run locally because they need Herdr and authenticated providers.
 
 ## Troubleshooting
 
@@ -246,6 +252,7 @@ This public driver controls `horch` directly. Tests of an AI controller followin
 | `{"error": "config_invalid"}` | `workers.toml` is missing or invalid at the config path; copy `workers.example.toml`. |
 | `worker_limit` on `horch run` | `max_active_workers` tasks still have open panes; close finished or problem tasks with `horch close <task-id>`. |
 | Worker stops at a dialog (`blocked` / `start_failed`) | Trust dialogs are cleared once per location, by you in the pane: Codex asks "Trust this folder?" for each new git repository, and Claude Code asks to trust folders and about external `CLAUDE.md` imports. The controller never answers them. Afterwards run `horch close <task-id>` and start a new task. |
+| Pi `start_failed`: no ready session | Install `herdr integration install pi` and inspect the pane. Pi 1.1.0 can ask for project trust even for an empty ancestor `.agents/skills` directory. Herdr 0.9.3 may report that dialog as idle; horch withholds task input until the integration reports a ready session. Resolve trust yourself, close the old task, then start fresh. |
 | Claude Code prompts when reading config or task directories | Add `~/.config/herdr-orchestrator` and `~/.local/state/herdr-orchestrator` to `permissions.additionalDirectories` in your Claude Code settings. |
 | `result_missing` / `result_invalid` | Inspect the problem pane and task files. If the user wants a retry, close the old task and start a new one. |
 | `not_started` | Herdr did not observe the prompt acknowledgement. The task may still be running. Inspect it before deciding; `horch wait <task-id> --recheck` checks the existing task again without resending anything. |

@@ -28,6 +28,8 @@ jobs:
           python -m compileall -q skills e2e
           python skills/herdr-orchestrator/scripts/horch.py --help
           python e2e/review_loop.py --help
+          python e2e/pi_startup.py --help
+          python e2e/controller_loop.py --help
       - name: Parse example configuration
         run: |
           python - <<'PY'

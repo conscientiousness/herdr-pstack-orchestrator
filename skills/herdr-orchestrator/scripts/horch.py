@@ -578,6 +578,27 @@ def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False):
         return _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full)
 
 
+def wait_for_pi_session(agent, deadline):
+    """Do not submit input to Pi's pre-session trust dialog.
+
+    Herdr 0.9.3 can classify that dialog as idle/interactive_ready. The Pi
+    integration reports its session only after project trust is resolved and
+    the interactive input handler is installed. Fresh panes have no old session.
+    """
+    while time.monotonic() < deadline:
+        entry = herdr_path(herdr("agent", "get", agent), "result", "agent")
+        if entry.get("agent_status") == "blocked":
+            raise HerdrError("Pi is blocked during startup; no task prompt was sent")
+        session = entry.get("agent_session") or {}
+        if (session.get("agent") == "pi" and session.get("source") == "herdr:pi"
+                and session.get("value") and entry.get("agent_status") in ("idle", "done")):
+            return
+        time.sleep(POLL_SECONDS)
+    raise HerdrError("Pi did not report a ready session; no task prompt was sent. "
+                     "Inspect its pane for a startup dialog and verify that the Pi "
+                     "integration is installed with herdr integration install pi")
+
+
 def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
     """Start one worker on one task and return the run object; fail() on contract errors."""
     workspace = require_workspace()
@@ -669,6 +690,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
         }
 
     start_problem = None
+    startup_deadline = time.monotonic() + START_TIMEOUT_MS / 1000
     try:
         doc = herdr(
             "agent", "start", agent,
@@ -681,6 +703,8 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
         started_type = (doc.get("result") or {}).get("type")
         if started_type != "agent_started":
             start_problem = f"herdr agent start reported {started_type!r}"
+        elif worker["harness"] == "pi":
+            wait_for_pi_session(agent, startup_deadline)
     except HerdrError as exc:
         start_problem = str(exc)
     if start_problem:

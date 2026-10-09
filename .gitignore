@@ -7,6 +7,9 @@ assets/*.delivery.json
 e2e/*
 !e2e/README.md
 !e2e/review_loop.py
+!e2e/pi_startup.py
+!e2e/controller_loop.py
+!e2e/startup-findings.md
 !e2e/evidence/
 e2e/evidence/*
 !e2e/evidence/verification.json
@@ -15,3 +18,9 @@ e2e/evidence/*
 !e2e/evidence/recovery.json
 !e2e/evidence/completion.json
 !e2e/evidence/relocation-e2e.json
+!e2e/evidence/startup-diagnosis.json
+!e2e/evidence/pi-startup.json
+!e2e/evidence/startup-fixed-review.json
+!e2e/evidence/controller-audit-initial.json
+!e2e/evidence/controller-audit-second.json
+!e2e/evidence/controller-reanalysis.json
