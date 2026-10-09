@@ -1,5 +1,7 @@
 # End-to-end verification
 
+For agent-driven verification, use the project-local [verify-herdr-orchestrator skill](../.agents/skills/verify-herdr-orchestrator/SKILL.md). Its feature map selects existing drivers and records prerequisites, evidence locations, and cleanup without adding another test harness.
+
 These files are repository tooling, outside both installed Agent Skills. Run the public driver from a clone inside Herdr:
 
 ```bash
@@ -108,4 +110,4 @@ An evidence audit should distinguish a naturally observed failure, a deliberate 
 | Explicit missing-pane error codes | `lifecycle.json`: cross-workspace cleanup and `already closed is idempotent` | Confirms direct lookup and already-gone cleanup. The three individual pane/tab/workspace-not-found responses were not each isolated by this probe. Keep the narrow allowlist so other Herdr errors do not falsely confirm closure. |
 | Withhold results until turn completion | `verification.json`: Pi controller's `prior_failure`; `completion.json`: early fields, final delivery, cancellation | A real controller previously consumed early reports and closed unfinished reviewers. A later focused probe deliberately injected provisional results and verified withholding. A fresh controller loop passed after the fix. |
 
-These findings support retaining the mechanisms rather than deleting them by line count. They do not establish that every defensive branch was triggered. Deliberate approval denial, turns longer than 30 minutes, macOS runtime, and live original-pstack workflows remain unverified.
+These findings support retaining the mechanisms rather than deleting them by line count. They do not establish that every defensive branch was triggered. Deliberate approval denial, turns longer than 30 minutes, macOS runtime, and original-pstack workflows beyond the recorded `how` run remain unverified.

@@ -217,6 +217,8 @@ Native Pi and Codex discovery passed for all 56 package entries. A fresh Pi cont
 
 ## Verification
 
+Use the project-local [verify-herdr-orchestrator skill](.agents/skills/verify-herdr-orchestrator/SKILL.md) to select an existing E2E, check its prerequisites, and retain evidence after cleanup.
+
 Measured during development on 2026-10-09 with end-to-end behavior tests:
 
 | Area | Result |
