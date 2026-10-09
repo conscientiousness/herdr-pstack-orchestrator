@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read real Pi and Codex skill catalogs after a disposable package installation."""
+"""Verify an installed bundle's files and real Pi/Codex skill catalogs."""
 
 import argparse
 import hashlib
@@ -10,6 +10,12 @@ import selectors
 import subprocess
 import tempfile
 import time
+
+
+def file_hashes(root):
+    return {path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(root.rglob("*"))
+            if path.is_file() and "__pycache__" not in path.parts}
 
 
 def catalog(command, cwd, env, requests, log):
@@ -57,20 +63,44 @@ def catalog(command, cwd, env, requests, log):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("consumer", type=Path, help="Disposable project populated by npx skills add")
+    parser.add_argument("--installation-only", action="store_true",
+                        help="Check installed files and Claude links without Pi/Codex CLIs (CI)")
     args = parser.parse_args()
     consumer = args.consumer.resolve()
     skills = consumer / ".agents/skills"
-    expected = {path.parent.name for path in skills.glob("*/SKILL.md")}
-    if not {"poteto-mode", "how", "unslop", "pstack-herdr", "herdr-orchestrator"} <= expected:
-        parser.error("Install the complete prepared package into consumer first")
+    source = Path(__file__).resolve().parents[1] / "skills"
+    expected = {path.parent.name for path in source.glob("*/SKILL.md")}
     output = Path(tempfile.mkdtemp(prefix="pstack-catalogs-"))
     pi_user = output / "pi"
     pi_user.mkdir()
     (pi_user / "skills").symlink_to(skills, target_is_directory=True)
     codex_user = output / "codex"
     codex_user.mkdir()
-    receipt = {"verdict": "fail", "expected_skills": sorted(expected), "checks": {}}
+    receipt = {"verdict": "fail", "expected_skills": sorted(expected), "checks": {},
+               "scope": "installation" if args.installation_only else "installation_and_catalogs",
+               "driver_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
     try:
+        wanted = file_hashes(source)
+        installed = file_hashes(skills)
+        receipt["checks"].update({
+            "installed_catalog": {path.parent.name for path in skills.glob("*/SKILL.md")} == expected,
+            "all_files_preserved": installed == wanted,
+            "claude_entries": all(
+                (consumer / ".claude/skills" / name / "SKILL.md").is_file()
+                and (consumer / ".claude/skills" / name / "SKILL.md").read_bytes()
+                == (source / name / "SKILL.md").read_bytes() for name in expected),
+        })
+        receipt["file_differences"] = sorted(
+            path for path in wanted.keys() | installed.keys()
+            if wanted.get(path) != installed.get(path))
+        receipt["installed_files"] = len(installed)
+        receipt["installed_tree_sha256"] = hashlib.sha256(
+            json.dumps(installed, sort_keys=True).encode()).hexdigest()
+        receipt["installed_entry_sha256"] = {
+            name: installed.get(f"{name}/SKILL.md") for name in sorted(expected)}
+        if args.installation_only:
+            receipt["verdict"] = "pass" if all(receipt["checks"].values()) else "fail"
+            return finish(output, receipt)
         pi = catalog(
             ["pi", "--mode", "rpc", "--no-session", "--no-extensions"], output,
             dict(os.environ, PI_CODING_AGENT_DIR=str(pi_user)),
@@ -94,16 +124,17 @@ def main():
         codex_names = {row["name"] for group in groups for row in group["skills"]
                        if row["enabled"] and row.get("description")
                        and Path(row["path"]).resolve().is_relative_to(skills)}
-        receipt["checks"] = {"pi_catalog": pi_names == expected,
+        receipt["checks"].update({"pi_catalog": pi_names == expected,
                               "codex_catalog": codex_names == expected,
-                              "codex_no_errors": not any(group["errors"] for group in groups)}
+                              "codex_no_errors": not any(group["errors"] for group in groups)})
         receipt["discovered"] = {"pi": sorted(pi_names), "codex": sorted(codex_names)}
-        receipt["installed_entry_sha256"] = {
-            name: hashlib.sha256((skills / name / "SKILL.md").read_bytes()).hexdigest()
-            for name in sorted(expected)}
         receipt["verdict"] = "pass" if all(receipt["checks"].values()) else "fail"
     except (OSError, ValueError, KeyError, RuntimeError) as exc:
         receipt["error"] = str(exc)
+    return finish(output, receipt)
+
+
+def finish(output, receipt):
     (output / "evidence.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print(json.dumps({"verdict": receipt["verdict"], "checks": receipt["checks"],
                       "evidence": str(output / "evidence.json")}))

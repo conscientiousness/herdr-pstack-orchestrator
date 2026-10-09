@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare discoverable pstack skills from the reviewed original checkout."""
+"""Build the committed skills bundle from a reviewed original pstack checkout."""
 
 import argparse
 import hashlib
@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 
-ADAPTER = Path(__file__).resolve().parents[1]
+ADAPTER = Path(__file__).resolve().parents[1] / "skills/pstack-herdr"
 
 
 def git(source, *args):
@@ -43,7 +43,11 @@ def prepare(source, output):
     if output.exists():
         raise ValueError("Output already exists; use a new directory and inspect before reinstalling")
 
-    selected = list(sorted((source / "pstack/skills").glob("*/SKILL.md")))
+    original = list(sorted((source / "pstack/skills").glob("*/SKILL.md")))
+    excluded = manifest["excluded_skills"]
+    if not set(excluded) <= {path.parent.name for path in original}:
+        raise ValueError("Excluded skill missing from the pinned source")
+    selected = [path for path in original if path.parent.name not in excluded]
     selected += [source / "cursor-team-kit/skills" / name / "SKILL.md"
                  for name in manifest["team_kit_skills"]]
     adapted = set(manifest["adapted_skills"])
@@ -60,9 +64,9 @@ def prepare(source, output):
                 "## Herdr runtime\n\n"
                 "Before following the original instructions below, read the sibling "
                 "[pstack-herdr](../pstack-herdr/SKILL.md) skill and its required mapping. "
-                f"Use `{source}` as the pinned original source checkout. "
-                f"Resolve upstream relative references from `{path}`, including links "
-                "outside this installed skill directory. "
+                "Resolve relative references from this installed skill directory. "
+                "The mapping translates original repository paths to bundled resources; "
+                "no separate upstream checkout is needed. "
                 "The Herdr mapping overrides upstream delegation tools, model defaults, "
                 "setup files, and Cursor-specific capabilities. Delegate only through horch, "
                 "using workers.toml. Keep workflow coordination in the controller. "
@@ -76,7 +80,7 @@ def prepare(source, output):
 
     for name in ("herdr-orchestrator", "pstack-herdr"):
         if not (ADAPTER.parent / name / "SKILL.md").is_file():
-            raise ValueError(f"Install the companion {name} skill beside this skill first")
+            raise ValueError(f"Missing local adapter: skills/{name}/SKILL.md")
 
     output.mkdir(parents=True)
     records = []
@@ -92,10 +96,18 @@ def prepare(source, output):
     for name in ("herdr-orchestrator", "pstack-herdr"):
         shutil.copytree(ADAPTER.parent / name, output / "skills" / name,
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    resources = output / "skills/pstack-herdr/references/agents"
+    if resources.exists():
+        shutil.rmtree(resources)
+    shutil.copytree(source / "pstack/agents", resources)
+    shutil.copyfile(source / "pstack/LICENSE", resources / "UPSTREAM-LICENSE.txt")
     receipt = {"repository": manifest["repository"], "revision": manifest["revision"],
-               "version": manifest["version"], "source_checkout": str(source),
-               "skills": records}
-    (output / "provenance.json").write_text(json.dumps(receipt, indent=2) + "\n")
+               "version": manifest["version"], "excluded_skills": excluded,
+               "skills": records,
+               "agents": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                          for path in sorted((source / "pstack/agents").glob("*.md"))}}
+    (output / "skills/pstack-herdr/references/bundle.json").write_text(
+        json.dumps(receipt, indent=2) + "\n")
     return {"output": str(output), "upstream_skills": len(records),
             "adapted_skills": sum(row["adapted"] for row in records),
             "companion_skills": 2, "revision": manifest["revision"]}
@@ -103,7 +115,7 @@ def prepare(source, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", type=Path, required=True, help="Clean pinned cursor/plugins checkout")
+    parser.add_argument("--source", type=Path, required=True, help="Maintainer-only clean pinned cursor/plugins checkout")
     parser.add_argument("--output", type=Path, required=True, help="New local skill package directory")
     args = parser.parse_args()
     try:

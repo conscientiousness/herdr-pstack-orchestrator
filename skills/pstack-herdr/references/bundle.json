@@ -1,0 +1,322 @@
+{
+  "repository": "https://github.com/cursor/plugins.git",
+  "revision": "ccb5507cec1546dc88135c1139c811e6c59115ba",
+  "version": "0.15.15",
+  "excluded_skills": {
+    "make-bot-ui": "Requires unavailable Cursor Routines and secret-request tools; no coding workflow depends on it.",
+    "poteto-help": "Cursor-specific setup and navigation duplicate the adapter docs and require unbundled guide pages; no workflow depends on it.",
+    "setup-pstack": "Writes Cursor model rules. Herdr uses the existing adapter setup and workers.toml roles instead."
+  },
+  "skills": [
+    {
+      "name": "architect",
+      "adapted": true,
+      "source": "pstack/skills/architect/SKILL.md",
+      "source_sha256": "922238947195f2fb825e90688bb6cfa520b81a35a7bee12223c73a6cf96ae64b"
+    },
+    {
+      "name": "arena",
+      "adapted": true,
+      "source": "pstack/skills/arena/SKILL.md",
+      "source_sha256": "6e17736b5228b661569c3af054f8302c55cf9bf1649447652d53705cce38bed6"
+    },
+    {
+      "name": "automate-me",
+      "adapted": true,
+      "source": "pstack/skills/automate-me/SKILL.md",
+      "source_sha256": "1510979b0b71b54284427a19c09918f8b1fdfc168f9b7f9e30098793a5ec88ef"
+    },
+    {
+      "name": "benchmark-checklist",
+      "adapted": false,
+      "source": "pstack/skills/benchmark-checklist/SKILL.md",
+      "source_sha256": "6a767e788a60428fa14e645ee10fe2e49896e514ff654f668b1d824deb9038e8"
+    },
+    {
+      "name": "blast-radius",
+      "adapted": true,
+      "source": "pstack/skills/blast-radius/SKILL.md",
+      "source_sha256": "2e10745b97f5862323dcda3b29ca60d56b5c3c98e37020085d26b48efbe0a436"
+    },
+    {
+      "name": "bro",
+      "adapted": false,
+      "source": "pstack/skills/bro/SKILL.md",
+      "source_sha256": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb"
+    },
+    {
+      "name": "correct",
+      "adapted": false,
+      "source": "pstack/skills/correct/SKILL.md",
+      "source_sha256": "bf482bacc972b3f124a4af8bf9364b4b3e280cb5845e44c326ea4f4565e5c904"
+    },
+    {
+      "name": "create-verification-skill",
+      "adapted": true,
+      "source": "pstack/skills/create-verification-skill/SKILL.md",
+      "source_sha256": "644f2551403c1bca01a2855b34611b6e7be0ce0dc5b204514c376c0f6a6e6ac4"
+    },
+    {
+      "name": "figure-it-out",
+      "adapted": true,
+      "source": "pstack/skills/figure-it-out/SKILL.md",
+      "source_sha256": "0eb9485f0e7d84fee56b5d0f0af0faf4635e3ca87c8cba3970c01293b76ecc19"
+    },
+    {
+      "name": "how",
+      "adapted": true,
+      "source": "pstack/skills/how/SKILL.md",
+      "source_sha256": "7e0d902484a90eba73dcf518bff478dc5b962b456d23c3d0a188c2ce36b236d8"
+    },
+    {
+      "name": "interrogate",
+      "adapted": true,
+      "source": "pstack/skills/interrogate/SKILL.md",
+      "source_sha256": "2f7e570ec23791ed2e485a09c98ed0597c46035e2050b351b84d3dc760ddd71f"
+    },
+    {
+      "name": "maintain-verification-skill",
+      "adapted": true,
+      "source": "pstack/skills/maintain-verification-skill/SKILL.md",
+      "source_sha256": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8"
+    },
+    {
+      "name": "no-comments",
+      "adapted": true,
+      "source": "pstack/skills/no-comments/SKILL.md",
+      "source_sha256": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05"
+    },
+    {
+      "name": "poteto-mode",
+      "adapted": true,
+      "source": "pstack/skills/poteto-mode/SKILL.md",
+      "source_sha256": "31cd02290360ce63564ef22b74d69fc6d90e62181d05a644cbed8f6c47cc9412"
+    },
+    {
+      "name": "principle-attack-the-premise",
+      "adapted": false,
+      "source": "pstack/skills/principle-attack-the-premise/SKILL.md",
+      "source_sha256": "c87bd7536f772f8a403ad8155535ee17a1bbec9a353156693eb3bb1520c87ae3"
+    },
+    {
+      "name": "principle-boundary-discipline",
+      "adapted": false,
+      "source": "pstack/skills/principle-boundary-discipline/SKILL.md",
+      "source_sha256": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28"
+    },
+    {
+      "name": "principle-build-the-lever",
+      "adapted": false,
+      "source": "pstack/skills/principle-build-the-lever/SKILL.md",
+      "source_sha256": "458b269eab8e95a1573276955312f7d2a13ae8599879a9efc748248f6bc34b56"
+    },
+    {
+      "name": "principle-encode-lessons-in-structure",
+      "adapted": false,
+      "source": "pstack/skills/principle-encode-lessons-in-structure/SKILL.md",
+      "source_sha256": "77044c83a9ac6df78fc643887ea5f1f11f082adaf14b717c060cdaed03cce863"
+    },
+    {
+      "name": "principle-exhaust-the-design-space",
+      "adapted": false,
+      "source": "pstack/skills/principle-exhaust-the-design-space/SKILL.md",
+      "source_sha256": "8583310d7297b7823d75494faa57b003564d436807febecdecbd8321abe5cf6e"
+    },
+    {
+      "name": "principle-experience-first",
+      "adapted": false,
+      "source": "pstack/skills/principle-experience-first/SKILL.md",
+      "source_sha256": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b"
+    },
+    {
+      "name": "principle-explain-the-number",
+      "adapted": false,
+      "source": "pstack/skills/principle-explain-the-number/SKILL.md",
+      "source_sha256": "5aac99e7ce0bb1b37e2579acf4fe88c32a1456d9d46afd4a57cfe1df9092e89c"
+    },
+    {
+      "name": "principle-fix-root-causes",
+      "adapted": false,
+      "source": "pstack/skills/principle-fix-root-causes/SKILL.md",
+      "source_sha256": "ba4cd38da1dcc8fe5432feb64457cba95594736a9b21b2ebf8f8c52aee068707"
+    },
+    {
+      "name": "principle-foundational-thinking",
+      "adapted": false,
+      "source": "pstack/skills/principle-foundational-thinking/SKILL.md",
+      "source_sha256": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2"
+    },
+    {
+      "name": "principle-guard-the-context-window",
+      "adapted": true,
+      "source": "pstack/skills/principle-guard-the-context-window/SKILL.md",
+      "source_sha256": "d2cef147862576e3d709b7afc149d85196245e8338b9c7eef337c95fba412b3e"
+    },
+    {
+      "name": "principle-laziness-protocol",
+      "adapted": false,
+      "source": "pstack/skills/principle-laziness-protocol/SKILL.md",
+      "source_sha256": "9006579e9e3f33955d17569733db688ae65f22577dc3b21803d219a5a8445aff"
+    },
+    {
+      "name": "principle-make-operations-idempotent",
+      "adapted": false,
+      "source": "pstack/skills/principle-make-operations-idempotent/SKILL.md",
+      "source_sha256": "540738217c3da7bf513b9886924ad6a2bc77e58be867f5bd2e1831c74bf2ce70"
+    },
+    {
+      "name": "principle-migrate-callers-then-delete-legacy-apis",
+      "adapted": false,
+      "source": "pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "source_sha256": "09978915a4a11990cf0a9a02d9c08cc59e0b7a04c5c24b83aa560fbe4146f75b"
+    },
+    {
+      "name": "principle-minimize-reader-load",
+      "adapted": false,
+      "source": "pstack/skills/principle-minimize-reader-load/SKILL.md",
+      "source_sha256": "42551c5dc74cd578163c148da552db3ff67d29b78600ef216bfd311fb828fe69"
+    },
+    {
+      "name": "principle-model-the-domain",
+      "adapted": false,
+      "source": "pstack/skills/principle-model-the-domain/SKILL.md",
+      "source_sha256": "bbadbb9a723fac3f76e782ae45665eb94058ec10993e4bae36d4dc6b0e4eac07"
+    },
+    {
+      "name": "principle-never-block-on-the-human",
+      "adapted": false,
+      "source": "pstack/skills/principle-never-block-on-the-human/SKILL.md",
+      "source_sha256": "f2764bb9338cbfc788c903cf4b9cd0a5f4042d3a04dd6d59cbd525d9beaadd0a"
+    },
+    {
+      "name": "principle-outcome-oriented-execution",
+      "adapted": false,
+      "source": "pstack/skills/principle-outcome-oriented-execution/SKILL.md",
+      "source_sha256": "10eb91633aa570355ba4bb37088fcade2b22e498df7a58edc749e65bc5a78e2d"
+    },
+    {
+      "name": "principle-prove-it-works",
+      "adapted": false,
+      "source": "pstack/skills/principle-prove-it-works/SKILL.md",
+      "source_sha256": "ec79a15025bac8d33d62011c54f3b612733fd2a024e623b531b3637aa75070e2"
+    },
+    {
+      "name": "principle-redesign-from-first-principles",
+      "adapted": false,
+      "source": "pstack/skills/principle-redesign-from-first-principles/SKILL.md",
+      "source_sha256": "a1c7fd0a96b40e12a74bceb0e6bb20a9666dd844dcabfb624acb27da23b929fe"
+    },
+    {
+      "name": "principle-separate-before-serializing-shared-state",
+      "adapted": false,
+      "source": "pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "source_sha256": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb"
+    },
+    {
+      "name": "principle-sequence-verifiable-units",
+      "adapted": false,
+      "source": "pstack/skills/principle-sequence-verifiable-units/SKILL.md",
+      "source_sha256": "2ccbbacc56ace5afdfb8670cef19d7bd009fb2a0033b9a741cbdf2b6baf72187"
+    },
+    {
+      "name": "principle-subtract-before-you-add",
+      "adapted": false,
+      "source": "pstack/skills/principle-subtract-before-you-add/SKILL.md",
+      "source_sha256": "a983a50e732c1ed315eba7aaf47a61329e31c4794eb1ab9d25d9945265b31e03"
+    },
+    {
+      "name": "principle-test-behavior-not-implementation",
+      "adapted": false,
+      "source": "pstack/skills/principle-test-behavior-not-implementation/SKILL.md",
+      "source_sha256": "87e40efe4e486f7ea639d2ed1fc0abe6c93b8fd0e89a81218086909d2470a52e"
+    },
+    {
+      "name": "principle-type-system-discipline",
+      "adapted": false,
+      "source": "pstack/skills/principle-type-system-discipline/SKILL.md",
+      "source_sha256": "c83da8031ffb4c86410030d3e261f659598fca2b7d8158fd9dc269d70a3a025e"
+    },
+    {
+      "name": "recall",
+      "adapted": true,
+      "source": "pstack/skills/recall/SKILL.md",
+      "source_sha256": "d265b0e5b6dc5b89c0407f3387d24462c988e1990a37d5359735137908128c5a"
+    },
+    {
+      "name": "reflect",
+      "adapted": true,
+      "source": "pstack/skills/reflect/SKILL.md",
+      "source_sha256": "31b8fb866ebe084e7fb7f16dc0ea46ab84ffdc838d54f948edc78556f301a497"
+    },
+    {
+      "name": "show-me-your-work",
+      "adapted": true,
+      "source": "pstack/skills/show-me-your-work/SKILL.md",
+      "source_sha256": "bcff5f7f9fd23f92c12b251f9cd6b947e9485e1055cfacb6fdd9cae0789d7550"
+    },
+    {
+      "name": "swarm",
+      "adapted": true,
+      "source": "pstack/skills/swarm/SKILL.md",
+      "source_sha256": "bdcee4168e22428036e93d7cdeec3f391dbc4132f927f6db2540328c22db0273"
+    },
+    {
+      "name": "tdd",
+      "adapted": false,
+      "source": "pstack/skills/tdd/SKILL.md",
+      "source_sha256": "eeb868e2dfebee528d730a67d7b17498fac4bb85dec2e38bc5c5176aca4d5d2f"
+    },
+    {
+      "name": "teach",
+      "adapted": true,
+      "source": "pstack/skills/teach/SKILL.md",
+      "source_sha256": "bd286e5a6290673be2cd28aef7af2ec7f1fb138e6bce156ea657368c7e7fc8a4"
+    },
+    {
+      "name": "technical-writing",
+      "adapted": false,
+      "source": "pstack/skills/technical-writing/SKILL.md",
+      "source_sha256": "f5c512ffeec70bc4e0dee50f7bb4c26742e1be77967a6e8b15d1921e1c209ceb"
+    },
+    {
+      "name": "typescript-best-practices",
+      "adapted": false,
+      "source": "pstack/skills/typescript-best-practices/SKILL.md",
+      "source_sha256": "28f9e61710e205f6f3c5476f333483cff0e988f6a5b639e2faad536344b40c5e"
+    },
+    {
+      "name": "unslop",
+      "adapted": false,
+      "source": "pstack/skills/unslop/SKILL.md",
+      "source_sha256": "195411d320b5b328f9f642baf59757ed19aaf0931c0838740e0aca273d538dc1"
+    },
+    {
+      "name": "why",
+      "adapted": true,
+      "source": "pstack/skills/why/SKILL.md",
+      "source_sha256": "442215bf70e491d4d31bd200c197f2ec447445df38e074c40880fc4bf30a1f9e"
+    },
+    {
+      "name": "control-cli",
+      "adapted": false,
+      "source": "cursor-team-kit/skills/control-cli/SKILL.md",
+      "source_sha256": "13ac93e595bbda2000849bdb815d5f2ca03f7c2ca63788c8335f9212b9b422a2"
+    },
+    {
+      "name": "control-ui",
+      "adapted": false,
+      "source": "cursor-team-kit/skills/control-ui/SKILL.md",
+      "source_sha256": "410cae25bdb1e5d2323b126abc5047b0213be7fdb0195710213fa8de8a751871"
+    },
+    {
+      "name": "deslop",
+      "adapted": false,
+      "source": "cursor-team-kit/skills/deslop/SKILL.md",
+      "source_sha256": "2f7b7def74af7ed11f5b44b4d32f0f91fca8c5d1f92bf2171e8d12fd33a0f810"
+    }
+  ],
+  "agents": {
+    "comment-sicko.md": "c0fd0383008da45fc78cfac17b9007d62c42f87ad1c8d5c2fb658b1fd01f7c82",
+    "poteto-agent.md": "abe41c169ecbfe65641f1725f4188d568e046c0dec7fd2dc271abb594c299201"
+  }
+}

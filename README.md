@@ -28,7 +28,7 @@ The diagram shows an implementation and review loop. The optional `pstack-herdr`
 Two Agent Skills connect your controller to Pi, Codex CLI, and Claude Code. Each task gets a fresh process, a complete brief, and a structured result. The `horch` CLI uses Python's standard library and your authenticated agent CLIs.
 
 - `herdr-orchestrator` sets up workers and delegates tasks through the `horch` CLI.
-- `pstack-herdr` reads Lauren Tan's original pstack from a pinned checkout and maps its roles and delegation to Herdr. The controller coordinates the workflow; workers receive bounded assignments.
+- `pstack-herdr` maps the bundled original pstack skills, roles, and delegation to Herdr. The controller coordinates the workflow; workers receive bounded assignments.
 
 Workers open in separate tabs labeled `horch`, at most four panes per tab, without taking focus or using the controller's tab. The controller creates separate git worktrees for writers and submits tasks through Herdr's agent API. Every follow-up starts a fresh worker.
 
@@ -39,19 +39,22 @@ Workers open in separate tabs labeled `horch`, at most four panes per tab, witho
 - Node.js/npm for `npx skills add`; a manual clone needs neither
 - Your chosen worker harnesses, `pi`, `codex`, or `claude`, installed and authenticated
 - For Pi workers, Herdr's Pi integration: `herdr integration install pi`
-- For pstack workflows, both adapters and the [prepared original skill catalog](skills/pstack-herdr/references/compatibility.md#install-discoverable-skills). Keep its pinned source checkout available.
 
 ## Install
 
-Install the core skill and, optionally, the pstack adapter:
+Install pstack and both Herdr adapters together:
 
 ```bash
-npx skills add conscientiousness/herdr-pstack-orchestrator -s herdr-orchestrator
-# optional, for original pstack workflows:
-npx skills add conscientiousness/herdr-pstack-orchestrator -s pstack-herdr
+npx skills@1.7.1 add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*'
 ```
 
-These commands install from the repository's default branch. For the full pstack catalog, also follow [source preparation and installation](skills/pstack-herdr/references/compatibility.md#install-discoverable-skills). Installing the adapter alone does not install those skills. Open a new agent session inside Herdr after installation.
+Choose your harnesses and installation scope, review any existing skill-name conflicts, then open a new agent session inside Herdr. The command installs the bundled skills and resources from this repository; no upstream clone or preparation step is needed. It installs from `main`; v0.2.0 predates this bundled layout.
+
+For delegation without pstack, install only the core skill:
+
+```bash
+npx skills@1.7.1 add conscientiousness/herdr-pstack-orchestrator -s herdr-orchestrator
+```
 
 Or clone and run directly:
 
@@ -196,16 +199,16 @@ Wait for `state: "done"` before consuming a result. A worker can write files whi
 
 ## Optional: original pstack through Herdr
 
-The adapter tracks [original pstack](https://github.com/cursor/plugins/tree/ccb5507cec1546dc88135c1139c811e6c59115ba/pstack) 0.15.15. Preparation produces 56 installable entries: 51 pstack skills, three team-kit dependencies, and two Herdr adapters. It preserves supporting files and licenses. Workflow entries load the Herdr mapping; pure guidance keeps its original body.
+The adapter tracks [original pstack](https://github.com/cursor/plugins/tree/ccb5507cec1546dc88135c1139c811e6c59115ba/pstack) 0.15.15. The bundle contains 53 installable entries: 48 pstack skills, three team-kit dependencies, and two Herdr adapters. It preserves supporting files and licenses. Workflow entries load the Herdr mapping; pure guidance keeps its original body.
 
-After [preparing and installing the package](skills/pstack-herdr/references/compatibility.md#install-discoverable-skills), start a fresh session and invoke a skill directly:
+After installation, start a fresh session and invoke a skill directly:
 
 ```text
 Use poteto-mode for this goal: ...
 Done means: ...
 ```
 
-You can also ask `Use interrogate to review this branch.` Independent skills such as `unslop` are discoverable too. Review conflicts with existing skill names when installing. The prepared package removes upstream explicit-only flags so harnesses can select skills implicitly.
+You can also ask `Use interrogate to review this branch.` Independent skills such as `unslop` are discoverable too. Review conflicts with existing skill names when installing. The bundle removes upstream explicit-only flags so harnesses can select skills implicitly. It excludes Cursor-specific `make-bot-ui`, `poteto-help`, and `setup-pstack`; role setup uses `workers.toml`. See the [selection and compatibility notes](skills/pstack-herdr/references/compatibility.md).
 
 All three controller harnesses read roles directly from `workers.toml`. Configure only the roles the chosen workflow needs. For the implementation/review loop:
 

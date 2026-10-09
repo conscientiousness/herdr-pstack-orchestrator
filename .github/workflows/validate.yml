@@ -25,9 +25,9 @@ jobs:
           node-version: '22'
       - name: Check Python syntax and CLI entry points
         run: |
-          python -m compileall -q skills e2e
+          python -m compileall -q skills e2e scripts
           python skills/herdr-orchestrator/scripts/horch.py --help
-          python skills/pstack-herdr/scripts/prepare.py --help
+          python scripts/prepare_pstack.py --help
           python scripts/check_upstream.py --help
           python e2e/review_loop.py --help
           python e2e/pi_startup.py --help
@@ -41,13 +41,14 @@ jobs:
           path = pathlib.Path('skills/herdr-orchestrator/references/workers.example.toml')
           tomllib.loads(path.read_text())
           PY
-      - name: Install both skills into a disposable project
+      - name: Install the bundled skills into a disposable project
         env:
           DISABLE_TELEMETRY: '1'
         run: |
           package_check=$(mktemp -d)
           cd "$package_check"
-          npx --yes skills@1.7.1 add "$GITHUB_WORKSPACE" -s herdr-orchestrator -s pstack-herdr -a claude-code -a codex -a pi -y
+          npx --yes skills@1.7.1 add "$GITHUB_WORKSPACE/skills" -s '*' -a claude-code -a codex -a pi -y
+          python "$GITHUB_WORKSPACE/e2e/skill_catalogs.py" "$package_check" --installation-only
           python .agents/skills/herdr-orchestrator/scripts/horch.py --help
           test ! -e .agents/skills/herdr-orchestrator/scripts/e2e.py
           test ! -e .agents/skills/herdr-orchestrator/e2e
@@ -59,7 +60,7 @@ jobs:
           test -f .agents/skills/pstack-herdr/references/compatibility.md
           test -f .agents/skills/pstack-herdr/references/herdr-tools.md
           test -f .claude/skills/herdr-orchestrator/SKILL.md
-      - name: Prepare and install the original skill catalog
+      - name: Verify bundled upstream files match regeneration
         if: matrix.python == '3.11'
         env:
           DISABLE_TELEMETRY: '1'
@@ -68,7 +69,5 @@ jobs:
           pstack_revision=$(python -c 'import json; print(json.load(open("skills/pstack-herdr/references/upstream.json"))["revision"])')
           git clone --quiet https://github.com/cursor/plugins.git "$catalog_check/source"
           git -C "$catalog_check/source" checkout --detach "$pstack_revision"
-          python skills/pstack-herdr/scripts/prepare.py --source "$catalog_check/source" --output "$catalog_check/package"
-          mkdir "$catalog_check/consumer"
-          cd "$catalog_check/consumer"
-          npx --yes skills@1.7.1 add "$catalog_check/package" -s '*' -a claude-code -a codex -a pi -y
+          python scripts/prepare_pstack.py --source "$catalog_check/source" --output "$catalog_check/package"
+          diff -r --exclude=__pycache__ skills "$catalog_check/package/skills"

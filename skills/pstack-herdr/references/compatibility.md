@@ -1,61 +1,55 @@
 # Original pstack source and compatibility
 
-This adapter tracks [Lauren Tan's original pstack](https://github.com/cursor/plugins/tree/ccb5507cec1546dc88135c1139c811e6c59115ba/pstack), version **0.15.15**, at commit `ccb5507cec1546dc88135c1139c811e6c59115ba`. The revision pins instructions and references; it is not a claim that every playbook works on every harness.
+This bundle tracks [Lauren Tan's original pstack](https://github.com/cursor/plugins/tree/ccb5507cec1546dc88135c1139c811e6c59115ba/pstack), version **0.15.15**, at commit `ccb5507cec1546dc88135c1139c811e6c59115ba`. The revision pins instructions and references; it does not establish runtime support for every playbook.
 
-## Install discoverable skills
-
-The source pin and adapted-skill list live in [upstream.json](upstream.json). The source checkout alone does not register skills. Prepare a local package, then install it with the same skill installer used for this repository.
-
-From a clone of this repository:
+## Install
 
 ```bash
-pstack_source="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-orchestrator/cursor-plugins"
-pstack_package="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-orchestrator/pstack-package-0.15.15"
-mkdir -p "$(dirname "$pstack_source")"
-git clone https://github.com/cursor/plugins.git "$pstack_source"
-git -C "$pstack_source" checkout --detach ccb5507cec1546dc88135c1139c811e6c59115ba
-python3 skills/pstack-herdr/scripts/prepare.py --source "$pstack_source" --output "$pstack_package"
-npx skills@1.7.1 add "$pstack_package" -g -a codex -a claude-code -a pi
+npx skills@1.7.1 add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*'
 ```
 
-Run clone and preparation into new directories. For an existing source checkout, inspect its revision and local changes first. Preparation refuses a different revision, a dirty checkout, or an existing output directory. Use the installer's selection screen to choose skills and inspect name conflicts before installation. Preserve existing user skills unless replacing them is intended. A skipped skill is not installed from this package; workflow source reads still use the pinned checkout. Omit `-g` for project installation, or select only the harnesses you use.
+Choose your harnesses and project or global scope in the installer. Review existing skill-name conflicts before replacing user skills. The `skills/` URL installs the bundled catalog and both Herdr adapters, leaving out repository development skills. Selecting only `-s pstack-herdr` installs only that adapter; the installer does not resolve dependencies.
 
-If both adapter skills were installed without cloning this repository, run `scripts/prepare.py` from the installed `pstack-herdr` directory instead. The companion `herdr-orchestrator` directory must be beside it.
+No separate source checkout is needed. The installer copies complete skill directories into standard sibling locations. Open a fresh session (or reload skills where supported), then invoke `poteto-mode`, `how`, `interrogate`, or standalone guidance such as `unslop`. Pi supports `/skill:poteto-mode`; other harnesses provide their own invocation UI. This layout is available on `main`; v0.2.0 used the earlier preparation procedure.
 
-Preparation includes all original pstack skills and the referenced `control-cli`, `control-ui`, and `deslop` skills from `cursor-team-kit`, plus the two Herdr skills. Each skill retains its supporting files and upstream license. Names are normalized to directory names, descriptions are preserved, and Cursor-only metadata and `disable-model-invocation` are omitted so harnesses can discover and select the skills. This enables implicit selection; it does not promise that a model always selects the right skill.
+## Included skills and adaptations
 
-Pure guidance, including `unslop`, `technical-writing`, and 23 principles, keeps its original body. The explicitly listed workflow/runtime skills receive one Herdr preamble before their original body. This includes `principle-guard-the-context-window`, which calls for subagents. The mapping covers direct delegation, composed workflows, model setup, transcript paths, generated skill locations, and Cursor-specific capabilities. `setup-pstack` uses TOML setup in place of the original Cursor rule-writing procedure. The original checkout remains unchanged. `make-bot-ui` is discoverable but requires Cursor routine and secret-request tools that this adapter does not provide; stop at that missing capability rather than attempting its credential flow.
+The bundle contains **53 entries**: 48 pstack skills, the three referenced team-kit skills (`control-cli`, `control-ui`, `deslop`), and two Herdr adapters. Each upstream skill retains its resource tree and `UPSTREAM-LICENSE.txt`. The two original agent instructions and their license live in [agents/](agents/). The [bundle provenance](bundle.json) records source paths and hashes; [upstream.json](upstream.json) defines the pin, adaptations, and exclusions.
 
-The generated package records the absolute source location. Keep the checkout available for agent definitions and cross-package references. Generate on the target machine after moving the checkout; do not distribute the generated package as a portable upstream mirror. Installed copies stay fixed until you explicitly prepare and install a reviewed update.
-
-Open a fresh harness session (or reload skills where supported), then ask:
-
-```text
-Use poteto-mode for this goal: ...
-Done means: ...
-```
-
-Or invoke `how`, `interrogate`, or `unslop` directly. Pi supports `/skill:poteto-mode`; other harnesses expose their own skill invocation UI. `pstack-herdr` remains an explicit entry for troubleshooting and source-path overrides. Custom Cursor modes, hooks, and cloud capabilities are not installed.
-
-## Source contract
-
-| Original path or setting | Adapter use |
+| Excluded original skill | Reason |
 |---|---|
-| `pstack/.cursor-plugin/plugin.json` and checkout commit | Identify the source version. Plugin metadata does not control execution. |
-| `pstack/skills/poteto-mode/SKILL.md`, `playbooks/`, and `principle-*` skills | Controller reads the selected workflow and applied principles. |
-| `pstack/skills/<name>/SKILL.md` and its relative references | Resolve skill calls from one source tree. |
-| `pstack/agents/` | Read named agent instructions into bounded worker briefs. |
-| `pstack/skills/interrogate/references/{reviewer-prompt,rubric,code-quality-review,lead-judgment}.md` | Original reviewer inputs and controller synthesis. No rubric is copied or parsed by `horch`. |
-| Upstream role names | Resolve through `[roles]` in `workers.toml` on every harness. |
+| `make-bot-ui` | Requires Cursor Routines and secret-request/webhook tools that this adapter does not provide. No included coding playbook requires it. |
+| `poteto-help` | Cursor-specific setup and navigation depend on guides outside the skill tree. This adapter documents installation and entry points. |
+| `setup-pstack` | Writes Cursor model rules. Its workflow references map to Herdr setup and `[roles]` in `workers.toml`. |
 
-Source files and role contracts have been inspected for this revision. Native Pi and Codex catalogs discovered all 56 package entries. A fresh Pi controller directly invoked original `how`, loaded this mapping, completed three explorer tasks and one explainer task, and closed all four workers. See the [discovery and routing receipt](https://github.com/conscientiousness/herdr-pstack-orchestrator/blob/main/e2e/evidence/skill-discovery.json). Other original skills and `poteto-mode` playbooks remain **runtime unverified**. Claude Code installation was checked; native Claude discovery was not measured. Existing controller and review-loop receipts retain their historical source attribution in the [E2E guide](https://github.com/conscientiousness/herdr-pstack-orchestrator/blob/main/e2e/README.md#historical-pstack-source); they do not establish compatibility with this original revision. The ordinary `herdr-orchestrator` runtime remains independent of pstack.
+Generic guidance remains included: `unslop`, `bro`, technical writing, TypeScript guidance, and all 24 principles. Being independent of delegation is not a reason to exclude a useful skill.
 
-## Update when needed
+Names are normalized to directory names and original descriptions are preserved. Cursor-only metadata and `disable-model-invocation` are omitted so harnesses can discover and select skills implicitly. Eighteen workflow/runtime entries prepend the Herdr mapping; all original bodies and supporting files are preserved. This includes `principle-guard-the-context-window`, whose instructions call for subagents. No plugin registration, hooks, or custom installer are required.
 
-The [daily upstream check](https://github.com/conscientiousness/herdr-pstack-orchestrator/blob/main/.github/workflows/upstream.yml) compares tracked `pstack/` and `cursor-team-kit/` trees against the pin. It runs at 02:23 UTC and on manual dispatch; scheduled runs require the workflow on the default branch. The README badge links to the run summary and JSON artifact. `current` means no relevant tree changes, `update_required` means changes need review, and `error` means freshness is unknown. It never updates installed skills or the pin.
+## Resource and runtime mapping
 
-1. Choose a target `cursor/plugins` commit and compare it with the pin above. Inspect changed entry points, role names, agent definitions, prompts, references, and required tools.
-2. Preserve original files. Update only this adapter where those changes affect its mapping, plus `upstream.json`, its adapted-skill classification, the README version badge, and the installation command here. Generate into a new package directory and inspect installer conflicts before replacing installed copies. Pure skill-content changes need no Herdr rewrite.
-3. Address problems actually encountered with the smallest necessary verification. Keep unexecuted workflows marked unverified; record the exact source revision with any real task used as evidence. Historical receipts keep their original versions and hashes.
+| Original path or setting | Installed equivalent |
+|---|---|
+| `pstack/skills/<name>/` and relative references | Sibling `<name>/` directory; resolve scripts to absolute paths before running them. |
+| `pstack/agents/` | Bundled `pstack-herdr/references/agents/`; include the applicable instructions in a bounded worker brief. |
+| `cursor-team-kit/skills/{control-cli,control-ui,deslop}/` | Sibling skill directories with their supporting files. |
+| `interrogate/references/` | Installed review prompts and rubric; `horch` does not parse them. |
+| Upstream role names and model defaults | `[roles]` and `[workers]` in `workers.toml` on every harness. |
 
-Fetch and inspect the chosen commit before checking it out. Never use an unreviewed `git pull` as an implicit adapter upgrade. No background updater is installed.
+Read [herdr-tools.md](herdr-tools.md) for tool substitutions and unavailable capabilities. Cursor modes, `/loop`, cloud execution, and missing MCP/app tools remain unavailable unless the environment supplies an equivalent. A workflow requiring one stops at that step. Scripts may require their own tools; bundling them does not install those dependencies.
+
+The recorded original `how` run completed three explorer tasks and one explainer task through Herdr. Its [historical receipt](https://github.com/conscientiousness/herdr-pstack-orchestrator/blob/main/e2e/evidence/skill-discovery.json) used the earlier prepared package. Other original skills and `poteto-mode` playbooks remain **runtime unverified**. Native discovery and workflow execution are separate checks; native Claude Code discovery has not been measured. Earlier controller/review-loop receipts keep their original attribution in the [E2E guide](https://github.com/conscientiousness/herdr-pstack-orchestrator/blob/main/e2e/README.md#historical-pstack-source).
+
+## Maintainer updates
+
+The [daily upstream check](https://github.com/conscientiousness/herdr-pstack-orchestrator/blob/main/.github/workflows/upstream.yml) compares `pstack/` and `cursor-team-kit/` against the pin at 02:23 UTC and on manual dispatch. The README badge links to its summary and JSON artifact: `current` means no relevant tree changes, `update_required` means review is needed, and `error` means freshness is unknown. It never updates installed skills or the pin.
+
+1. Inspect the target commit's changed instructions, roles, agents, resources, and required tools. Update the adapter mapping and `upstream.json` only where needed; review exclusions and the README version badge.
+2. From this repository's root, regenerate into a new directory with a clean checkout at the reviewed revision:
+
+   ```bash
+   python3 scripts/prepare_pstack.py --source /path/to/cursor-plugins --output /tmp/pstack-next
+   ```
+
+   This is maintainer tooling, not an installation step. It rejects a dirty or differently pinned source and an existing output directory. Inspect the generated `skills/` tree, replace the bundled upstream directories and generated agent/provenance resources, and remove entries no longer selected. Preserve the two local adapters. CI checks that the committed bundle matches regeneration.
+3. Verify affected installation or runtime behavior with the existing E2E procedures, then commit the reviewed bundle. Users receive it when they explicitly reinstall. Keep unexecuted workflows marked unverified and historical receipts unchanged.
