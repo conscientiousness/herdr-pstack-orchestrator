@@ -54,10 +54,18 @@ Write `result.json` at exactly this path:
 
     {result_path}
 
-Use these exact values in `result.json`:
+It must be one JSON object with exactly these keys:
 
-- task_id: {task_id}
-- nonce: {nonce}
+    {{
+      "task_id": "{task_id}",
+      "nonce": "{nonce}",
+      "status": "completed",
+      "summary": "One or two sentences.",
+      "files": ["report.md"],
+      "question": null
+    }}
+
+`status` is `completed`, `blocked`, or `failed`. `files` lists the output files you wrote, relative to the directory of `result.json`. `question` is required when `status` is `blocked`, else null.
 """
 
 
