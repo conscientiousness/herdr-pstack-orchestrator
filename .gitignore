@@ -24,3 +24,11 @@ e2e/evidence/*
 !e2e/evidence/controller-audit-initial.json
 !e2e/evidence/controller-audit-second.json
 !e2e/evidence/controller-reanalysis.json
+!e2e/pi_preflight.py
+!e2e/evidence/pi-preflight.json
+!e2e/evidence/pi-controller.json
+!e2e/evidence/controller-e2e.json
+!e2e/evidence/controller-stalled.json
+!e2e/evidence/controller-provider-error.json
+!e2e/evidence/controller-audit-array.json
+!e2e/evidence/controller-array-reanalysis.json

@@ -31,7 +31,7 @@ Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1
 | `wait [<task-id> ...] [--max-seconds <n>] [--recheck]` | Wait for a state change. No IDs selects all unsettled tasks. See waiting below. |
 | `list` | List task, worker, pane, and state. |
 | `close <task-id>` | Close that task's recorded pane. |
-| `detect` | List installed harnesses, versions, and Pi providers. |
+| `detect` | List installed harnesses, versions, Pi providers, and Pi integration status. |
 | `check [<worker> ...] [--cwd <dir>] [--max-seconds <n>]` | Verify configured workers with real tasks; default wait cap 300 seconds. |
 
 Workers open in `horch` tabs in your workspace, at most four panes per tab, without taking focus or using your tab.

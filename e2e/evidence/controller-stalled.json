@@ -1,0 +1,62 @@
+{
+  "schema": "horch/controller-e2e/v1",
+  "verdict": "fail",
+  "seconds": 1214.182,
+  "hashes": {
+    "e2e/controller_loop.py": "40a3e84562fa7ae8c4916e2ac8ad066b7318662e35ed28aa036729383ae7ee9e",
+    "e2e/review_loop.py": "ccb1aebd417c6c6960926c353c6adb3aa1290372f00c04a8cef33d69cc980cb5",
+    "skills/herdr-orchestrator/scripts/horch.py": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+    "skills/herdr-orchestrator/SKILL.md": "4d12637fac7d76486ff24207112cfcfa5e1b3c909d7b8f03e07e0ecb2ef14f1b",
+    "skills/herdr-orchestrator/references/lifecycle.md": "f2266937f35bc17fa74cb225f4e72e5d12867352d805ade44d4c3339f09a64d0",
+    "skills/herdr-orchestrator/references/setup.md": "164483d367e572c28ee4020e6399c5321fec27a1c97975b6288b2d50f1cd8df4",
+    "skills/herdr-orchestrator/references/workers.example.toml": "bb885254944c4667ab5c2e29fff11b586b904e05d1d69e090306684638b2492a"
+  },
+  "config_sha256": "21c0d2e3e01b6faa8e1dfaf71aa4fab5d2483be8a88879c79a4d8b81bda69538",
+  "models": {
+    "controller": "gpt-6.1-sol",
+    "writer": "glm-5.3-flash",
+    "reviewer_1": "deepseek/deepseek-v4.1-flash",
+    "reviewer_2": "glm-5.3-flash"
+  },
+  "tasks": [
+    {
+      "task_id": "t-3b6155",
+      "state": "running",
+      "closed_before_cleanup": false
+    }
+  ],
+  "revisions": {
+    "base": "683c3c525e933ff58e2fbb679468a1af7836409e"
+  },
+  "assertions": [
+    {
+      "name": "global_capacity",
+      "ok": true
+    },
+    {
+      "name": "base_defects",
+      "ok": true
+    },
+    {
+      "name": "controller_started",
+      "ok": true
+    },
+    {
+      "name": "controller_acknowledged",
+      "ok": true
+    },
+    {
+      "name": "source_and_config_integrity",
+      "ok": true
+    },
+    {
+      "name": "actual_pane_cleanup",
+      "ok": true
+    }
+  ],
+  "counts": {},
+  "observations": {},
+  "failure_categories": [
+    "controller_blocked"
+  ]
+}

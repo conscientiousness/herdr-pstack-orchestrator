@@ -86,8 +86,27 @@ def output_objects(text):
                 yield from output_objects(obj['output'])
 
 
+def literal_command_map(source):
+    """Recognize only the observed immutable JSON-string array mapping."""
+    token = r'"(?:\\["\\/bfnrt]|\\u[0-9a-fA-F]{4}|[^"\\\x00-\x1f])*"'
+    match = re.fullmatch(
+        r'\s*const\s+cmds\s*=\s*(\[\s*' + token
+        + r'(?:\s*,\s*' + token + r')*\s*\])\s*;\s*'
+        r'text\s*\(\s*await\s+Promise\.all\s*\(\s*cmds\.map\s*\('
+        r'\s*cmd\s*=>\s*tools\.exec_command\s*\(\s*\{\s*cmd\s*,\s*'
+        r'max_output_tokens\s*:\s*([1-9][0-9]*)\s*\}\s*\)\s*\)\s*\)\s*\)\s*;\s*',
+        source)
+    if not match:
+        return None
+    return [('exec_command', {'cmd': cmd, 'max_output_tokens': int(match[2])})
+            for cmd in json.loads(match[1])]
+
+
 def literal_calls(source):
     """Extract fixed arguments, including string sums, without evaluating JS."""
+    mapped = literal_command_map(source)
+    if mapped is not None:
+        return mapped
     class StringSums(ast.NodeTransformer):
         def visit_BinOp(self, node):
             node = self.generic_visit(node)
@@ -179,7 +198,7 @@ def transcript_path(session, cwd, started):
 def audit_transcript(path, tasks, counts, delivered_at=None):
     """Ordering is tool-call/output order, never assistant narrative or report."""
     pending, live, done, reads = {}, {}, set(), set()
-    cell_calls, cell_ordered = {}, {}
+    cell_calls, cell_ordered, cell_array = {}, {}, {}
     observation_handles = set()
     counts.update({'tool_calls': 0, 'shell_calls': 0, 'wait_launches': 0,
                    'short_waits': 0, 'yielded_waits': 0, 'handle_resumes': 0,
@@ -187,6 +206,7 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
     short = set()
     cell_live = set()
     ordered_cells = set()
+    array_cells = set()
     known_ids = {t['task_id'] for t in tasks}
     if delivered_at is None:
         delivered_at = {}
@@ -212,6 +232,9 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                 calls = [(name, json.loads(item['arguments']))]
             elif name == 'exec':
                 calls = literal_calls(raw)
+                if literal_command_map(raw) is not None:
+                    ordered_cells.add(item['call_id'])
+                    array_cells.add(item['call_id'])
                 if (len(re.findall(r'text\s*\(\s*await\s+tools\.(?:exec_command|write_stdin)\s*\(', raw)) == len(calls)
                         and 'Promise' not in raw):
                     ordered_cells.add(item['call_id'])
@@ -271,7 +294,12 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                                 raise Failure('delivery_order_unproven')
                             reads.add(tid)
                     if reads_content and has_artifact and not any(t['task_id'] in cmd for t in tasks):
-                        raise Failure('delivery_dynamic_read_unproven')
+                        # Redundant final verification cannot establish delivery.
+                        # Allow it only after every task already has an explicit
+                        # gated read and all observed delivery times precede it.
+                        if (reads != known_ids or done != known_ids
+                                or any(call_time < delivered_at[tid] for tid in known_ids)):
+                            raise Failure('delivery_dynamic_read_unproven')
                     waits = list(re.finditer(r'(?:horch\.py|\bhorch)\s+wait\b([^\n;&|]*)', cmd))
                     if len(waits) > 1:
                         raise Failure('transcript_combined_waits')
@@ -300,11 +328,13 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
             if calls is None:
                 raise Failure('transcript_output_unmatched')
             ordered = item.get('call_id') in ordered_cells
+            array_output = item.get('call_id') in array_cells
             prior_cell = None
             if len(calls) == 1 and calls[0][0] == 'cell':
                 prior_cell = calls[0][1]
                 calls = cell_calls.pop(prior_cell)
                 ordered = cell_ordered.pop(prior_cell)
+                array_output = cell_array.pop(prior_cell)
                 cell_live.discard(prior_cell)
             output = text_output(item.get('output', ''))
             cells = set(re.findall(r'Script running with cell ID ([\w-]+)', output))
@@ -312,13 +342,31 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                 raise Failure('transcript_cell_changed')
             segments = [(calls, output)]
             remaining = calls
-            if (len(calls) > 1 and ordered) or cells:
+            if (len(calls) > 1 and ordered) or cells or array_output:
                 frames = []
+                arrays = 0
                 parts = item.get('output', [])
                 for part in parts if isinstance(parts, list) else []:
                     try:
                         frame = json.loads(part.get('text', ''))
                     except (ValueError, AttributeError):
+                        continue
+                    if array_output:
+                        arrays += 1
+                        # Promise.all prints only after every call completes.
+                        # A yielded cell can have no array yet, never a prefix.
+                        if (arrays != 1 or not isinstance(frame, list)
+                                or len(frame) != len(calls) or not frame
+                                or any(not isinstance(f, dict)
+                                       or not isinstance(f.get('chunk_id'), str)
+                                       or not f['chunk_id']
+                                       or not isinstance(f.get('output'), str)
+                                       or not (type(f.get('exit_code')) is int
+                                               or type(f.get('session_id')) is int)
+                                       for f in frame)
+                                or len({f['chunk_id'] for f in frame}) != len(frame)):
+                            raise Failure('transcript_output_mapping_ambiguous')
+                        frames.extend(frame)
                         continue
                     if isinstance(frame, dict) and frame.get('status') == 'fulfilled':
                         frame = frame.get('value')
@@ -333,6 +381,7 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                 # Yielded cells return only new output. Keep the unprinted calls
                 # in order so later frames cannot repeat or skip an observation.
                 cell_calls[cell], cell_ordered[cell] = remaining, ordered
+                cell_array[cell] = array_output
                 cell_live.add(cell)
             for calls, output in segments:
                 sessions = set(re.findall(r'"session_id"\s*:\s*(\d+)|Process running with session ID (\d+)', output))

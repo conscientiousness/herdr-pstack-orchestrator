@@ -29,6 +29,7 @@ jobs:
           python skills/herdr-orchestrator/scripts/horch.py --help
           python e2e/review_loop.py --help
           python e2e/pi_startup.py --help
+          python e2e/pi_preflight.py --help
           python e2e/controller_loop.py --help
       - name: Parse example configuration
         run: |

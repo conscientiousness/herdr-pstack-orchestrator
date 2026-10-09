@@ -101,7 +101,8 @@
         "horch_dispatch": true,
         "wait_calls": 18
       },
-      "prior_failure": "An earlier run closed two reviewers after consuming reports while their task states were still running. The CLI now withholds early fields and the skills require done; this fresh six-worker rerun passed."
+      "prior_failure": "An earlier run closed two reviewers after consuming reports while their task states were still running. The CLI now withholds early fields and the skills require done; this fresh six-worker rerun passed.",
+      "evidence": "pi-controller.json"
     },
     "package_ci": {
       "python": [
@@ -224,6 +225,89 @@
         "scope": "Read-only code review plus independent replay of both real traces, including a separate raw-row scan of delivery and handle ordering. Replay was judged sufficient for parser-only changes.",
         "subsequent_change": "The parent restored the existing launch-time overlap check alongside the output-time check so ordered concurrent results cannot erase overlap at launch. Both real traces passed again with unchanged counts on the final auditor hash recorded above."
       }
+    },
+    "pi_preflight": {
+      "passed": 15,
+      "total": 15,
+      "seconds": 47.66,
+      "evidence": "pi-preflight.json",
+      "horch_sha256": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+      "scope": "Real Herdr missing integration via supported PI_CODING_AGENT_DIR; mixed batch and direct run reject before allocation; non-Pi and two installed Pi workers complete; owned panes absent.",
+      "independent_review": {
+        "verdict": "PASS",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "commit": "c4d1e17",
+        "scope": "Read-only runtime/preflight-driver review and independent historical Pi receipt provenance audit."
+      }
+    },
+    "controller_release_attempt": {
+      "verdict": "fail",
+      "seconds": 1214.182,
+      "evidence": "controller-stalled.json",
+      "auditor_sha256": "40a3e84562fa7ae8c4916e2ac8ad066b7318662e35ed28aa036729383ae7ee9e",
+      "cause": "First GLM worker remained working without visible progress. After about 20 minutes the controller asked whether to retry; Herdr reported blocked and the driver stopped. No six-task scenario or transcript audit completed.",
+      "cleanup": "Source/config integrity and actual owned-pane cleanup passed.",
+      "root_cause": "Worker/provider stall cause remains undetermined; no approval denial or startup trust dialog was observed."
+    },
+    "controller_provider_error_attempt": {
+      "verdict": "fail",
+      "seconds": 281.285,
+      "evidence": "controller-provider-error.json",
+      "cause": "The implementation completed. A first-round DeepSeek reviewer then received CommandCode API HTTP400 after writing its report but before delivering result.json. The controller inspected the result_missing task and asked whether to retry; the driver observed controller_blocked and stopped.",
+      "cleanup": "Source/config integrity and actual owned-pane cleanup passed.",
+      "scope": "An undelivered report did not satisfy the review gate. The full six-task scenario and transcript audit did not complete."
+    },
+    "controller_array_audit_attempt": {
+      "verdict": "fail",
+      "seconds": 816.115,
+      "scenario_assertions": "46/46",
+      "evidence": "controller-audit-array.json",
+      "auditor_sha256": "40a3e84562fa7ae8c4916e2ac8ad066b7318662e35ed28aa036729383ae7ee9e",
+      "cause": "All six real tasks and scenario/source/cleanup checks passed. The transcript auditor rejected a literal command array mapped through Promise.all with an object shorthand property, before any task dispatch.",
+      "scope": "Original integrated failure retained; parser correction and fresh integrated rerun are required.",
+      "reanalysis": {
+        "verdict": "pass",
+        "evidence": "controller-array-reanalysis.json",
+        "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+        "scope": "Three unchanged real traces; earlier wait/handle counts preserved. Not a fresh integrated pass."
+      },
+      "independent_review": {
+        "verdict": "PASS",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "commit": "706a47bba856e37245b6b290beec455499ee6db0",
+        "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+        "scope": "Read-only review of literal-array mapping and redundant verification gates, three real trace replays, and raw-row delivery-time checks. Array-map yielded continuations were statically reviewed, not exercised."
+      }
+    },
+    "fresh_controller_e2e": {
+      "verdict": "pass",
+      "passed": 47,
+      "total": 47,
+      "seconds": 736.836,
+      "evidence": "controller-e2e.json",
+      "tested_commit": "706a47bba856e37245b6b290beec455499ee6db0",
+      "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+      "horch_sha256": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+      "counts": {
+        "tool_calls": 53,
+        "shell_calls": 36,
+        "wait_launches": 6,
+        "short_waits": 0,
+        "yielded_waits": 6,
+        "handle_resumes": 23,
+        "rejected_wait_requests": 0
+      },
+      "scope": "Fresh final-driver invocation; six distinct workers, initial FAIL/final PASS panels, real committed CLI outputs, original transcript wait/delivery audit, unchanged source/configuration, and actual pane cleanup all passed together. No post-run parser correction or receipt relabeling."
+    },
+    "release_011_package_ci": {
+      "verdict": "PASS",
+      "python": [
+        "3.11",
+        "3.14"
+      ],
+      "commit": "706a47bba856e37245b6b290beec455499ee6db0",
+      "run": "https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/runs/37952944013",
+      "scope": "Reviewed final runtime and E2E driver code; subsequent changes add the fresh receipt and documentation."
     }
   },
   "limits": [
