@@ -1,11 +1,11 @@
 ---
 name: pstack-herdr
-description: "Run original pstack workflows through configured Herdr workers. Use as the entry point for pstack with Herdr, including poteto-mode and individual pstack skills."
+description: "Run original pstack workflows through configured Herdr workers. Loaded by installed pstack workflow skills to map their tools and roles to Herdr; also usable as an explicit entry point."
 ---
 
 # pstack-herdr
 
-Use Lauren Tan's original pstack from `cursor/plugins`. Read [herdr-tools.md](references/herdr-tools.md) and the companion [herdr-orchestrator skill](../herdr-orchestrator/SKILL.md) before starting. The controller runs inside a Herdr pane.
+Installed workflow skills load this mapping before their original instructions. You can invoke `poteto-mode`, `how`, or `interrogate` directly. Use Lauren Tan's original pstack from `cursor/plugins`. Read [herdr-tools.md](references/herdr-tools.md) and the companion [herdr-orchestrator skill](../herdr-orchestrator/SKILL.md) before starting. The controller runs inside a Herdr pane.
 
 This mapping takes precedence over upstream tool names, model defaults, configuration paths, and delegation instructions. User and project instructions retain precedence over both skills. Keep upstream source files unchanged.
 
@@ -15,7 +15,7 @@ This mapping takes precedence over upstream tool names, model defaults, configur
 2. Resolve pstack skills under `<checkout>/pstack/skills/<name>/SKILL.md`. Read the requested skill, or `poteto-mode/SKILL.md` in full for a general goal, then its chosen playbook and required references. Read each applied principle's own file. Resolve relative links from their owning file. Use this checkout consistently rather than another installation of a same-named skill.
 3. Keep workflow coordination in this controller. Expand exploration, design, implementation, and review phases here, then send bounded assignments through `horch`. Put this task-specific rule in every worker brief: **Do not delegate, use native subagents, or run a whole playbook. Complete this assignment yourself; report any need for further delegation to the controller.** This overrides the companion skill's general permission for worker subagents.
 
-Enter through `pstack-herdr` in each new session, including for a specific upstream skill. Reading source files does not install Cursor modes, hooks, or slash commands. Runtime verification is recorded separately from source compatibility; see the compatibility notes.
+Install the discoverable skill package described in the compatibility notes. Its workflow entries load this mapping automatically; pure guidance keeps its original body. A source checkout alone does not register skills. Cursor custom modes and hooks are not installed. Runtime verification is separate from discovery and source compatibility.
 
 ## Resolve roles
 

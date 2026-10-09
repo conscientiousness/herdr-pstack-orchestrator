@@ -7,6 +7,8 @@
 # herdr-pstack-orchestrator
 
 [![Package validation](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml)
+[![Pstack upstream](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml)
+[![Pstack source: 0.15.15](https://img.shields.io/badge/pstack_source-0.15.15-blue)](https://github.com/cursor/plugins/tree/ccb5507cec1546dc88135c1139c811e6c59115ba/pstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Run a visible team of coding agents from one conversation.** One model implements, other models review, and you can inspect every worker in [Herdr](https://herdr.dev).
@@ -35,7 +37,7 @@ Workers open in tabs labeled `horch` (at most four panes per tab) without steali
 - Node.js/npm for `npx skills add`; a manual clone needs neither
 - The harnesses you want as workers — `pi`, `codex`, and/or `claude` — installed and authenticated with your provider
 - For Pi workers: Herdr's Pi integration (`herdr integration install pi`); `horch detect` reports its status, missing integration fails before worker allocation, and task submission waits for its session readiness signal
-- For pstack workflows: both skills above and the [original source checkout](skills/pstack-herdr/references/compatibility.md#keep-one-source-checkout)
+- For pstack workflows: both skills above and the [original source checkout](skills/pstack-herdr/references/compatibility.md#install-discoverable-skills)
 
 ## Install
 
@@ -186,16 +188,16 @@ Wait for `state: "done"` before consuming a result. A worker can write files whi
 
 ## Optional: original pstack through Herdr
 
-This adapter tracks [original pstack](https://github.com/cursor/plugins/tree/main/pstack) directly. Keep its full source checkout at the revision in the [installation and update instructions](skills/pstack-herdr/references/compatibility.md). Skills, references, agent definitions, and licenses stay in that checkout, unchanged. The controller reads them by path, so no upstream plugin or runtime extension is required to load them.
+This adapter tracks [original pstack](https://github.com/cursor/plugins/tree/main/pstack) directly. Keep its full source checkout at the revision in the [installation and update instructions](skills/pstack-herdr/references/compatibility.md). Skills, references, agent definitions, and licenses stay in that checkout, unchanged. The preparation command produces a discoverable skill package from that checkout. Install it into your harness so names and descriptions are available during skill selection. Workflow entries load the Herdr mapping automatically; pure guidance keeps its original body.
 
-Enter through `pstack-herdr` in each new session:
+After [preparing and installing the package](skills/pstack-herdr/references/compatibility.md#install-discoverable-skills), start a fresh session and invoke a skill directly:
 
 ```text
-Use pstack-herdr to run original pstack's poteto-mode for this goal: ...
+Use poteto-mode for this goal: ...
 Done means: ...
 ```
 
-For a specific skill, ask `Use pstack-herdr with original pstack's interrogate to review this branch.` The adapter resolves it from the same checkout. Pure guidance such as `unslop` uses its original content.
+For a specific skill, ask `Use interrogate to review this branch.` Independent skills such as `unslop` are also discoverable. Installing only the two Herdr skills does not install the original skill catalog. Existing skills with the same names need an explicit installation choice. The generated package normalizes discovery metadata, including removing upstream explicit-only flags; Cursor modes and hooks remain unsupported.
 
 All three controller harnesses read roles directly from `workers.toml`. Configure only the roles the chosen workflow needs. For the implementation/review loop:
 
@@ -208,6 +210,8 @@ All three controller harnesses read roles directly from `workers.toml`. Configur
 A single role names one worker; a panel role lists one worker per review task. The `arena cross-judge pool` is a selection pool, from which the controller chooses one worker. Other workflows use their original role names, such as `how explorer` or `architect runners`. There is no separate model sheet to maintain.
 
 The controller dispatches an implementation worker in a worktree, sends the same upstream review brief to every reviewer, assesses the delivered reports, and assigns accepted fixes and subsequent reviews to fresh workers. See the [entry point and review instructions](skills/pstack-herdr/SKILL.md). Read-only reviews are enforced by the brief and chosen harness permissions, not by a separate `horch` sandbox.
+
+The README source badge identifies the pinned version, not a release of this repository. The upstream CI badge checks daily at 02:23 UTC for changes in `pstack/` or `cursor-team-kit/`. A failed check means an update needs review or the check failed; open its summary for the distinction. Detection never upgrades installed skills automatically.
 
 The original-source mapping has been inspected, but live original-pstack playbooks are **unverified**. Earlier review-loop results retain their [historical source attribution](e2e/README.md#historical-pstack-source). Cursor modes, `/loop`, cloud execution, and unavailable MCP or app-driving tools are not supplied by this adapter; it reports a missing required capability instead of claiming the workflow finished.
 
