@@ -13,7 +13,7 @@
 
 Run coding agents from one conversation and inspect their work in [Herdr](https://herdr.dev). The controller assigns tasks, waits for results, and verifies the work.
 
-[Latest release: v0.2.0](https://github.com/conscientiousness/herdr-pstack-orchestrator/releases/tag/v0.2.0).
+[Latest release](https://github.com/conscientiousness/herdr-pstack-orchestrator/releases/latest).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/workflow-dark.svg">
@@ -253,7 +253,7 @@ Include reproduction steps, relevant versions, and sanitized evidence with a bug
 
 Controllers deliver changes on a feature branch and open or update a PR by default. Merging into `main` or enabling auto-merge requires an explicit user request, even when an upstream playbook calls for autonomous shipping.
 
-Future releases use `vYYYY.MM.DD.N`: the UTC release date and an index starting at `1` each day (for example, `v2026.10.10.1`, then `v2026.10.10.2`). Publish from verified `main` after an explicit release request. Existing tags stay unchanged; the upstream pstack version is tracked separately.
+Release tags use `vYYYY.MM.DD.N`: the UTC release date and an index starting at `1` each day (for example, `v2026.10.10.1`, then `v2026.10.10.2`). Publish from verified `main` after an explicit release request. Existing tags stay unchanged; the upstream pstack version is tracked separately.
 
 ## Credits
 
