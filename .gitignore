@@ -14,3 +14,4 @@ e2e/evidence/*
 !e2e/evidence/lifecycle.json
 !e2e/evidence/recovery.json
 !e2e/evidence/completion.json
+!e2e/evidence/relocation-e2e.json

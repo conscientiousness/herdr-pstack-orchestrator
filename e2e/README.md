@@ -15,7 +15,8 @@ The run retains its worktree and writes `evidence.json` with assertions, source 
 ## Evidence and source attribution
 
 - [verification.json](evidence/verification.json): development runs, tested versions, source hashes, and limits.
-- [review-e2e.json](evidence/review-e2e.json): the public six-task driver run and its observed outputs.
+- [review-e2e.json](evidence/review-e2e.json): the release-era public six-task driver pass and its observed outputs.
+- [relocation-e2e.json](evidence/relocation-e2e.json): the latest attempt after moving the driver. It failed at initial worker acknowledgement (`not_started` / Herdr `agent_prompt_stalled`), before implementation. Three attempts stopped there; owned panes were cleaned up. A separate GLM setup check and manual same-worktree dispatch succeeded. The root cause remains undetermined; no fresh full-loop pass is claimed.
 - [lifecycle.json](evidence/lifecycle.json), [recovery.json](evidence/recovery.json), and [completion.json](evidence/completion.json): sanitized historical real-worker probes, with original artifact hashes and tested source attribution. Their local drivers are not distributed; these records are supporting evidence, not additional portable test commands.
 
 Historical evidence keeps its original source attribution. Moving the driver changes its hash; it does not retroactively change which code an earlier run exercised. The CLI itself is unchanged by the relocation.

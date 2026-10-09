@@ -220,7 +220,7 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 
 Model names throughout are examples; availability depends on your provider.
 
-The [E2E guide](e2e/README.md) explains the evidence and the mechanisms it covers. Tests and evidence live outside the installed skills. The [verification summary](e2e/evidence/verification.json) records versions, counts, source hashes, and limits. Core and setup runs predate the final completion-delivery change; the public loop and focused lifecycle check cover the final CLI. The [public E2E evidence](e2e/evidence/review-e2e.json) contains the observed invoice outputs and every assertion. Live runtime tests used Linux; macOS has not been measured.
+The [E2E guide](e2e/README.md) explains the evidence and the mechanisms it covers. Tests and evidence live outside the installed skills. The [verification summary](e2e/evidence/verification.json) records versions, counts, source hashes, and limits. Core and setup runs predate the final completion-delivery change; the public loop and focused lifecycle check cover the final CLI. The [release E2E evidence](e2e/evidence/review-e2e.json) contains the observed invoice outputs and every assertion. After relocating the driver, installation/CI passed, but fresh live attempts stopped at worker startup (`agent_prompt_stalled`); see the [latest attempt and limits](e2e/README.md#evidence-and-source-attribution). The historical 27/27 is not a fresh pass of the relocated driver. Live runtime tests used Linux; macOS has not been measured.
 
 ### Reproduce the review loop
 

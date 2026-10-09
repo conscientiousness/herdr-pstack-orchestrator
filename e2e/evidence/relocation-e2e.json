@@ -1,0 +1,53 @@
+{
+  "schema": "horch/public-review-e2e/v1",
+  "verdict": "fail",
+  "seconds": 9,
+  "horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+  "driver_sha256": "01d33247bf3bf7f9dc861126f44a339a54a1d5e5151847e4696ae158e81ef867",
+  "workers": {
+    "writer": "glm",
+    "reviewers": [
+      "ds",
+      "glm"
+    ]
+  },
+  "models": {
+    "glm": {
+      "harness": "pi",
+      "provider": "zai",
+      "model": "glm-5.3-flash",
+      "effort": "max"
+    },
+    "ds": {
+      "harness": "pi",
+      "provider": "commandcode",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "effort": "max"
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "t-34b953",
+      "worker": "glm"
+    }
+  ],
+  "revisions": {
+    "base": "a0e71b786da972c3c8c9be55ea254a3fea8c9fac"
+  },
+  "assertions": [
+    {
+      "name": "fixture exposes a real line calculation defect",
+      "ok": true
+    },
+    {
+      "name": "all test worker panes closed",
+      "ok": true
+    },
+    {
+      "name": "tested source stayed unchanged during the run",
+      "ok": true
+    }
+  ],
+  "observations": {},
+  "problem": "RuntimeError: worker glm could not start: not_started"
+}

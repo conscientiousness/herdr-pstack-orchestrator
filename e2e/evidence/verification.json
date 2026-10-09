@@ -112,6 +112,33 @@
       "run": "https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/runs/37919075768",
       "commit": "b4a5284d45ffd5c782169904b75bd28757cdebda",
       "scope": "Python syntax and CLI entry points, example TOML parsing, installation of both skills for Claude Code, Codex, and Pi."
+    },
+    "review_guidance_update": {
+      "commit": "62f316668d9234a1ad5b5a35b57759397450f25c",
+      "package_checks": {
+        "passed": 15,
+        "total": 15,
+        "scope": "Local install into Claude Code, Codex and Pi; runtime/reference contents; E2E exclusions; CLI help; config parsing; relative Markdown links; unchanged CLI hash."
+      },
+      "package_ci": {
+        "verdict": "PASS",
+        "python": [
+          "3.11",
+          "3.14"
+        ],
+        "run": "https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/runs/37927268176"
+      },
+      "relocated_driver": {
+        "verdict": "fail",
+        "evidence": "relocation-e2e.json",
+        "attempts": 3,
+        "driver_sha256": "01d33247bf3bf7f9dc861126f44a339a54a1d5e5151847e4696ae158e81ef867",
+        "stopped_at": "Initial GLM worker prompt acknowledgement (not_started).",
+        "diagnostic": "Herdr reported agent_prompt_stalled: no observed working or blocked state within 5000 ms; current status idle.",
+        "cleanup": "All panes owned by the three attempts were closed.",
+        "separate_observations": "A GLM horch check completed in 30 seconds. Manual dispatch of the same brief in the same worktree completed with status completed. Root cause of the startup discrepancy remains undetermined.",
+        "scope": "The third attempt used a local observer around command execution to retain startup state before cleanup. Command results and test assertions were unchanged. No fresh six-task pass is claimed."
+      }
     }
   },
   "limits": [
