@@ -222,7 +222,18 @@ A single role names one worker; a panel lists one worker per task. The controlle
 
 The [adapter instructions](skills/pstack-herdr/SKILL.md) define workflow coordination and review. Read-only assignments rely on worker briefs and harness permissions; `horch` does not enforce a separate sandbox.
 
-The source badge identifies the upstream pin. The upstream monitor checks `pstack/` and `cursor-team-kit/` daily at 02:23 UTC. Its summary distinguishes changes needing review from a failed check. It never upgrades installed skills automatically.
+### Upstream sync and adaptations
+
+| Record | Contents |
+|---|---|
+| [Selection manifest](skills/pstack-herdr/references/upstream.json) | Pinned version and commit, skills requiring Herdr mapping, and exclusions with reasons. |
+| [Bundle inventory](skills/pstack-herdr/references/bundle.json) | Included upstream skills, source paths and hashes, and which entries load the Herdr mapping. |
+| [Compatibility notes](skills/pstack-herdr/references/compatibility.md) | Shared metadata changes, resource mapping, unsupported capabilities, and maintainer update steps. |
+| [Tool mapping](skills/pstack-herdr/references/herdr-tools.md) | Herdr equivalents for upstream tools, roles, and workflow actions. |
+
+The [upstream monitor](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml) checks `pstack/` and `cursor-team-kit/` daily at 02:23 UTC. Its summary and JSON artifact list changed files and distinguish changes needing review from a failed check. It does not decide how to adapt changes or upgrade installed skills automatically.
+
+For each upstream update, use the [upstream sync PR template](.github/PULL_REQUEST_TEMPLATE/upstream-sync.md) to record what was synced directly, adapted, or excluded, with reasons and verification evidence. The manifests remain the inventory; the PR records decisions for that update.
 
 Cursor modes, hooks, `/loop`, cloud execution, and unavailable MCP or app-driving tools are not supplied by this adapter. Workflows requiring a missing capability stop at that step. See the verification scope below.
 
