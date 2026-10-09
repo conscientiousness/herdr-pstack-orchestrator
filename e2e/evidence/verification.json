@@ -256,6 +256,21 @@
       "cause": "The implementation completed. A first-round DeepSeek reviewer then received CommandCode API HTTP400 after writing its report but before delivering result.json. The controller inspected the result_missing task and asked whether to retry; the driver observed controller_blocked and stopped.",
       "cleanup": "Source/config integrity and actual owned-pane cleanup passed.",
       "scope": "An undelivered report did not satisfy the review gate. The full six-task scenario and transcript audit did not complete."
+    },
+    "controller_array_audit_attempt": {
+      "verdict": "fail",
+      "seconds": 816.115,
+      "scenario_assertions": "46/46",
+      "evidence": "controller-audit-array.json",
+      "auditor_sha256": "40a3e84562fa7ae8c4916e2ac8ad066b7318662e35ed28aa036729383ae7ee9e",
+      "cause": "All six real tasks and scenario/source/cleanup checks passed. The transcript auditor rejected a literal command array mapped through Promise.all with an object shorthand property, before any task dispatch.",
+      "scope": "Original integrated failure retained; parser correction and fresh integrated rerun are required.",
+      "reanalysis": {
+        "verdict": "pass",
+        "evidence": "controller-array-reanalysis.json",
+        "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+        "scope": "Three unchanged real traces; earlier wait/handle counts preserved. Not a fresh integrated pass."
+      }
     }
   },
   "limits": [

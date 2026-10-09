@@ -30,3 +30,5 @@ e2e/evidence/*
 !e2e/evidence/controller-e2e.json
 !e2e/evidence/controller-stalled.json
 !e2e/evidence/controller-provider-error.json
+!e2e/evidence/controller-audit-array.json
+!e2e/evidence/controller-array-reanalysis.json

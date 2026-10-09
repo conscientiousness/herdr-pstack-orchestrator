@@ -1,0 +1,58 @@
+{
+  "schema": "horch/controller-array-reanalysis/v1",
+  "scope": "Replay of three unchanged real transcripts after auditor corrections; not fresh integrated E2E evidence. Original failing receipts remain unchanged.",
+  "auditor_sha256": "30b4dad63666bf83ef43fb5ec0c01ffadc9a43343b64a1453f0dde46c8267b1c",
+  "runs": [
+    {
+      "name": "array",
+      "verdict": "pass",
+      "original_verdict": "fail",
+      "original_receipt_sha256": "abd4a96ecfe4f3d4272629e3e35073819b2e308f37d35577f2855618b5a9e8c9",
+      "original_driver_sha256": "40a3e84562fa7ae8c4916e2ac8ad066b7318662e35ed28aa036729383ae7ee9e",
+      "transcript_sha256": "9d940d99d7da5dcb07a70ae8fedfba457a209f403646a3076c2761782db5f7a6",
+      "counts": {
+        "tool_calls": 53,
+        "shell_calls": 33,
+        "wait_launches": 6,
+        "short_waits": 0,
+        "yielded_waits": 6,
+        "handle_resumes": 36,
+        "rejected_wait_requests": 0
+      }
+    },
+    {
+      "name": "initial",
+      "verdict": "pass",
+      "original_verdict": "fail",
+      "original_receipt_sha256": "8dda00f57fc4f7c3c76eaf2111bf566c318b1cd1d6d3ef0312c69af27a6c82f2",
+      "original_driver_sha256": "5b7474f4d0090ae548ae15d4c9c1535cf89dbd6eb4c59b65924e295045428b9b",
+      "transcript_sha256": "8bd034e907e321bcf46989e50a29a6a61f111a38ed9eb8fb16c91d8a04f2835f",
+      "counts": {
+        "tool_calls": 56,
+        "shell_calls": 32,
+        "wait_launches": 6,
+        "short_waits": 0,
+        "yielded_waits": 6,
+        "handle_resumes": 33,
+        "rejected_wait_requests": 0
+      }
+    },
+    {
+      "name": "second",
+      "verdict": "pass",
+      "original_verdict": "fail",
+      "original_receipt_sha256": "c6f98da273285953006a2a6e5518f67a5a687dcbc73ed5cf6c89dfb3d5dd80ab",
+      "original_driver_sha256": "a1af70334b0580ff7c018022382bfeb758af6ae9d2cde725f8d256449390c096",
+      "transcript_sha256": "80458ec9bc6d21442c41d3e5d23904442375be35574b73ba321073e660b8fa41",
+      "counts": {
+        "tool_calls": 88,
+        "shell_calls": 33,
+        "wait_launches": 6,
+        "short_waits": 0,
+        "yielded_waits": 6,
+        "handle_resumes": 28,
+        "rejected_wait_requests": 1
+      }
+    }
+  ]
+}
