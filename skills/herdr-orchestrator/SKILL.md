@@ -39,7 +39,9 @@ Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1
 
 Workers open in `horch` tabs in your workspace, at most four panes per tab, without taking focus or using your tab.
 
-`run` and `check` verify the caller's pane, tab, and workspace against live Herdr before dispatch. On `caller_context_invalid`, follow [caller context recovery](references/setup.md#caller-context). Do not choose a workspace from UI focus or create replacement panes to work around the error.
+Before the first dispatch, or after moving/resuming the controller, establish its pane ID from the actual launch context and verify it with `herdr pane get <controller-pane-id>`. Compare the returned IDs with `HERDR_PANE_ID`, `HERDR_TAB_ID`, and `HERDR_WORKSPACE_ID` in the shell executing `horch`; shell snapshots can restore another pane's values.
+
+`run` and `check` reject unavailable panes or inconsistent IDs before dispatch. On a mismatch or `caller_context_invalid`, follow [caller context recovery](references/setup.md#caller-context). Do not choose a workspace from UI focus or create replacement panes to work around the error.
 
 ## Delegate and verify
 
