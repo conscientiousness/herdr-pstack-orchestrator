@@ -248,6 +248,14 @@
       "cause": "First GLM worker remained working without visible progress. After about 20 minutes the controller asked whether to retry; Herdr reported blocked and the driver stopped. No six-task scenario or transcript audit completed.",
       "cleanup": "Source/config integrity and actual owned-pane cleanup passed.",
       "root_cause": "Worker/provider stall cause remains undetermined; no approval denial or startup trust dialog was observed."
+    },
+    "controller_provider_error_attempt": {
+      "verdict": "fail",
+      "seconds": 281.285,
+      "evidence": "controller-provider-error.json",
+      "cause": "The implementation completed. A first-round DeepSeek reviewer then received CommandCode API HTTP400 after writing its report but before delivering result.json. The controller inspected the result_missing task and asked whether to retry; the driver observed controller_blocked and stopped.",
+      "cleanup": "Source/config integrity and actual owned-pane cleanup passed.",
+      "scope": "An undelivered report did not satisfy the review gate. The full six-task scenario and transcript audit did not complete."
     }
   },
   "limits": [
