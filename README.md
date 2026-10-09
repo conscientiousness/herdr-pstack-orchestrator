@@ -17,14 +17,14 @@
   <img alt="Your controller briefs an implementation worker, verifies its diff, and dispatches independent reviewers. After all reviewers finish, the controller assesses findings. Accepted findings go to a fresh fix worker and a fresh review panel; no unresolved blockers leads to a verified result." src="assets/workflow-light.svg" width="100%">
 </picture>
 
-**Delegate → implement → review → fix → review again.** Every worker runs in a visible Herdr pane. The optional `pstack-herdr` skill adds the review loop shown above.
+**Delegate → implement → review → fix → review again.** Every worker runs in a visible Herdr pane. The optional `pstack-herdr` skill adapts original pstack workflows, including the review loop shown above.
 
 [Download the interactive diagram](https://github.com/conscientiousness/herdr-pstack-orchestrator/raw/refs/heads/main/assets/workflow.html) and open it in your browser · [Diagram source and reproduction](assets/workflow.md)
 
 Two Agent Skills connect your controller to Pi, Codex CLI, and Claude Code. Each task gets a fresh process, a complete brief, and a structured result. The `horch` CLI uses Python's standard library; no server or API integration is required beyond Herdr and your existing agent subscriptions or provider accounts.
 
 - **herdr-orchestrator** — the core skill. Delegates work to Pi, Codex CLI, and Claude Code workers through a small CLI (`horch`), with first-use setup, setup checks, task states, and problem handling.
-- **pstack-herdr** — optional. If you also run pstack, it routes pstack's delegation and review loop through the same Herdr workers instead of native subagents.
+- **pstack-herdr** — optional. Reads Lauren Tan's original pstack from a pinned source checkout and routes its delegated work through Herdr. Workers receive bounded tasks; the controller owns the workflow.
 
 Workers open in tabs labeled `horch` (at most four panes per tab) without stealing focus. The controller creates separate git worktrees for writers and submits tasks through Herdr's agent API. Every follow-up starts a fresh worker.
 
@@ -35,13 +35,13 @@ Workers open in tabs labeled `horch` (at most four panes per tab) without steali
 - Node.js/npm for `npx skills add`; a manual clone needs neither
 - The harnesses you want as workers — `pi`, `codex`, and/or `claude` — installed and authenticated with your provider
 - For Pi workers: Herdr's Pi integration (`herdr integration install pi`); `horch detect` reports its status, missing integration fails before worker allocation, and task submission waits for its session readiness signal
-- For the review loop only: pstack installed separately (see [Credits](#credits)); the two skills are installed independently of each other and of pstack
+- For pstack workflows: both skills above and the [original source checkout](skills/pstack-herdr/references/compatibility.md#keep-one-source-checkout)
 
 ## Install
 
 ```bash
 npx skills add conscientiousness/herdr-pstack-orchestrator -s herdr-orchestrator
-# optional, for pstack review loops:
+# optional, for original pstack workflows:
 npx skills add conscientiousness/herdr-pstack-orchestrator -s pstack-herdr
 ```
 
@@ -184,9 +184,20 @@ Read the diff, run the tests, or request an independent review before accepting 
 
 Wait for `state: "done"` before consuming a result. A worker can write files while its turn is still running, so `horch wait` withholds result summaries, files, and questions until completion. Closing a running worker cancels it; it does not complete the task or satisfy a review gate.
 
-## Optional: the pstack review loop
+## Optional: original pstack through Herdr
 
-The mapping was verified with **pstack-claude 0.9.73** (`interrogate` workflow). Other versions are unverified; see the [compatibility notes](skills/pstack-herdr/references/compatibility.md) before upgrading. Map pstack roles to workers in `workers.toml`:
+This adapter tracks [original pstack](https://github.com/cursor/plugins/tree/main/pstack) directly. Keep its full source checkout at the revision in the [installation and update instructions](skills/pstack-herdr/references/compatibility.md). Skills, references, agent definitions, and licenses stay in that checkout, unchanged. The controller reads them by path, so no upstream plugin or runtime extension is required to load them.
+
+Enter through `pstack-herdr` in each new session:
+
+```text
+Use pstack-herdr to run original pstack's poteto-mode for this goal: ...
+Done means: ...
+```
+
+For a specific skill, ask `Use pstack-herdr with original pstack's interrogate to review this branch.` The adapter resolves it from the same checkout. Pure guidance such as `unslop` uses its original content.
+
+All three controller harnesses read roles directly from `workers.toml`. Configure only the roles the chosen workflow needs. For the implementation/review loop:
 
 ```toml
 [roles]
@@ -194,9 +205,11 @@ The mapping was verified with **pstack-claude 0.9.73** (`interrogate` workflow).
 "interrogate reviewers" = ["glm", "haiku"]
 ```
 
-A single role names one worker; a panel role lists one worker per review task. The review loop then runs end to end through `horch`: an implementation worker in a git worktree, the same read-only review brief sent to every reviewer, lead synthesis of their reports, and — after any accepted finding — a fresh implementation worker and a fresh reviewer panel on the new revision. Reviewer sessions are never reused, and a `done` reviewer task is never treated as a passing review.
+A single role names one worker; a panel role lists one worker per review task. The `arena cross-judge pool` is a selection pool, from which the controller chooses one worker. Other workflows use their original role names, such as `how explorer` or `architect runners`. There is no separate model sheet to maintain.
 
-Ask your controller to use both `pstack-herdr` and pstack's `interrogate` workflow. The TOML roles are authoritative. Codex and Pi read them directly; Claude Code can import them from your user-owned `pstack-models.md`. See the [mapping and review-loop instructions](skills/pstack-herdr/SKILL.md). Read-only reviews are enforced by the brief and chosen harness permissions, not by a separate `horch` sandbox.
+The controller dispatches an implementation worker in a worktree, sends the same upstream review brief to every reviewer, assesses the delivered reports, and assigns accepted fixes and subsequent reviews to fresh workers. See the [entry point and review instructions](skills/pstack-herdr/SKILL.md). Read-only reviews are enforced by the brief and chosen harness permissions, not by a separate `horch` sandbox.
+
+The original-source mapping has been inspected, but live original-pstack playbooks are **unverified**. Earlier review-loop results retain their [historical source attribution](e2e/README.md#historical-pstack-source). Cursor modes, `/loop`, cloud execution, and unavailable MCP or app-driving tools are not supplied by this adapter; it reports a missing required capability instead of claiming the workflow finished.
 
 ## Verification
 
@@ -216,13 +229,13 @@ Measured during development on 2026-10-09 with end-to-end behavior tests:
 | Codex controller, current skill and final driver | 47/47 passed in 12m 17s, including the integrated wait/delivery audit and six completed, closed tasks |
 | Earlier Codex-controller runs | Both completed six tasks and passed 46 scenario/source/cleanup checks; their corrected transcript audits were separate reanalysis |
 | Claude Code controller, skill end-to-end | 19/19 passed |
-| Claude Code controller, pstack review loop end-to-end | 21/21 passed — the first reviewer panel FAILed the revision, and a fresh second panel PASSed it |
-| Codex controller, full pstack review loop | 10/10 passed; direct TOML roles, six fresh workers, no native subagents |
+| Historical Claude Code controller, pstack review loop | 21/21 passed — the first reviewer panel FAILed the revision, and a fresh second panel PASSed it |
+| Historical Codex controller, pstack review loop | 10/10 passed; direct TOML roles, six fresh workers, no native subagents |
 | Codex and Pi as workers | Starting and completing real tasks verified |
 | Permission-denial handling | Unverified |
 | Completions longer than 30 minutes | Unverified |
-| pstack workflows other than the review loop (for example Arena) | Not tested |
-| Pi controller, full pstack review loop | 10/10 passed on the release CLI; direct TOML roles, six fresh workers, no native subagents |
+| Original pstack 0.15.15 playbooks | Source mapping inspected; runtime unverified |
+| Historical Pi controller, pstack review loop | 10/10 passed on the release CLI; direct TOML roles, six fresh workers, no native subagents |
 
 Model names throughout are examples; availability depends on your provider.
 
@@ -274,7 +287,7 @@ Issues and pull requests are welcome.
 - [Herdr](https://herdr.dev) — the terminal multiplexer for coding agents that hosts every worker pane; `horch` drives its CLI.
 - The banner uses Herdr's ram icon as its visual reference. See the [generation prompt and provenance](assets/banner-prompt.md).
 - The workflow diagram is generated with [Archify](https://github.com/tt-a1i/archify). Its standalone viewer includes Archify's MIT-licensed code; see [diagram provenance and notices](assets/workflow.md).
-- pstack — original pstack by Lauren Tan (poteto), MIT, in the [cursor/plugins](https://github.com/cursor/plugins) repository. The `pstack-herdr` skill maps its workflows onto Herdr via the [pstack-claude](https://github.com/michael-denyer/pstack-claude) port by Michael Denyer.
+- [pstack](https://github.com/cursor/plugins/tree/main/pstack) — Lauren Tan's (poteto) original workflow skills, under MIT. This repository provides an independent Herdr adapter and reads original source files from a pinned checkout.
 
 ## License
 

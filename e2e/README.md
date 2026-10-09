@@ -59,6 +59,12 @@ Historical evidence keeps its original source attribution. Moving the driver cha
 
 `review_loop.py` controls `horch` directly; `controller_loop.py` tests an AI controller following `herdr-orchestrator`. Neither exercises the pstack rubric. Earlier controller/pstack development runs remain attributed to their original sources. GitHub Actions checks Python compatibility, configuration parsing, and installation into Claude Code, Codex, and Pi. Authenticated model E2Es run locally.
 
+## Historical pstack source
+
+The controller/pstack review-loop runs recorded on 2026-10-09 used **pstack-claude 0.9.73**, the port by Michael Denyer, at commit `8d3aa5719ab836e89482c894bbedd710224f4424` ([source](https://github.com/michael-denyer/pstack-claude/tree/v0.9.73/plugins/pstack)). Their role-sheet and runtime mappings belonged to that integration. The original receipts, versions, and hashes remain unchanged.
+
+The current adapter reads Lauren Tan's original `cursor/plugins` checkout directly. Those historical passes do not verify the new source or entry instructions. The [current source pin and update procedure](../skills/pstack-herdr/references/compatibility.md) distinguish source inspection from actual runtime evidence. Neither public loop driver exercises the original pstack rubric.
+
 ## Why the lifecycle mechanisms remain
 
 An evidence audit should distinguish a naturally observed failure, a deliberate fault/race exercise, and static reasoning. A passing exercise shows the current behavior; it is not proof of a prior production incident or an exhaustive concurrency test.
@@ -72,4 +78,4 @@ An evidence audit should distinguish a naturally observed failure, a deliberate 
 | Explicit missing-pane error codes | `lifecycle.json`: cross-workspace cleanup and `already closed is idempotent` | Confirms direct lookup and already-gone cleanup. The three individual pane/tab/workspace-not-found responses were not each isolated by this probe. Keep the narrow allowlist so other Herdr errors do not falsely confirm closure. |
 | Withhold results until turn completion | `verification.json`: Pi controller's `prior_failure`; `completion.json`: early fields, final delivery, cancellation | A real controller previously consumed early reports and closed unfinished reviewers. A later focused probe deliberately injected provisional results and verified withholding. A fresh controller loop passed after the fix. |
 
-These findings support retaining the mechanisms rather than deleting them by line count. They do not establish that every defensive branch was triggered. Deliberate approval denial, turns longer than 30 minutes, macOS runtime, and pstack workflows outside the review loop remain unverified.
+These findings support retaining the mechanisms rather than deleting them by line count. They do not establish that every defensive branch was triggered. Deliberate approval denial, turns longer than 30 minutes, macOS runtime, and live original-pstack workflows remain unverified.
