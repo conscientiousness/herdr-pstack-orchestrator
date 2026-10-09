@@ -4,7 +4,7 @@ Generated with the built-in `image_gen` tool on 2026-10-09 and revised from the 
 
 Style reference: [Herdr's ram icon](https://herdr.dev/_astro/logo.DM81885K_Z1HYzg2.svg), provided by the repository owner. The reference belongs to Herdr; these are generated illustrations for an independent integration project, not official Herdr banners. Unselected drafts are not distributed.
 
-The final edit replaces the earlier controller and removes worker props while preserving the two-row layout. The dark variant derives from the final light image.
+The final edit replaces the earlier controller and removes worker props while preserving the two-row layout. The dark variant preserves the dog's natural black-and-white markings from the light image, with a muted contour for contrast against the dark background.
 
 ## Light prompt
 
@@ -22,8 +22,16 @@ No additional characters, props, connecting lines, arrows, cables, words, titles
 ## Dark prompt
 
 Use case: precise-object-edit
-Asset type: dark-mode counterpart of the input 3:1 GitHub repository banner.
-Recolor the input image only. Preserve all character poses, shapes, proportions, facial features, laptop, eight terminal pane frames, spacing and framing.
-Keep the cute Border Collie sheepdog controller behind its laptop. Keep all eight awake Herdr-style ram workers and their distinct poses exactly: standing, seated, walking, leaping, stretching, looking back, looking upward and reclining alert. No sleeping sheep. No props in the worker panes.
-Replace the pale warm-gray background and pale cutouts with uniform dark charcoal #0d1117. Replace the charcoal silhouettes and outlines with soft warm ivory #e6e4dd. Use dark cutouts for horns, facial details and terminal marks. Preserve the Border Collie's distinctive contrasting central blaze and muzzle using the same two-tone inversion. Do not redesign its face.
-Flat clean high-contrast illustration, no texture, gradient, glow, shadows, new props, connectors, lettering or watermark.
+Asset type: 3:1 GitHub dark-theme repository banner.
+Input image 1 is the DARK BANNER EDIT TARGET. Input image 2 is the LIGHT BANNER REFERENCE, used only to restore the controller Border Collie's correct fur markings.
+Change ONLY the left controller dog and its laptop colors. Keep the entire right-hand grid of EIGHT sheep and terminal frames absolutely unchanged in geometry, color, position and pose. Keep the dark background #0d1117, framing, whitespace, and all proportions.
+The dog was mistakenly made into a photographic negative. Correct it to the NORMAL black-and-white Border Collie markings seen in input 2:
+- The large outer head, cheeks, ears, and patches surrounding its eyes are DARK CHARCOAL #30363a, never white.
+- The narrow central forehead blaze running down the bridge of its nose is WARM WHITE.
+- The muzzle around the mouth is WARM WHITE.
+- The rounded nose and little smiling mouth are DARK.
+- The two little paws are WARM WHITE with small dark toe lines.
+Keep the original face, ear shape, pose, proportions, and cute expression from the light reference. Keep its small pale oval eyes readable against the dark eye patches. This should read immediately as the same black-and-white dog in the light banner.
+For dark-background legibility, give the outer silhouette of the dark fur a subtle thin warm-gray contour, sufficient to separate it from the background, especially along the ears. No glow or halo, no shaded fur.
+Make the laptop lid DARK GRAPHITE with a restrained thin warm-gray outline, and retain a small warm-white circular terminal emblem with a dark >_ glyph. Keep the existing laptop shape and position. Make the baseline muted warm gray instead of bright white.
+Flat crisp brand illustration with solid fills. Do not invert the dog's biological markings. No gradients, textures, shadows, 3D, new objects, new lettering or watermarks. The sheep and their frames must stay exactly as they are in input 1.
