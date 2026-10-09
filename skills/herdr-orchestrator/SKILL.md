@@ -23,7 +23,7 @@ Use the absolute path inside this installed skill:
 python3 <skill-dir>/scripts/horch.py <command> ...
 ```
 
-Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1`). Commands print JSON; operational errors use `{"error": "<code>", "message": "<text>"}` and exit 1. CLI help and argument errors use argparse output.
+Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1`). Pi workers also require `herdr integration install pi` so startup dialogs cannot receive task prompts. Commands print JSON; operational errors use `{"error": "<code>", "message": "<text>"}` and exit 1. CLI help and argument errors use argparse output.
 
 | Command | Purpose |
 |---|---|

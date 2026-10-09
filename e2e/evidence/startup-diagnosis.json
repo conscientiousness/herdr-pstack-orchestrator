@@ -1,0 +1,64 @@
+{
+  "schema": "horch/startup-diagnosis/v1",
+  "date": "2026-10-09",
+  "versions": {
+    "herdr": "0.9.3",
+    "pi": "1.1.0",
+    "pi_integration": 9
+  },
+  "original_horch_sha256": "de182bf021c673668436b11a3b86efeef9cb22effc4e9c3dca31c6af5f5b8144",
+  "trigger": {
+    "owned_package_check_left_empty_ancestor_skills_directory": true,
+    "directory_existed_and_was_empty": true,
+    "removed_empty_directory_without_changing_harness_settings": true
+  },
+  "unmodified_failure": {
+    "task_id": "t-9fcfce",
+    "start_seconds": 3.926,
+    "interactive_ready": true,
+    "session_present": false,
+    "state": "not_started",
+    "result_exists": false,
+    "actual_line": {
+      "total_cents": 940
+    },
+    "prompt_stalled": true
+  },
+  "withheld_prompt_observation": {
+    "task_id": "t-bb82be",
+    "trust_dialog_visible": true,
+    "agent_status": "idle",
+    "interactive_ready": true,
+    "session_present": false,
+    "fallback_reason": "default_known_agent_idle_fallback",
+    "visible_blocker": false,
+    "task_prompt_sent": false
+  },
+  "unmodified_after_directory_cleanup": {
+    "task_id": "t-72481b",
+    "start_seconds": 3.025,
+    "session_present": true,
+    "state": "done",
+    "closed": true,
+    "actual_line": {
+      "total_cents": 936
+    }
+  },
+  "private_source_sha256": {
+    "pair-t-9fcfce.json": "1dbcdfeea2c786c9c6b216cdd8577b863a72708d979a9e4b4bcaa1075a9ca4a2",
+    "pair-t-72481b.json": "9086a1394b2be48839724f86e4d0a28e2f694acf7531fe2fb5bf1e5da7446c00",
+    "trust-screen.txt": "9371c3af148e10397014f051eee2b51815bfb4448c95d647a62bc20d9f4ccbd7",
+    "trust-agent.json": "d2a9adf3d55326e8bb8b7f74f3dba6abdfd7652c96d8c5120b9accbf34c88092",
+    "trust-explain.json": "8a6c3d33c41cc3ddf848ed6fa2fd71ee29137f79c53b3e4d87ceac5a32a2075c"
+  },
+  "fixed_evidence": [
+    "pi-startup.json",
+    "startup-fixed-review.json"
+  ],
+  "limits": [
+    "The diagnostic withholding probe altered pre-prompt observation only; it did not send or resend a task.",
+    "The original failing submissions selected the trust dialog default; subsequent saved trust explains same-directory successes.",
+    "The published startup E2E verifies the fixed guard using real Pi processes; no harness or Herdr code was mocked.",
+    "Upstream detector behavior outside the measured versions remains unverified."
+  ]
+}

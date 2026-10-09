@@ -137,7 +137,8 @@
         "diagnostic": "Herdr reported agent_prompt_stalled: no observed working or blocked state within 5000 ms; current status idle.",
         "cleanup": "All panes owned by the three attempts were closed.",
         "separate_observations": "A GLM horch check completed in 30 seconds. Manual dispatch of the same brief in the same worktree completed with status completed. Root cause of the startup discrepancy remains undetermined.",
-        "scope": "The third attempt used a local observer around command execution to retain startup state before cleanup. Command results and test assertions were unchanged. No fresh six-task pass is claimed."
+        "scope": "The third attempt used a local observer around command execution to retain startup state before cleanup. Command results and test assertions were unchanged. No fresh six-task pass is claimed.",
+        "subsequent_resolution": "See startup-diagnosis.json and startup-fixed-review.json. A leftover empty ancestor skills directory triggered Pi project trust; Herdr misclassified the dialog as idle. The new Pi ready-session guard and a fresh full loop passed."
       },
       "independent_review": {
         "verdict": "PASS",
@@ -145,6 +146,23 @@
         "commit": "62f316668d9234a1ad5b5a35b57759397450f25c",
         "scope": "Read-only review of controller instructions, package layout, relocation import, evidence attribution, and unchanged CLI. Later evidence-only updates were outside the pinned review."
       }
+    },
+    "pi_startup_fix": {
+      "horch_sha256": "40de0067638e0fb276280b900f140fac63ce08eb29b386d96a837c152fcfa6b7",
+      "diagnosis": "startup-diagnosis.json",
+      "guard_e2e": {
+        "passed": 11,
+        "total": 11,
+        "seconds": 126,
+        "evidence": "pi-startup.json"
+      },
+      "public_review_loop": {
+        "passed": 27,
+        "total": 27,
+        "seconds": 431,
+        "evidence": "startup-fixed-review.json"
+      },
+      "compatibility": "Pi workers now require the installed Herdr Pi integration. No prompt is submitted without its ready-session signal. Other harness paths and released v0.1.0 are unchanged."
     }
   },
   "limits": [

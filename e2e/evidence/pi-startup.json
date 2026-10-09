@@ -1,0 +1,72 @@
+{
+  "schema": "horch/pi-startup-e2e/v1",
+  "verdict": "pass",
+  "seconds": 126,
+  "source_hashes": {
+    "horch.py": "40de0067638e0fb276280b900f140fac63ce08eb29b386d96a837c152fcfa6b7",
+    "pi_startup.py": "9fb3961076be42945ab9a84f73f915a1baccbf03577ed37018c06691501d6775"
+  },
+  "worker": {
+    "harness": "pi",
+    "provider": "zai",
+    "model": "glm-5.3-flash",
+    "effort": "max"
+  },
+  "tasks": [
+    {
+      "task_id": "t-4c4828",
+      "state": "start_failed"
+    },
+    {
+      "task_id": "t-d67bda",
+      "state": "running"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "untrusted project remains at the Pi trust dialog",
+      "ok": true
+    },
+    {
+      "name": "startup fails before a prompt baseline is recorded",
+      "ok": true
+    },
+    {
+      "name": "untrusted worker produced no result",
+      "ok": true
+    },
+    {
+      "name": "Pi trust decisions stayed unchanged",
+      "ok": true
+    },
+    {
+      "name": "fresh worker starts after explicitly declining project resources",
+      "ok": true
+    },
+    {
+      "name": "fresh worker delivers and closes normally",
+      "ok": true
+    },
+    {
+      "name": "delivered result has matching identity and successful outcome",
+      "ok": true
+    },
+    {
+      "name": "real worker produced the verified arithmetic answer",
+      "ok": true
+    },
+    {
+      "name": "declining project resources did not grant trust",
+      "ok": true
+    },
+    {
+      "name": "owned panes confirmed absent",
+      "ok": true
+    },
+    {
+      "name": "source stayed unchanged",
+      "ok": true
+    }
+  ],
+  "problem_category": null
+}

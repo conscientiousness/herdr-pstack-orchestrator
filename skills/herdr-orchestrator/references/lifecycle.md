@@ -19,6 +19,8 @@ A valid result has exactly six keys: matching `task_id` and `nonce`, `status` (`
 
 Herdr must also report that the turn ended: an idle/done agent with `completion_seq` newer than the pre-prompt baseline, or the observed working-to-idle fallback when no completion sequence is available. An idle agent alone does not establish completion.
 
+Before submitting a Pi task, `horch` additionally waits for the installed Herdr Pi integration to report an idle/done session within the startup budget. Herdr 0.9.3's `interactive_ready` alone can describe Pi 1.1.0's trust dialog. Without the session signal, startup returns `start_failed`, retains the pane, and sends no task prompt. Install the integration and let the user resolve any dialog before starting a fresh task.
+
 ## States
 
 
@@ -47,6 +49,8 @@ A pane-placement error can leave an empty pane when Herdr's response was lost. N
 ## Task store and concurrency
 
 Processes sharing a task store serialize startup to enforce `max_active_workers`; workers execute concurrently after launch. Use the same state directory for controllers that should share one limit. Short per-task transactions prevent a concurrent wait from overwriting confirmed closure. JSON updates replace files atomically.
+
+A Pi worker waiting for its session signal can use the full 90-second startup budget while holding the startup lock. Install the integration and resolve startup dialogs before checking several workers; `check` stops launching new checks when its overall budget expires.
 
 `horch close` resolves the recorded pane directly, even from another workspace. Only explicit pane/tab/workspace-not-found responses establish that it is already gone; other Herdr errors leave cleanup unresolved.
 

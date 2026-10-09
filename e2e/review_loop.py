@@ -224,6 +224,17 @@ exhaustive or combinatorial subprocess sweeps. Finish within five minutes.
             state_path = Path(task["task_dir"]) / "state.json"
             try:
                 state = json_file(state_path)
+                # close clears the stored problem. Preserve the original state
+                # privately before cleanup so a failed run remains diagnosable.
+                diagnostic = self.directory / f"{task['task_id']}-before-cleanup.json"
+                try:
+                    diagnostic.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+                except OSError:
+                    print(f"Could not preserve diagnostic for {task['task_id']}; continuing cleanup", flush=True)
+                self.observations.setdefault("states_before_cleanup", []).append({
+                    "task_id": task["task_id"], "state": state.get("state"),
+                    "closed": state.get("closed"),
+                })
                 if not state.get("closed"):
                     # Inspect each problem pane before cleanup. Do not copy its
                     # screen (which may contain private data) into public evidence.
