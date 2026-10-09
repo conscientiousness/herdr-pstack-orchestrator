@@ -554,6 +554,24 @@ def require_workspace():
     workspace = os.environ.get("HERDR_WORKSPACE_ID")
     if not workspace:
         fail("not_in_herdr", "HERDR_WORKSPACE_ID is not set; horch cannot place worker panes")
+    pane_id = os.environ.get("HERDR_PANE_ID")
+    tab_id = os.environ.get("HERDR_TAB_ID")
+    guidance = ("Verify this controller's live pane, tab, and workspace and refresh its "
+                "HERDR_PANE_ID, HERDR_TAB_ID, and HERDR_WORKSPACE_ID. "
+                "A harness shell snapshot may contain stale IDs; do not infer them from UI focus.")
+    if not pane_id or not tab_id:
+        fail("caller_context_invalid", f"Controller pane or tab ID is missing. {guidance}")
+    try:
+        pane = herdr_path(herdr("pane", "get", pane_id, timeout=30.0), "result", "pane")
+    except HerdrError as exc:
+        if herdr_error_code(exc) not in MISSING_PANE_CODES:
+            raise
+        fail("caller_context_invalid", f"Controller pane {pane_id!r} is no longer available. {guidance}")
+    if not isinstance(pane, dict) or any(
+        pane.get(key) != expected for key, expected in
+        (("pane_id", pane_id), ("tab_id", tab_id), ("workspace_id", workspace))
+    ):
+        fail("caller_context_invalid", f"Controller context disagrees with live Herdr state. {guidance}")
     return workspace
 
 

@@ -7,6 +7,7 @@ Commands run from the repository root, using `repo` and `proof` from [Launch](..
 | [Skill installation and discovery](discovery.md) | `skill_catalogs.py` | Bundled skills, npm, Pi, Codex; no models |
 | [Worker review loop](workers.md) | `review_loop.py` | Authenticated workers, two free slots; six real tasks |
 | [AI controller loop](controller.md) | `controller_loop.py` | Configured Codex controller plus workers; transcript audit |
+| [Caller context preflight](controller.md#caller-context-preflight) | `caller_context.py` | Verified live controller pane; read-only Herdr checks, no models |
 | [Pi integration and startup](pi.md) | `pi_preflight.py`, `pi_startup.py` | Select the reproduced failure; different prerequisites |
 | [Upstream update detection](upstream.md) | `check_upstream.py` | Git and network; no models |
 

@@ -21,3 +21,13 @@ Read the printed receipt and require the fresh run's scenario, transcript audit,
 ## Gotchas
 
 If there is no configured Codex worker, report the prerequisite gap; do not relabel a Pi worker or edit configuration to force the run. Missing/ambiguous transcript evidence fails the audit even if the fixture is correct. Post-run reanalysis is not a fresh integrated pass. This driver does not test an original pstack playbook or a Pi controller.
+
+## Caller context preflight
+
+For a worker placed in the wrong workspace because of stale shell context, use the focused CLI driver:
+
+```bash
+python3 e2e/caller_context.py --controller-pane <verified-controller-pane> --output "$proof"
+```
+
+Confirm the controller's actual identity before supplying the pane ID. The driver reads live Herdr state, exercises `run` and `check`, and uses an empty isolated configuration to prevent all worker launches, including before the fix. Read the printed receipt and require every check to pass. Keep the retained artifact directory; there are no owned panes to close. This checks preflight only, not a new controller workflow.

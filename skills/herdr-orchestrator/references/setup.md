@@ -25,6 +25,14 @@ Run the setup when the user asks for it, or when `horch run` fails with `config_
 5. Write `~/.config/herdr-orchestrator/workers.toml` (or `$XDG_CONFIG_HOME/herdr-orchestrator/workers.toml`) in the format under "Configuration" below. Show the user the file.
 6. For Pi workers, install Herdr's Pi integration with `herdr integration install pi`. `horch` requires its ready-session signal before submitting a task. Run `horch check --cwd <a directory the workers will work in>`. If Herdr reports the Pi integration as missing, `run` and any `check` batch selecting Pi fail with `pi_integration_missing` before allocating any worker. Unknown or unavailable integration status still uses the live ready-session guard. Successful check output has one `ok` field per worker. For a line with `ok: false`, read `message`, look at the pane it names (see [problem handling](../SKILL.md#problems)), and tell the user. After the user clears a dialog, run `horch close <task-id>` and `horch check <worker>` again.
 
+## Caller context
+
+`run` and `check` require `HERDR_PANE_ID`, `HERDR_TAB_ID`, and `HERDR_WORKSPACE_ID` to identify one live controller pane. Missing pane/tab IDs or inconsistent IDs produce `caller_context_invalid` before task allocation. A missing workspace retains `not_in_herdr`; an unavailable Herdr service remains a `herdr_error`.
+
+A harness shell snapshot can restore IDs from a different pane even when the controller process was launched with the correct environment. Confirm the actual controller's identity from its launch context and `herdr pane get <verified-controller-pane>`. Refresh all three variables together in the shell running `horch`. Never substitute the currently focused workspace; it may belong to another project. If the controller identity cannot be established, report the mismatch and leave dispatch stopped.
+
+This check rejects missing panes and inconsistent IDs. It cannot prove ownership when stale IDs happen to identify another still-live pane consistently. Keep the verified controller context when resuming a session or moving a pane; do not relocate workers and edit task records as routine recovery.
+
 ## Dialogs that stop a worker before it starts
 
 These appear before the worker reads its task. `horch` reports `start_failed` and leaves the pane open. The user must clear each one once, in the pane or by starting the harness there themselves.

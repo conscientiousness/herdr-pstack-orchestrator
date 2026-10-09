@@ -1,0 +1,218 @@
+{
+  "schema": "horch/caller-context-fix/v1",
+  "observation": {
+    "start_utc": "2026-10-09T19:02:15Z",
+    "end_utc": "2026-10-09T19:32:15Z",
+    "duration_seconds": 1800,
+    "method": "Read-only Herdr state and pane snapshots, task metadata, and scoped controller tool-trace inspection; sampling changed to 120 seconds at user request.",
+    "source_release": "v2026.10.09.1",
+    "source_commit": "c5b8fc9a4cbc706a10c36a164ddc27e80350ad7c",
+    "horch_sha256": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+    "scope": "A real research controller; this observation did not evaluate the research conclusions or every pstack workflow.",
+    "tracked_tasks": 9,
+    "delivered_and_closed_at_end": 9,
+    "tracked_tasks_include_workers_already_running_at_start": true,
+    "controller_wait_launches": {
+      "total": 32,
+      "max_seconds_1": 19,
+      "max_seconds_45": 1,
+      "max_seconds_50": 12,
+      "unbounded": 0
+    },
+    "pre_window_incident": {
+      "evidence": "Controller process environment identified the intended workspace; its shell snapshot exported another workspace and an unavailable pane. Initial worker creation used that other workspace. The user corrected placement before observation began.",
+      "runtime_cause": "require_workspace read only HERDR_WORKSPACE_ID and did not check live pane/tab identity.",
+      "later_dispatches": "Controller supplied an explicit verified context; no further placement mismatch observed."
+    },
+    "controller_findings": [
+      "Substantial experimental scripts were written in the main controller before the user explicitly reinforced planning, guidance, delegation, and context economy.",
+      "After that guidance, subsequent implementation and analysis were delegated; targeted verification remained in the controller.",
+      "Repeated short wait launches persisted despite available yielded shell sessions.",
+      "Large artifact reads brought full reports into the controller context.",
+      "Tracked workers used fresh processes, writers had separate worktrees, and delivered tasks were closed. No observation-driven intervention was made."
+    ],
+    "limits": [
+      "Manual workflow observation, not a new automated controller-loop verdict.",
+      "The revised skill instructions were not run through a fresh model-driven workflow.",
+      "No pane inputs, focus changes, creation, closure, or configuration changes were performed by the observer."
+    ]
+  },
+  "before": {
+    "schema": "horch/caller-context-e2e/v1",
+    "verdict": "fail",
+    "scope": "live Herdr reads and CLI preflight; no worker launch",
+    "source_hashes": {
+      "horch.py": "430631be69487ddd20e6fcbfca65077dc695de704cecefcb8da1b7bba9b4016e",
+      "caller_context.py": "e86dfec3afdb96f1a41ca47d4d4c944e8ffd7b829f77a089dc1e1d9bacdf9ace"
+    },
+    "checks": [
+      {
+        "name": "stale-pane-run",
+        "ok": false
+      },
+      {
+        "name": "stale-pane-check",
+        "ok": false
+      },
+      {
+        "name": "wrong-workspace-run",
+        "ok": false
+      },
+      {
+        "name": "wrong-workspace-check",
+        "ok": false
+      },
+      {
+        "name": "wrong-tab-run",
+        "ok": false
+      },
+      {
+        "name": "wrong-tab-check",
+        "ok": false
+      },
+      {
+        "name": "valid-context-run",
+        "ok": true
+      },
+      {
+        "name": "valid-context-check",
+        "ok": true
+      },
+      {
+        "name": "no task state allocated",
+        "ok": true
+      }
+    ],
+    "observations": [
+      {
+        "case": "stale-pane-run",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "stale-pane-check",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "wrong-workspace-run",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "wrong-workspace-check",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "wrong-tab-run",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "wrong-tab-check",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "valid-context-run",
+        "expected_error": "config_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "valid-context-check",
+        "expected_error": "config_invalid",
+        "actual_error": "config_invalid"
+      }
+    ]
+  },
+  "after": {
+    "schema": "horch/caller-context-e2e/v1",
+    "verdict": "pass",
+    "scope": "live Herdr reads and CLI preflight; no worker launch",
+    "source_hashes": {
+      "horch.py": "bd7098e568e77b245067b1202305f097acd610538e35604926f23af047aaa372",
+      "caller_context.py": "e86dfec3afdb96f1a41ca47d4d4c944e8ffd7b829f77a089dc1e1d9bacdf9ace"
+    },
+    "checks": [
+      {
+        "name": "stale-pane-run",
+        "ok": true
+      },
+      {
+        "name": "stale-pane-check",
+        "ok": true
+      },
+      {
+        "name": "wrong-workspace-run",
+        "ok": true
+      },
+      {
+        "name": "wrong-workspace-check",
+        "ok": true
+      },
+      {
+        "name": "wrong-tab-run",
+        "ok": true
+      },
+      {
+        "name": "wrong-tab-check",
+        "ok": true
+      },
+      {
+        "name": "valid-context-run",
+        "ok": true
+      },
+      {
+        "name": "valid-context-check",
+        "ok": true
+      },
+      {
+        "name": "no task state allocated",
+        "ok": true
+      }
+    ],
+    "observations": [
+      {
+        "case": "stale-pane-run",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "caller_context_invalid"
+      },
+      {
+        "case": "stale-pane-check",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "caller_context_invalid"
+      },
+      {
+        "case": "wrong-workspace-run",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "caller_context_invalid"
+      },
+      {
+        "case": "wrong-workspace-check",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "caller_context_invalid"
+      },
+      {
+        "case": "wrong-tab-run",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "caller_context_invalid"
+      },
+      {
+        "case": "wrong-tab-check",
+        "expected_error": "caller_context_invalid",
+        "actual_error": "caller_context_invalid"
+      },
+      {
+        "case": "valid-context-run",
+        "expected_error": "config_invalid",
+        "actual_error": "config_invalid"
+      },
+      {
+        "case": "valid-context-check",
+        "expected_error": "config_invalid",
+        "actual_error": "config_invalid"
+      }
+    ]
+  }
+}
