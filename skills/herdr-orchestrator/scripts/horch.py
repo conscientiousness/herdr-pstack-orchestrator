@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """horch - start, watch, and close herdr worker agents.
 
-Core of the herdr-orchestrator skill. Subcommands: run, wait, list, close.
+Core of the herdr-orchestrator skill. Subcommands: run, wait, list, close, detect, check.
 Python 3.11+, standard library only. Every command prints JSON on stdout;
 errors are one {"error": code, "message": text} object with exit status 1.
 """
@@ -219,6 +219,7 @@ def default_state():
         "saw_working": False,
         "long_notified": False,
         "closed": False,
+        "problem": None,
     }
 
 
@@ -465,16 +466,27 @@ def write_brief(directory, controller_brief, task_id, nonce):
 # ---------------------------------------------------------------------------
 
 
-def cmd_run(args):
-    require_herdr_env()
+def resolve_cwd(raw):
+    try:
+        cwd = Path(raw or os.getcwd()).resolve(strict=True)
+    except OSError:
+        cwd = None
+    if cwd is None or not cwd.is_dir():
+        fail("cwd_not_found", f"--cwd is not a directory: {raw}")
+    return cwd
+
+
+def require_workspace():
     workspace = os.environ.get("HERDR_WORKSPACE_ID")
     if not workspace:
         fail("not_in_herdr", "HERDR_WORKSPACE_ID is not set; horch cannot place worker panes")
-    config = load_config()
-    worker = config["workers"].get(args.worker)
-    if worker is None:
-        fail("unknown_worker", f"no worker named {args.worker!r} in {config_path()}")
+    return workspace
 
+
+def cmd_run(args):
+    require_herdr_env()
+    require_workspace()
+    config = load_config()
     brief_source = Path(args.brief).expanduser()
     try:
         brief_source = brief_source.resolve(strict=True)
@@ -482,12 +494,16 @@ def cmd_run(args):
         brief_source = None
     if brief_source is None or not brief_source.is_file():
         fail("brief_not_found", f"brief file not found: {args.brief}")
-    try:
-        cwd = Path(args.cwd or os.getcwd()).resolve(strict=True)
-    except OSError:
-        cwd = None
-    if cwd is None or not cwd.is_dir():
-        fail("cwd_not_found", f"--cwd is not a directory: {args.cwd}")
+    brief_text = brief_source.read_text(encoding="utf-8", errors="replace")
+    emit(start_task(config, args.worker, brief_text, resolve_cwd(args.cwd)))
+
+
+def start_task(config, worker_name, brief_text, cwd):
+    """Start one worker on one task and return the run object; fail() on contract errors."""
+    workspace = require_workspace()
+    worker = config["workers"].get(worker_name)
+    if worker is None:
+        fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
 
     max_active = config["max_active_workers"]
     active = active_task_count()
@@ -508,7 +524,7 @@ def cmd_run(args):
 
     directory = root / task_id
     directory.mkdir(parents=True)
-    write_brief(directory, brief_source.read_text(encoding="utf-8", errors="replace"), task_id, nonce)
+    write_brief(directory, brief_text, task_id, nonce)
 
     try:
         pane_id, tab_id = place_pane(workspace, cwd, os.environ.get("HERDR_TAB_ID"))
@@ -520,7 +536,7 @@ def cmd_run(args):
     task = {
         "task_id": task_id,
         "nonce": nonce,
-        "worker": args.worker,
+        "worker": worker_name,
         "harness": worker["harness"],
         "model": worker["model"],
         "cwd": str(cwd),
@@ -540,7 +556,7 @@ def cmd_run(args):
     def run_object(state_name):
         return {
             "task_id": task_id,
-            "worker": args.worker,
+            "worker": worker_name,
             "agent": agent,
             "pane_id": pane_id,
             "state": state_name,
@@ -565,10 +581,10 @@ def cmd_run(args):
         start_problem = str(exc)
     if start_problem:
         state["state"] = "start_failed"
+        state["problem"] = start_problem
         save_state(directory, state)
-        notify(f"horch: {task_id} start_failed", f"worker {args.worker} failed to start in pane {pane_id}: {start_problem}")
-        emit(run_object("start_failed"))
-        return
+        notify(f"horch: {task_id} start_failed", f"worker {worker_name} failed to start in pane {pane_id}: {start_problem}")
+        return run_object("start_failed")
 
     index = agent_index()
     entry = (index or {}).get(agent)
@@ -587,7 +603,8 @@ def cmd_run(args):
         status = ((doc.get("result") or {}).get("agent") or {}).get("agent_status")
         if status == "blocked":
             state["state"] = "blocked"
-            notify(f"horch: {task_id} blocked", f"worker {args.worker} is waiting at a dialog in pane {pane_id}")
+            state["problem"] = "the worker is waiting at a dialog"
+            notify(f"horch: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
         else:
             state["state"] = "running"
             state["saw_working"] = status == "working"
@@ -597,15 +614,17 @@ def cmd_run(args):
             code = exc.payload["error"].get("code")
         if code == "agent_blocked":
             state["state"] = "blocked"
-            notify(f"horch: {task_id} blocked", f"worker {args.worker} is waiting at a dialog in pane {pane_id}")
+            state["problem"] = "the worker is waiting at a dialog"
+            notify(f"horch: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
         else:
             state["state"] = "not_started"
+            state["problem"] = str(exc)
             notify(
                 f"horch: {task_id} not_started",
-                f"worker {args.worker} never reported working within {ACK_TIMEOUT_MS // 1000}s: {exc}",
+                f"worker {worker_name} never reported working within {ACK_TIMEOUT_MS // 1000}s: {exc}",
             )
     save_state(directory, state)
-    emit(run_object(state["state"]))
+    return run_object(state["state"])
 
 
 # ---------------------------------------------------------------------------
@@ -652,14 +671,16 @@ def evaluate_task(info, agent, config):
     title = f"horch: {task_id}"
     if agent is None:
         state["state"] = "exited"
-        notify(title, f"worker {task['worker']} ({task['agent']}) is gone from herdr")
+        state["problem"] = f"worker {task['worker']} ({task['agent']}) is gone from herdr"
+        notify(title, state["problem"])
         return "exited"
     status = agent.get("agent_status")
     if status == "working":
         state["saw_working"] = True
     if status == "blocked":
         state["state"] = "blocked"
-        notify(title, f"worker {task['worker']} is waiting at a dialog in pane {task['pane_id']}")
+        state["problem"] = f"worker {task['worker']} is waiting at a dialog in pane {task['pane_id']}"
+        notify(title, state["problem"])
         return "blocked"
     if turn_ended(agent, state):
         verdict = result_verdict(info["dir"], task)
@@ -673,10 +694,12 @@ def evaluate_task(info, agent, config):
             return "done"
         if verdict == "missing":
             state["state"] = "result_missing"
-            notify(title, f"turn ended without a valid result.json ({task['result_path']})")
+            state["problem"] = f"turn ended without a valid result.json ({task['result_path']})"
+            notify(title, state["problem"])
             return "result_missing"
         state["state"] = "result_invalid"
-        notify(title, f"result.json does not match task_id/nonce ({task['result_path']})")
+        state["problem"] = f"result.json is invalid or does not match task_id/nonce ({task['result_path']})"
+        notify(title, state["problem"])
         return "result_invalid"
     if not state["long_notified"] and ran_longer_than(task, config["notify_after_minutes"]):
         state["long_notified"] = True
@@ -750,29 +773,31 @@ def cmd_wait(args):
     if not infos:
         return
 
-    if not all(info["state"]["state"] in SETTLED_STATES for info in infos):
-        deadline = None if args.max_seconds is None else time.monotonic() + max(0.0, args.max_seconds)
-        previous = {info["task_id"]: info["state"]["state"] for info in infos}
-        failures = 0
-        while True:
-            changed, polled = poll_round(infos, previous, config)
-            failures = 0 if polled else failures + 1
-            if failures >= 3:
-                fail("herdr_error", "could not poll herdr agent list")
-            if changed:
-                break
-            now = time.monotonic()
-            if deadline is not None and now >= deadline:
-                break
-            gap = POLL_SECONDS if deadline is None else min(POLL_SECONDS, deadline - now)
-            if gap > 0:
-                time.sleep(gap)
-
-    for info in infos:
-        if info["reported"] is None:
-            info["reported"] = info["state"]["state"]
+    wait_until_change(infos, config, args.max_seconds)
     for info in infos:
         emit(wait_line(info))
+
+
+def wait_until_change(infos, config, max_seconds):
+    """Poll until a waited task changes state or max_seconds pass; no-op when all are settled."""
+    if all(info["state"]["state"] in SETTLED_STATES for info in infos):
+        return
+    deadline = None if max_seconds is None else time.monotonic() + max(0.0, max_seconds)
+    previous = {info["task_id"]: info["state"]["state"] for info in infos}
+    failures = 0
+    while True:
+        changed, polled = poll_round(infos, previous, config)
+        failures = 0 if polled else failures + 1
+        if failures >= 3:
+            fail("herdr_error", "could not poll herdr agent list")
+        if changed:
+            return
+        now = time.monotonic()
+        if deadline is not None and now >= deadline:
+            return
+        gap = POLL_SECONDS if deadline is None else min(POLL_SECONDS, deadline - now)
+        if gap > 0:
+            time.sleep(gap)
 
 
 # ---------------------------------------------------------------------------
@@ -823,6 +848,122 @@ def cmd_close(args):
 
 
 # ---------------------------------------------------------------------------
+# detect and check
+# ---------------------------------------------------------------------------
+
+
+CHECK_BRIEF = """\
+# horch setup check
+
+This task only checks that horch can start you and read your result. Do not
+read, create, or change any file except `result.json`. Write `result.json` now
+with status `completed` and summary `check ok`.
+"""
+
+
+def tool_version(name):
+    path = shutil.which(name)
+    if path is None:
+        return None
+    try:
+        proc = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=30)
+        version = (proc.stdout or proc.stderr).strip().splitlines()[0] if (proc.stdout or proc.stderr).strip() else None
+    except (OSError, subprocess.TimeoutExpired):
+        version = None
+    return {"path": path, "version": version}
+
+
+def pi_providers():
+    """Providers that `pi --list-models` shows, with how many models each lists.
+
+    Sign-in status is left out: `pi auth check` does not know providers that come
+    from extensions (measured: commandcode reports provider_not_found yet works).
+    `horch check` is the real test.
+    """
+    try:
+        proc = subprocess.run(["pi", "--list-models"], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    counts = {}
+    for line in proc.stdout.splitlines()[1:]:  # first line is the column header
+        fields = line.split()
+        if len(fields) >= 2:
+            counts[fields[0]] = counts.get(fields[0], 0) + 1
+    return [{"provider": provider, "models": count} for provider, count in counts.items()]
+
+
+def cmd_detect(args):
+    harnesses = {name: tool_version(name) for name in HARNESSES}
+    emit({
+        "herdr_env": os.environ.get("HERDR_ENV") == "1",
+        "herdr": tool_version("herdr"),
+        "python": ".".join(str(part) for part in sys.version_info[:3]),
+        "harnesses": harnesses,
+        "pi_providers": pi_providers() if harnesses["pi"] else [],
+        "config": {"path": str(config_path()), "exists": config_path().is_file()},
+    })
+
+
+def cmd_check(args):
+    require_herdr_env()
+    require_workspace()
+    config = load_config()
+    names = list(dict.fromkeys(args.workers or list(config["workers"])))
+    unknown = [name for name in names if name not in config["workers"]]
+    if unknown:
+        fail("unknown_worker", f"no worker named {', '.join(unknown)} in {config_path()}")
+    cwd = resolve_cwd(args.cwd)
+    deadline = time.monotonic() + args.max_seconds
+    pending = list(names)
+    started = {}
+    settled_at = {}
+    while pending or any(info["state"]["state"] not in SETTLED_STATES for info, _ in started.values()):
+        free = config["max_active_workers"] - active_task_count()
+        while pending and free > 0 and time.monotonic() < deadline:
+            name = pending.pop(0)
+            began = time.monotonic()
+            run = start_task(config, name, CHECK_BRIEF, cwd)
+            info = make_info(run["task_id"])
+            started[name] = (info, began)
+            if info["state"]["state"] in SETTLED_STATES:
+                settled_at[name] = time.monotonic()
+            free -= 1
+        waiting = [info for info, _ in started.values() if info["state"]["state"] not in SETTLED_STATES]
+        if time.monotonic() >= deadline or (not waiting and pending):
+            break  # out of time, or problem panes hold every slot
+        wait_until_change(waiting, config, deadline - time.monotonic())
+        for name, (info, _) in started.items():
+            if name not in settled_at and info["state"]["state"] in SETTLED_STATES:
+                settled_at[name] = time.monotonic()
+    for name in names:
+        if name not in started:
+            message = ("check wait limit reached before this worker could start" if time.monotonic() >= deadline
+                       else "no free worker slot; review max_active_workers or close problem panes with horch close")
+            emit({"worker": name, "task_id": None, "state": "not_checked", "ok": False,
+                  "pane_id": None, "seconds": None, "message": message})
+            continue
+        info, began = started[name]
+        info["state"] = load_state(info["dir"])
+        result = read_json(info["dir"] / "result.json")
+        status = result.get("status") if isinstance(result, dict) else None
+        state = info["state"]["state"]
+        message = info["state"]["problem"]
+        if state == "done" and status != "completed":
+            message = f"worker result status is {status!r}; expected completed"
+        elif state not in SETTLED_STATES and message is None:
+            message = "check wait limit reached; task is still unsettled"
+        emit({
+            "worker": name,
+            "task_id": info["task_id"],
+            "state": state,
+            "ok": state == "done" and status == "completed",
+            "pane_id": None if info["state"]["closed"] else info["task"]["pane_id"],
+            "seconds": round(settled_at.get(name, time.monotonic()) - began),
+            "message": message,
+        })
+
+
+# ---------------------------------------------------------------------------
 # entry point
 # ---------------------------------------------------------------------------
 
@@ -851,6 +992,15 @@ def build_parser():
     p_close = sub.add_parser("close", help="close the pane of a task horch started")
     p_close.add_argument("task_id", help="task to close")
     p_close.set_defaults(func=cmd_close)
+
+    p_detect = sub.add_parser("detect", help="print installed harnesses, versions, and pi providers")
+    p_detect.set_defaults(func=cmd_detect)
+
+    p_check = sub.add_parser("check", help="start each worker on a tiny task and report whether it works")
+    p_check.add_argument("workers", nargs="*", help="workers to check (default: all in workers.toml)")
+    p_check.add_argument("--cwd", help="working directory for the check workers (default: the current directory)")
+    p_check.add_argument("--max-seconds", type=int, default=300, help="stop waiting after this many seconds (default: 300)")
+    p_check.set_defaults(func=cmd_check)
 
     return parser
 
