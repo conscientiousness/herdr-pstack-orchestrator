@@ -25,8 +25,6 @@ HARNESSES = ("pi", "codex", "claude")
 CONFIG_TOP_KEYS = {"max_active_workers", "notify_after_minutes", "workers", "roles"}
 WORKER_KEYS = {"harness", "model", "provider", "effort", "args"}
 WORKER_NAME_RE = re.compile(r"[a-z][a-z0-9-]{0,15}")
-PANE_ID_RE = re.compile(r"w\d+:p\d+")
-TAB_ID_RE = re.compile(r"w\d+:t\d+")
 
 SETTLED_STATES = {
     "done",
@@ -133,9 +131,9 @@ def herdr(*args, timeout=120.0):
         payload = parsed if isinstance(parsed, dict) else {"raw": (proc.stderr or proc.stdout).strip()[:2000]}
         raise HerdrError(_herdr_message(payload, proc.returncode, proc.stderr), payload)
     parsed = _read_json_text(proc.stdout)
-    if isinstance(parsed, list):
-        return {"result": parsed}
-    return parsed if isinstance(parsed, dict) else {}
+    if not isinstance(parsed, dict):
+        raise HerdrError(f"herdr {' '.join(str(a) for a in args)} did not return a JSON object")
+    return parsed
 
 
 def notify(title, body):
@@ -146,41 +144,28 @@ def notify(title, body):
 
 
 # ---------------------------------------------------------------------------
-# JSON tree helpers (herdr response shapes are not documented, only observed)
+# herdr response accessors (fixed field paths; herdr ids are opaque strings)
 # ---------------------------------------------------------------------------
 
 
-def iter_nodes(node):
-    yield node
-    if isinstance(node, dict):
-        for value in node.values():
-            yield from iter_nodes(value)
-    elif isinstance(node, list):
-        for value in node:
-            yield from iter_nodes(value)
+def herdr_path(doc, *path):
+    """Follow a known field path into a herdr response, e.g. result.layout.panes."""
+    node = doc
+    for key in path:
+        if not isinstance(node, dict) or key not in node:
+            raise HerdrError(f"herdr response has no {'.'.join(path)}")
+        node = node[key]
+    return node
 
 
-def find_ids(node, regex):
-    found = []
-    for candidate in iter_nodes(node):
-        if isinstance(candidate, str) and regex.fullmatch(candidate) and candidate not in found:
-            found.append(candidate)
-    return found
-
-
-def entries_with_id(node, key, fallback_regex):
-    found = []
-    for candidate in iter_nodes(node):
-        if not isinstance(candidate, dict):
-            continue
-        value = candidate.get(key)
-        if isinstance(value, str):
-            found.append((value, candidate))
-            continue
-        value = candidate.get("id")
-        if isinstance(value, str) and fallback_regex.fullmatch(value):
-            found.append((value, candidate))
-    return found
+def herdr_id(doc, *path, id_key):
+    """Read an id herdr reports either as a plain string or as an object holding id_key."""
+    node = herdr_path(doc, *path)
+    if isinstance(node, str):
+        return node
+    if isinstance(node, dict) and isinstance(node.get(id_key), str):
+        return node[id_key]
+    raise HerdrError(f"herdr response has no {'.'.join(path)} ({id_key})")
 
 
 # ---------------------------------------------------------------------------
@@ -339,104 +324,88 @@ def load_config():
 def agent_index():
     """Map live agent name to its herdr entry, or None when herdr cannot be polled."""
     try:
-        doc = herdr("agent", "list", timeout=30.0)
+        agents = herdr_path(herdr("agent", "list", timeout=30.0), "result", "agents")
     except HerdrError:
         return None
     index = {}
-    for node in iter_nodes(doc.get("result", doc)):
-        if isinstance(node, dict) and isinstance(node.get("name"), str) and "agent_status" in node:
-            index[node["name"]] = node
+    for agent in agents:
+        name = agent.get("name") if isinstance(agent, dict) else None
+        if isinstance(name, str):  # herdr also lists unnamed pane agents
+            index[name] = agent
     return index
 
 
-def pane_exists(pane_id):
-    args = ["pane", "list"]
-    workspace = os.environ.get("HERDR_WORKSPACE_ID")
-    if workspace:
-        args += ["--workspace", workspace]
-    try:
-        doc = herdr(*args, timeout=30.0)
-    except HerdrError:
-        return False
-    return pane_id in find_ids(doc, PANE_ID_RE)
+def workspace_panes(workspace):
+    """(pane_id, tab_id) pairs for every pane of a workspace, read from result.panes."""
+    panes = herdr_path(herdr("pane", "list", "--workspace", workspace, timeout=30.0), "result", "panes")
+    pairs = []
+    for pane in panes:
+        pane_id = pane.get("pane_id") if isinstance(pane, dict) else None
+        tab_id = pane.get("tab_id") if isinstance(pane, dict) else None
+        if not isinstance(pane_id, str) or not isinstance(tab_id, str):
+            raise HerdrError("herdr pane list has a pane without pane_id or tab_id")
+        pairs.append((pane_id, tab_id))
+    return pairs
+
+
+def pane_exists(pane_id, workspace):
+    return any(pane == pane_id for pane, _ in workspace_panes(workspace))
 
 
 def close_pane(pane_id):
-    """Close a pane; True also when the pane turned out to be gone already."""
+    """Close a pane; returns "closed" or "already_gone", raises HerdrError when herdr cannot say."""
+    workspace = os.environ.get("HERDR_WORKSPACE_ID")
+    if not pane_exists(pane_id, workspace):
+        return "already_gone"
     try:
         herdr("pane", "close", pane_id, timeout=30.0)
-        return True
     except HerdrError:
-        return not pane_exists(pane_id)
+        if pane_exists(pane_id, workspace):
+            raise  # the pane is still there, so the close really failed
+        return "already_gone"  # it vanished between the two calls
+    return "closed"
 
 
-def tab_label(entry):
-    for key in ("label", "title", "name"):
-        value = entry.get(key)
-        if isinstance(value, str):
-            return value
-    return None
-
-
-def panes_of_tab(tab_id, entry, panes_by_tab):
-    ids = panes_by_tab.get(tab_id)
-    if ids:
-        return ids
-    listed = entry.get("pane_ids")
-    if isinstance(listed, list):
-        ids = [p for p in listed if isinstance(p, str) and PANE_ID_RE.fullmatch(p)]
-        if ids:
-            return ids
-    try:
-        doc = herdr("tab", "get", tab_id, timeout=30.0)
-    except HerdrError:
-        return []
-    return find_ids(doc, PANE_ID_RE)
-
-
-def has_pane_below(pane_id):
-    try:
-        doc = herdr("pane", "neighbor", "--direction", "down", "--pane", pane_id, timeout=30.0)
-    except HerdrError:
-        return False  # cannot tell; splitting down anyway is safe
-    return bool(find_ids(doc, PANE_ID_RE))
+def widest_pane_id(any_pane_id):
+    """Pane with the largest rect area of that tab; first in list order on a tie."""
+    panes = herdr_path(herdr("pane", "layout", "--pane", any_pane_id, timeout=30.0), "result", "layout", "panes")
+    best_id, best_area = None, -1
+    for pane in panes:
+        pane_id = pane.get("pane_id") if isinstance(pane, dict) else None
+        rect = pane.get("rect") if isinstance(pane, dict) else None
+        width = rect.get("width") if isinstance(rect, dict) else None
+        height = rect.get("height") if isinstance(rect, dict) else None
+        if not isinstance(pane_id, str) or not isinstance(width, (int, float)) or not isinstance(height, (int, float)):
+            raise HerdrError("herdr pane layout has a pane without pane_id or rect size")
+        if width * height > best_area:
+            best_id, best_area = pane_id, width * height
+    if best_id is None:
+        raise HerdrError("herdr pane layout lists no panes")
+    return best_id
 
 
 def split_pane(source, direction, cwd):
     doc = herdr("pane", "split", source, "--direction", direction, "--cwd", str(cwd), "--no-focus", timeout=60.0)
-    result = doc.get("result", doc)
-    pane = result.get("pane") if isinstance(result, dict) else None
-    if isinstance(pane, dict) and isinstance(pane.get("pane_id"), str):
-        return pane["pane_id"]
-    others = [p for p in find_ids(result, PANE_ID_RE) if p != source]
-    if others:
-        return others[0]
-    raise HerdrError("could not read the new pane id from herdr pane split")
+    return herdr_id(doc, "result", "pane", id_key="pane_id")
 
 
 def place_pane(workspace, cwd, caller_tab):
     """Return (pane_id, tab_id) for a fresh worker pane; never touches caller_tab."""
-    tabs_doc = herdr("tab", "list", "--workspace", workspace, timeout=30.0)
-    panes_doc = herdr("pane", "list", "--workspace", workspace, timeout=30.0)
-
-    panes_by_tab = {}
-    for pane_id, entry in entries_with_id(panes_doc, "pane_id", PANE_ID_RE):
-        tab_id = entry.get("tab_id")
-        if isinstance(tab_id, str):
-            panes_by_tab.setdefault(tab_id, []).append(pane_id)
-
-    for tab_id, entry in entries_with_id(tabs_doc, "tab_id", TAB_ID_RE):
-        if tab_id == caller_tab or tab_label(entry) != PANE_LABEL:
+    tabs = herdr_path(herdr("tab", "list", "--workspace", workspace, timeout=30.0), "result", "tabs")
+    panes = workspace_panes(workspace)
+    for tab in tabs:
+        tab_id = tab.get("tab_id") if isinstance(tab, dict) else None
+        if not isinstance(tab_id, str) or tab_id == caller_tab or tab.get("label") != PANE_LABEL:
             continue
-        panes = panes_of_tab(tab_id, entry, panes_by_tab)
-        if not panes or len(panes) >= PANES_PER_TAB:
+        count = tab.get("pane_count")
+        if not isinstance(count, int) or count < 1 or count >= PANES_PER_TAB:
             continue
-        if len(panes) == 1:
-            new_pane = split_pane(panes[0], "right", cwd)
-        else:
-            target = next((p for p in panes if not has_pane_below(p)), panes[0])
-            new_pane = split_pane(target, "down", cwd)
-        return new_pane, tab_id
+        ids = [pane_id for pane_id, pane_tab in panes if pane_tab == tab_id]
+        if not ids:
+            raise HerdrError(f"herdr tab list says tab {tab_id} has {count} panes, but pane list shows none")
+        if count == 1:
+            return split_pane(ids[0], "right", cwd), tab_id
+        return split_pane(widest_pane_id(ids[0]), "down", cwd), tab_id
 
     doc = herdr(
         "tab", "create",
@@ -446,16 +415,7 @@ def place_pane(workspace, cwd, caller_tab):
         "--no-focus",
         timeout=60.0,
     )
-    result = doc.get("result", doc)
-    root = result.get("root_pane") if isinstance(result, dict) else None
-    if isinstance(root, dict) and isinstance(root.get("pane_id"), str):
-        pane_id = root["pane_id"]
-    else:
-        pane_id = next(iter(find_ids(result, PANE_ID_RE)), None)
-    tab_id = next(iter(find_ids(result, TAB_ID_RE)), None)
-    if not pane_id:
-        raise HerdrError("could not read the new pane id from herdr tab create")
-    return pane_id, tab_id
+    return herdr_id(doc, "result", "root_pane", id_key="pane_id"), herdr_id(doc, "result", "tab", id_key="tab_id")
 
 
 # ---------------------------------------------------------------------------
@@ -697,8 +657,11 @@ def evaluate_task(info, agent, config):
         verdict = result_verdict(info["dir"], task)
         if verdict == "valid":
             state["state"] = "done"
-            if close_pane(task["pane_id"]):
+            try:
+                close_pane(task["pane_id"])
                 state["closed"] = True
+            except HerdrError:
+                pass  # herdr cannot say whether the pane is gone; horch close can retry
             return "done"
         if verdict == "missing":
             state["state"] = "result_missing"
@@ -845,12 +808,10 @@ def cmd_close(args):
     if state.get("closed"):
         emit({"task_id": args.task_id, "closed": True, "pane": "already_gone"})
         return
-    if close_pane(task["pane_id"]):
-        state["closed"] = True
-        save_state(directory, state)
-        emit({"task_id": args.task_id, "closed": True, "pane": "closed"})
-    else:
-        fail("herdr_error", f"pane {task['pane_id']} could not be closed")
+    outcome = close_pane(task["pane_id"])
+    state["closed"] = True
+    save_state(directory, state)
+    emit({"task_id": args.task_id, "closed": True, "pane": outcome})
 
 
 # ---------------------------------------------------------------------------
