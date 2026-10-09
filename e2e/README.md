@@ -63,6 +63,8 @@ Historical evidence keeps its original source attribution. Moving the driver cha
 
 ## Reproduce original skill discovery
 
+[bundled-install.json](evidence/bundled-install.json) records the current 53-entry bundle installed from a commit-pinned GitHub URL, all 190 files preserved, native Pi/Codex discovery, and a separate local installation checked after its temporary source was deleted. It includes exact source/driver hashes and cleanup. No model workflow was rerun for this packaging change.
+
 [skill-discovery.json](evidence/skill-discovery.json) records the real 56-entry Pi/Codex catalog checks, preserved original content/resources/licenses, a fresh original `how` invocation with four delivered and closed workers, and real current/older-pin upstream comparisons. The receipt discloses the evaluation controller's corrected tab placement, the user's mid-run role change, and the limited scope of the source walkthrough. The trace review was manual; full transcripts remain private. These results do not validate other original workflows.
 
 The current bundle is installed in one command. For an isolated installation, use a new directory and omit `-g`:

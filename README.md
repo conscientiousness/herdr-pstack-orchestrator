@@ -228,15 +228,16 @@ Cursor modes, hooks, `/loop`, cloud execution, and unavailable MCP or app-drivin
 
 ## Verification
 
-The v0.2.0 integration has these recorded results:
+The current bundle has these recorded results:
 
 | Scope | Evidence |
 |---|---|
-| Skill discovery | All 56 entries appeared in native Pi and Codex catalogs. Claude Code installation was checked; native discovery was not measured. |
-| Original pstack `how` | A Pi controller completed three explorer tasks and one explainer task through Herdr, with delivery and cleanup verified. |
-| Package installation | CI checks Python 3.11/3.14 and installation for Claude Code, Codex, and Pi. |
+| Bundled installation | One GitHub URL installed all 53 entries and 190 files for Codex, Pi, and Claude Code. A separate local install remained usable after its temporary source was deleted. |
+| Native discovery | All 53 entries appeared in Pi and Codex catalogs. Claude Code installation was checked; native discovery was not measured. |
+| Original pstack `how` (v0.2.0) | A Pi controller completed three explorer tasks and one explainer task through Herdr, with delivery and cleanup verified. |
+| Package CI | Python 3.11/3.14, installed file comparisons, and regeneration from the pinned upstream source. |
 
-The [discovery receipt](e2e/evidence/skill-discovery.json) records the first two results. Other original skills and `poteto-mode` playbooks remain runtime unverified. Discovery does not prove workflow execution.
+See the [bundled-install receipt](e2e/evidence/bundled-install.json) and historical [discovery/routing receipt](e2e/evidence/skill-discovery.json). Other original skills and `poteto-mode` playbooks remain runtime unverified. Discovery does not prove workflow execution.
 
 Earlier core, review-loop, and controller tests retain their original source revisions in the [E2E guide](e2e/README.md#evidence-and-source-attribution). They are not new v0.2.0 workflow tests. Runtime checks used Linux; macOS, deliberate approval denial, and task completion beyond 30 minutes remain unverified.
 

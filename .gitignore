@@ -34,3 +34,4 @@ e2e/evidence/*
 !e2e/evidence/controller-provider-error.json
 !e2e/evidence/controller-audit-array.json
 !e2e/evidence/controller-array-reanalysis.json
+!e2e/evidence/bundled-install.json
