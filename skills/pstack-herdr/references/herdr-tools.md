@@ -7,7 +7,7 @@ pstack skills describe delegation using Claude Code's `Agent`/`Task` and `SendMe
 | Dispatch a subagent (`Agent` or `Task`) | Write a complete brief file, then `horch run <worker> --brief <file> --cwd <dir>`. Record the returned task ID. |
 | Dispatch N subagents in one message | Make N `horch run` calls before waiting. Respect `max_active_workers`; wait for a slot before launching the rest. |
 | `run_in_background: true` | `horch run` already returns after the prompt is accepted. |
-| Wait for a subagent result | `horch wait <task-id> ... --max-seconds 45`, repeating while tasks run. Read `result.json` and every file it lists. |
+| Wait for a subagent result | `horch wait <task-id> ...` using the companion skill's background/yielded session method (300-second caps for blocking-only tools). Repeat for remaining running tasks; read results only after `done`. |
 | `model` and `@<level>` from a role line | Look up the role's worker name in `workers.toml`. The worker definition fixes harness, model, and effort. Ignore the role suffix. |
 | `readonly: true` | State in the brief that the worker must not change files or external state. This is an instruction, not an enforced sandbox; verify the checkout stayed unchanged. |
 | `isolation: "worktree"` | Create a git worktree first and pass it as `--cwd`. Give each concurrent writer a different worktree. |

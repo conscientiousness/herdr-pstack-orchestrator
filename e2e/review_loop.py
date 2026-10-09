@@ -19,7 +19,7 @@ import tempfile
 import time
 
 
-HORCH = Path(__file__).with_name("horch.py")
+HORCH = Path(__file__).resolve().parents[1] / "skills/herdr-orchestrator/scripts/horch.py"
 CONTRACT = """# Invoice CLI contract
 
 The CLI reads JSON on stdin. `line` accepts quantity, unit_price_cents, and
@@ -267,6 +267,7 @@ def main():
     if len(args.reviewer) != 2 or args.max_seconds < 1:
         parser.error("supply exactly two reviewers and a positive wait cap")
     # Validate configuration before creating a worktree or launching a worker.
+    sys.path.insert(0, str(HORCH.parent))
     import horch
     config = horch.load_config()
     if any(w not in config["workers"] for w in [args.writer, *args.reviewer]):

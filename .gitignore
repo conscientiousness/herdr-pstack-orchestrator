@@ -3,3 +3,15 @@ __pycache__/
 handoff/
 .archify/
 assets/*.delivery.json
+# Only reviewed, portable E2E artifacts belong in the public repository.
+e2e/*
+!e2e/README.md
+!e2e/review_loop.py
+!e2e/evidence/
+e2e/evidence/*
+!e2e/evidence/verification.json
+!e2e/evidence/review-e2e.json
+!e2e/evidence/lifecycle.json
+!e2e/evidence/recovery.json
+!e2e/evidence/completion.json
+!e2e/evidence/relocation-e2e.json

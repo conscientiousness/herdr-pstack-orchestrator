@@ -1,0 +1,42 @@
+{
+  "schema": "horch/development-e2e-summary/v1",
+  "date": "2026-10-09",
+  "scenario": "lifecycle",
+  "original_artifact_sha256": "7d7a76eadc9e624029631b24a1086f9376580b8dca5e8a99b555c9e7c2398dce",
+  "assertions": [
+    {
+      "name": "simultaneous starts honor one slot",
+      "ok": true
+    },
+    {
+      "name": "invalid task path rejected",
+      "ok": true
+    },
+    {
+      "name": "repeated bounded waits completed",
+      "ok": true
+    },
+    {
+      "name": "long running notification emitted once",
+      "ok": true
+    },
+    {
+      "name": "automatic cleanup from different workspace",
+      "ok": true
+    },
+    {
+      "name": "already closed is idempotent",
+      "ok": true
+    },
+    {
+      "name": "explicit close from different workspace",
+      "ok": true
+    },
+    {
+      "name": "closed task stays closed",
+      "ok": true
+    }
+  ],
+  "verdict": "pass",
+  "source_commit": "f40c90a"
+}
