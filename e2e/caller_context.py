@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Check caller-context rejection through the real CLI and live Herdr reads.
+"""Check caller-context resolution through the real CLI and live Herdr reads.
 
-Observed failure: a Codex shell snapshot supplied another workspace's old IDs.
-The workspace still existed, so horch created a worker there without checking
-the controller pane. Check stale panes and inconsistent workspace/tab IDs for
-both run and check, plus a valid-context control.
+Check unavailable or missing pane IDs and canonicalization of stale inherited
+workspace/tab IDs for both run and check, plus a valid-context control. This
+driver does not move real panes or exercise a moved pane's launch-ID alias.
 
 Every invocation uses an empty isolated configuration directory. That second
 preflight failure prevents worker creation even on the unfixed implementation.
@@ -48,14 +47,21 @@ def main():
                    XDG_CONFIG_HOME=str(root / "empty-config"), XDG_STATE_HOME=str(root / "state"))
         cases = [
             ("stale-pane", {"HERDR_PANE_ID": "missing-controller-pane"}, "caller_context_invalid"),
-            ("wrong-workspace", {"HERDR_WORKSPACE_ID": "wrong-workspace"}, "caller_context_invalid"),
-            ("wrong-tab", {"HERDR_TAB_ID": "wrong-tab"}, "caller_context_invalid"),
+            ("missing-pane", {"HERDR_PANE_ID": None}, "caller_context_invalid"),
+            ("blank-pane", {"HERDR_PANE_ID": ""}, "caller_context_invalid"),
+            ("whitespace-pane", {"HERDR_PANE_ID": " \t "}, "caller_context_invalid"),
+            ("stale-workspace", {"HERDR_WORKSPACE_ID": "wrong-workspace"}, "config_invalid"),
+            ("stale-tab", {"HERDR_TAB_ID": "wrong-tab"}, "config_invalid"),
+            ("stale-workspace-and-tab", {"HERDR_WORKSPACE_ID": "wrong-workspace",
+                                         "HERDR_TAB_ID": "wrong-tab"}, "config_invalid"),
             ("valid-context", {}, "config_invalid"),
         ]
         for label, overrides, expected in cases:
             for command in (["run", "probe", "--brief", str(root / "unused.md")], ["check", "probe"]):
+                case_env = dict(env, **overrides)
+                case_env = {key: value for key, value in case_env.items() if value is not None}
                 proc = subprocess.run([sys.executable, str(HORCH), *command],
-                                      env=dict(env, **overrides), capture_output=True, text=True, timeout=30)
+                                      env=case_env, capture_output=True, text=True, timeout=30)
                 name = label + "-" + command[0]
                 (root / (name + ".stdout")).write_text(proc.stdout)
                 (root / (name + ".stderr")).write_text(proc.stderr)

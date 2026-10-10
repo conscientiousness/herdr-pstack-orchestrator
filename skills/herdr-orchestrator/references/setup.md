@@ -27,11 +27,13 @@ Run the setup when the user asks for it, or when `horch run` fails with `config_
 
 ## Caller context
 
-`run` and `check` require `HERDR_PANE_ID`, `HERDR_TAB_ID`, and `HERDR_WORKSPACE_ID` to identify one live controller pane. Missing pane/tab IDs or inconsistent IDs produce `caller_context_invalid` before task allocation. A missing workspace retains `not_in_herdr`; an unavailable Herdr service remains a `herdr_error`.
+`run` and `check` require `HERDR_ENV=1` and a nonblank `HERDR_PANE_ID`. They resolve the caller with `herdr pane current --current` and use its returned workspace and tab for placement. Missing or unavailable caller panes produce `caller_context_invalid` before task allocation; an unavailable Herdr service remains a `herdr_error`. Reject a blank pane ID before using `--current`: Herdr 0.9.3 can otherwise fall back to the focused pane.
 
-A harness shell snapshot can restore IDs from a different pane even when the controller process was launched with the correct environment. Confirm the actual controller's identity from its launch context and `herdr pane get <verified-controller-pane>`. Refresh all three variables together in the shell running `horch`. Never substitute the currently focused workspace; it may belong to another project. If the controller identity cannot be established, report the mismatch and leave dispatch stopped.
+A harness shell snapshot can restore another pane's ID even when the controller process was launched correctly. Confirm the actual controller's identity from its launch context, restore that `HERDR_PANE_ID` in the shell running `horch`, and resolve it through `pane current --current`. Never substitute the currently focused pane. If the controller identity cannot be established, report the mismatch and leave dispatch stopped.
 
-This check rejects missing panes and inconsistent IDs. It cannot prove ownership when stale IDs happen to identify another still-live pane consistently. Keep the verified controller context when resuming a session or moving a pane; do not relocate workers and edit task records as routine recovery.
+Moving a pane is different from restoring another pane's shell snapshot. Herdr preserves the moved terminal's launch-time ID as an alias; its live workspace/tab may legitimately differ from the inherited environment. No manual refresh of those two variables is needed. See the official [agent automation guide](https://github.com/herdrdev/herdr/blob/v0.9.3/docs/next/website/src/content/docs/agent-automation.mdx).
+
+This check cannot prove ownership when a snapshot names another still-live pane. Verify identity when resuming; do not relocate workers and edit task records as routine recovery.
 
 ## Dialogs that stop a worker before it starts
 

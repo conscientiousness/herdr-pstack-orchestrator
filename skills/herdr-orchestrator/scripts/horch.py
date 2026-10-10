@@ -550,34 +550,30 @@ def resolve_cwd(raw):
     return cwd
 
 
-def require_workspace():
-    workspace = os.environ.get("HERDR_WORKSPACE_ID")
-    if not workspace:
-        fail("not_in_herdr", "HERDR_WORKSPACE_ID is not set; horch cannot place worker panes")
+def require_caller_context():
     pane_id = os.environ.get("HERDR_PANE_ID")
-    tab_id = os.environ.get("HERDR_TAB_ID")
-    guidance = ("Verify this controller's live pane, tab, and workspace and refresh its "
-                "HERDR_PANE_ID, HERDR_TAB_ID, and HERDR_WORKSPACE_ID. "
+    guidance = ("Verify this controller's live pane and its HERDR_PANE_ID. "
                 "A harness shell snapshot may contain stale IDs; do not infer them from UI focus.")
-    if not pane_id or not tab_id:
-        fail("caller_context_invalid", f"Controller pane or tab ID is missing. {guidance}")
+    # Herdr can fall back to UI focus when the caller pane ID is blank.
+    if not pane_id or not pane_id.strip():
+        fail("caller_context_invalid", f"Controller pane ID is missing. {guidance}")
     try:
-        pane = herdr_path(herdr("pane", "get", pane_id, timeout=30.0), "result", "pane")
+        pane = herdr_path(herdr("pane", "current", "--current", timeout=30.0), "result", "pane")
     except HerdrError as exc:
         if herdr_error_code(exc) not in MISSING_PANE_CODES:
             raise
         fail("caller_context_invalid", f"Controller pane {pane_id!r} is no longer available. {guidance}")
     if not isinstance(pane, dict) or any(
-        pane.get(key) != expected for key, expected in
-        (("pane_id", pane_id), ("tab_id", tab_id), ("workspace_id", workspace))
+        not isinstance(pane.get(key), str) or not pane[key].strip()
+        for key in ("pane_id", "tab_id", "workspace_id")
     ):
-        fail("caller_context_invalid", f"Controller context disagrees with live Herdr state. {guidance}")
-    return workspace
+        fail("caller_context_invalid", f"Controller context is missing live Herdr IDs. {guidance}")
+    return pane
 
 
 def cmd_run(args):
     require_herdr_env()
-    require_workspace()
+    require_caller_context()
     config = load_config()
     brief_source = Path(args.brief).expanduser()
     try:
@@ -622,7 +618,7 @@ def wait_for_pi_session(agent, deadline):
 
 def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
     """Start one worker on one task and return the run object; fail() on contract errors."""
-    workspace = require_workspace()
+    caller = require_caller_context()
     worker = config["workers"].get(worker_name)
     if worker is None:
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
@@ -654,7 +650,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full):
         shutil.rmtree(directory, ignore_errors=True)
         raise
     try:
-        pane_id, tab_id = place_pane(workspace, cwd, os.environ.get("HERDR_TAB_ID"))
+        pane_id, tab_id = place_pane(caller["workspace_id"], cwd, caller["tab_id"])
     except BaseException as exc:
         shutil.rmtree(directory, ignore_errors=True)
         print(f"warning: pane placement failed: {exc}; an empty pane may exist "
@@ -1142,7 +1138,7 @@ def cmd_detect(args):
 
 def cmd_check(args):
     require_herdr_env()
-    require_workspace()
+    require_caller_context()
     config = load_config()
     names = list(dict.fromkeys(args.workers or list(config["workers"])))
     unknown = [name for name in names if name not in config["workers"]]
