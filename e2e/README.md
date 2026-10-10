@@ -2,7 +2,23 @@
 
 For agent-driven verification, use the project-local [verify-herdr-orchestrator skill](../.agents/skills/verify-herdr-orchestrator/SKILL.md). Its feature map selects existing drivers and records prerequisites, evidence locations, and cleanup without adding another test harness.
 
-These files are repository tooling, outside the installed skills. Run the public driver from a clone inside Herdr:
+These files are repository tooling, outside the installed skills.
+
+## Caller context preflight
+
+After a real Codex shell snapshot supplied another workspace's old IDs, a worker was created in the wrong workspace. The [observation and before/after receipt](evidence/caller-context.json) records that failure and the focused fix. Reproduce the preflight check with a verified live controller pane:
+
+```bash
+python3 e2e/caller_context.py --controller-pane <verified-pane-id> --output /tmp/horch-context
+```
+
+The driver uses real Herdr reads and invokes both `run` and `check` with stale pane IDs, inconsistent workspace/tab IDs, and valid context. An empty isolated configuration is a second stopping condition, so even the unfixed version cannot launch workers. It retains `evidence.json` and command output outside the checkout. This verifies context rejection and valid-context acceptance up to configuration loading; it does not exercise worker startup or prove ownership of an otherwise consistent live pane.
+
+The same receipt records a 30-minute, read-only observation of the previous release: nine tracked tasks delivered and closed, but the controller repeatedly used short wait caps and performed bulk implementation itself before user guidance. The resulting skill edits have not received a new model-driven workflow run. They do not establish broader pstack playbook coverage.
+
+## Worker and controller loops
+
+Run the public loop driver from a clone inside Herdr:
 
 ```bash
 python3 e2e/review_loop.py \

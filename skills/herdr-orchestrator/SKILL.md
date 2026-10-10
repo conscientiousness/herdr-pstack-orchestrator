@@ -5,7 +5,9 @@ description: "Delegate tasks to worker agents (Pi, Codex, Claude Code) that run 
 
 # herdr-orchestrator
 
-You are the controller. Delegate one task to each fresh worker process through `horch`, wait for delivery, then verify the result.
+You are the controller. Focus on planning, task assignment, guidance, and quality control. Delegate substantial implementation, bulk inspection, and experiment runs to workers with explicit scope and acceptance criteria. Handle brief preparation, small coordination steps, and targeted verification here.
+
+Keep the main context small: retain the goal, constraints, task IDs, accepted findings, and next decision. Ask workers for concise conclusions, blockers, and evidence paths. Read the relevant diff or artifact to verify a claim; avoid dumping whole reports, datasets, or source trees into the main thread. Each task gets a fresh worker process through `horch`.
 
 ## Required rules
 
@@ -37,10 +39,14 @@ Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1
 
 Workers open in `horch` tabs in your workspace, at most four panes per tab, without taking focus or using your tab.
 
+Before the first dispatch, or after moving/resuming the controller, establish its pane ID from the actual launch context and verify it with `herdr pane get <controller-pane-id>`. Compare the returned IDs with `HERDR_PANE_ID`, `HERDR_TAB_ID`, and `HERDR_WORKSPACE_ID` in the shell executing `horch`; shell snapshots can restore another pane's values.
+
+`run` and `check` reject unavailable panes or inconsistent IDs before dispatch. On a mismatch or `caller_context_invalid`, follow [caller context recovery](references/setup.md#caller-context). Do not choose a workspace from UI focus or create replacement panes to work around the error.
+
 ## Delegate and verify
 
 1. Choose a configured worker. Create a separate git worktree for a writer and pass it as `--cwd`. A read-only worker may share a checkout; explicitly forbid file and external-state changes in its brief.
-2. Write a complete brief: goal, absolute paths to read, file ownership and constraints, verification commands, output files, and whether to commit. Workers have none of your conversation. Reports go beside `result.json`; `horch` appends its worker rules and exact result schema automatically.
+2. Write a complete brief: goal and acceptance criteria, absolute paths to read, file ownership and constraints, verification commands, output files, and whether to commit. Name the summary and evidence needed for your next decision. Workers have none of your conversation. Reports go beside `result.json`; `horch` appends its worker rules and exact result schema automatically.
 3. Run `horch run <worker> --brief <file> --cwd <dir>`. Record `task_id` and `pane_id`; any state other than `running` needs problem handling. For parallel tasks, submit all allowed by `max_active_workers` before waiting.
 4. Wait until every required task is `done`, using the method below. Read `result_path`, inspect its `status`, and read all listed files (paths are relative to the result directory). Relay a blocked result's `question` to the user. A follow-up is a new task with a complete brief and the prior report.
 5. Verify the diff, behavior, and reviewer verdicts before reporting. If `closed` is false, read `message` and retry cleanup with `horch close`; its worker slot remains occupied until closure is confirmed.
@@ -49,9 +55,11 @@ Workers open in `horch` tabs in your workspace, at most four panes per tab, with
 
 `horch wait <task-id> ...` has no default time cap and returns when any waited task changes state. It polls Herdr internally; those polls do not invoke a model. Wait again for the remaining running tasks after handling each change.
 
-- Prefer your harness's background command or yielded shell session for `horch wait`. Keep that same process/session until it returns; use completion notifications when available. Post required user updates while it runs. Claude Code supports background commands; Codex runtimes with yielded exec sessions can resume the returned session handle.
+- With background commands or yielded shell sessions, run `horch wait` **without `--max-seconds`** and resume that same process/session until it returns. A shell tool's yield timeout returns control to you; it does not require a timeout on `horch`. Post user updates while the wait stays alive. Claude Code supports background commands; Codex runtimes with yielded exec sessions can resume the returned session handle.
 - If the runtime only supports blocking shell calls (including Pi without a background facility), use `horch wait <task-id> ... --max-seconds 300` and a shell-tool timeout above 300 seconds. Use a shorter cap only when tool limits, a required update cadence, or a user request requires it.
 - A wait cap stops that observation call, not the worker. Repeat while tasks are `running`; report `long_running` once and keep waiting. Never cancel a worker merely to end a wait.
+
+Do not turn repeated `--max-seconds 1` calls into a status loop. While workers run, prepare independent briefs or assess already delivered evidence. For an occasional stored-state lookup, use `horch list`; use the existing wait process to observe delivery.
 
 ## Problems
 
