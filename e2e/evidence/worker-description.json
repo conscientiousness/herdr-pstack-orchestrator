@@ -1,0 +1,70 @@
+{
+  "schema": "horch/worker-description-preflight/v1",
+  "recorded_at": "2026-10-10T02:46:59.203887+00:00",
+  "herdr_version": "0.9.3",
+  "scope": "live Herdr reads and caller/config CLI preflight; no worker launch",
+  "reproduce": "python3 e2e/caller_context.py --controller-pane <verified-live-pane> --output <private-artifact-directory>",
+  "before": {
+    "verdict": "fail",
+    "passed": 21,
+    "total": 23,
+    "source_hashes": {
+      "horch.py": "2b45f315b7e63073c638a64294c2df6229a7a7419eaebdd856ea6d9b9b6825fd",
+      "caller_context.py": "c06af1a3e7e39935bd90609ed4ac3820ef37b60af8a5c08c0b62f6c587efe198"
+    }
+  },
+  "after": {
+    "verdict": "pass",
+    "passed": 23,
+    "total": 23,
+    "source_hashes": {
+      "horch.py": "bfc785ca7afac686cbf413faa17ed3257336f7beb6dd5fe9b3a08bb3798da04c",
+      "caller_context.py": "c06af1a3e7e39935bd90609ed4ac3820ef37b60af8a5c08c0b62f6c587efe198"
+    }
+  },
+  "configuration_observations": [
+    {
+      "case": "legacy-config-run",
+      "expected_error": "brief_not_found",
+      "before": "brief_not_found",
+      "after": "brief_not_found"
+    },
+    {
+      "case": "legacy-config-check",
+      "expected_error": "unknown_worker",
+      "before": "unknown_worker",
+      "after": "unknown_worker"
+    },
+    {
+      "case": "described-config-run",
+      "expected_error": "brief_not_found",
+      "before": "config_invalid",
+      "after": "brief_not_found"
+    },
+    {
+      "case": "described-config-check",
+      "expected_error": "unknown_worker",
+      "before": "config_invalid",
+      "after": "unknown_worker"
+    },
+    {
+      "case": "invalid-description-run",
+      "expected_error": "config_invalid",
+      "before": "config_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "invalid-description-check",
+      "expected_error": "config_invalid",
+      "before": "config_invalid",
+      "after": "config_invalid"
+    }
+  ],
+  "caller_checks_passed": true,
+  "no_task_state_allocated": true,
+  "limits": [
+    "No model calls or pane mutations.",
+    "Configuration metadata for multiple roles referencing one worker is accepted; the controller routing instructions and repeated reviewer dispatch were not exercised.",
+    "The complete model workflow was not rerun."
+  ]
+}

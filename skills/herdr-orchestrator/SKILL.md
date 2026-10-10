@@ -7,7 +7,7 @@ description: "Delegate tasks to worker agents (Pi, Codex, Claude Code) that run 
 
 You are the controller. Focus on planning, task assignment, guidance, and quality control. Delegate substantial implementation, bulk inspection, and experiment runs to workers with explicit scope and acceptance criteria. Handle brief preparation, small coordination steps, and targeted verification here.
 
-Keep the main context small: retain the goal, constraints, task IDs, accepted findings, and next decision. Ask workers for concise conclusions, blockers, and evidence paths. Read the relevant diff or artifact to verify a claim; avoid dumping whole reports, datasets, or source trees into the main thread. Each task gets a fresh worker process through `horch`.
+Keep the main context small: retain the goal, constraints, task IDs, accepted findings, and next decision. Ask workers for concise conclusions, blockers, and evidence paths. Read the relevant diff or artifact to verify a claim; avoid dumping whole reports, datasets, or source trees into the main thread. For structured evidence, inspect keys/counts first and extract the fields needed for the decision instead of pretty-printing the entire JSON. Each task gets a fresh worker process through `horch`.
 
 ## Required rules
 
@@ -39,13 +39,13 @@ Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1
 
 Workers open in `horch` tabs in your workspace, at most four panes per tab, without taking focus or using your tab.
 
-Before the first dispatch, or after moving/resuming the controller, establish its pane ID from the actual launch context and verify it with `herdr pane get <controller-pane-id>`. Compare the returned IDs with `HERDR_PANE_ID`, `HERDR_TAB_ID`, and `HERDR_WORKSPACE_ID` in the shell executing `horch`; shell snapshots can restore another pane's values.
+Before the first dispatch or after resuming the controller, establish its pane ID from the actual launch context. Check that the shell executing `horch` has that `HERDR_PANE_ID`, then resolve it with `herdr pane current --current`. Shell snapshots can restore another pane's identity. Herdr resolves a moved pane's original ID and returns its live workspace and tab; use those returned IDs rather than launch-time workspace/tab variables.
 
-`run` and `check` reject unavailable panes or inconsistent IDs before dispatch. On a mismatch or `caller_context_invalid`, follow [caller context recovery](references/setup.md#caller-context). Do not choose a workspace from UI focus or create replacement panes to work around the error.
+`run` and `check` reject missing or unavailable caller panes before dispatch and use Herdr's live workspace and tab for placement. On `caller_context_invalid`, follow [caller context recovery](references/setup.md#caller-context). Do not choose a workspace from UI focus or create replacement panes to work around the error.
 
 ## Delegate and verify
 
-1. Choose a configured worker. Create a separate git worktree for a writer and pass it as `--cwd`. A read-only worker may share a checkout; explicitly forbid file and external-state changes in its brief.
+1. Choose a configured worker based on the assignment and its optional `description`. With `pstack-herdr` active, follow its role-first routing rules. One worker/model can serve multiple roles in fresh processes. Create a separate git worktree for a writer and pass it as `--cwd`. A read-only worker may share a checkout; explicitly forbid file and external-state changes in its brief.
 2. Write a complete brief: goal and acceptance criteria, absolute paths to read, file ownership and constraints, verification commands, output files, and whether to commit. Name the summary and evidence needed for your next decision. Workers have none of your conversation. Reports go beside `result.json`; `horch` appends its worker rules and exact result schema automatically.
 3. Run `horch run <worker> --brief <file> --cwd <dir>`. Record `task_id` and `pane_id`; any state other than `running` needs problem handling. For parallel tasks, submit all allowed by `max_active_workers` before waiting.
 4. Wait until every required task is `done`, using the method below. Read `result_path`, inspect its `status`, and read all listed files (paths are relative to the result directory). Relay a blocked result's `question` to the user. A follow-up is a new task with a complete brief and the prior report.
@@ -61,9 +61,11 @@ Before the first dispatch, or after moving/resuming the controller, establish it
 
 Do not turn repeated `--max-seconds 1` calls into a status loop. While workers run, prepare independent briefs or assess already delivered evidence. For an occasional stored-state lookup, use `horch list`; use the existing wait process to observe delivery.
 
+For a routine progress check, use `herdr agent get <agent-name>` and, if needed, `herdr agent read <agent-name> --source visible`. Reserve native harness transcripts for explicit debugging, not a second status loop. Lifecycle activity does not establish that the work is correct; verify the delivered artifacts.
+
 ## Problems
 
-1. Read the pane before closing it: `herdr pane read <pane_id> --source recent --lines 40`.
+1. Read the pane before closing it: `herdr pane read <pane_id> --source visible`. This is passive; recent-history reads can scroll an idle full-screen agent.
 2. Tell the user the task, state, and what the pane shows. Never answer a dialog yourself.
 3. Follow the user's decision to close or retry. Start retries as fresh tasks. If the original task recovered after inspection, use explicit `--recheck` as described in [lifecycle and recovery](references/lifecycle.md).
 

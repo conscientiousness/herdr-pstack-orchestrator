@@ -1,0 +1,138 @@
+{
+  "schema": "horch/native-caller-context-review/v1",
+  "recorded_at": "2026-10-10T02:16:50.845659+00:00",
+  "herdr_version": "0.9.3",
+  "official_sources": {
+    "automation": "https://github.com/herdrdev/herdr/blob/v0.9.3/docs/next/website/src/content/docs/agent-automation.mdx",
+    "caller_resolution": "https://github.com/herdrdev/herdr/blob/v0.9.3/src/app/api/panes.rs#L144-L167",
+    "blank_environment": "https://github.com/herdrdev/herdr/blob/v0.9.3/src/cli/target.rs#L203-L209"
+  },
+  "scope": "Real CLI preflight and live Herdr reads with an empty isolated config; no pane mutation or worker launch.",
+  "reproduce": "python3 e2e/caller_context.py --controller-pane <verified-live-pane> --output <private-artifact-directory>",
+  "before": {
+    "verdict": "fail",
+    "passed": 11,
+    "total": 17,
+    "source_hashes": {
+      "horch.py": "bd7098e568e77b245067b1202305f097acd610538e35604926f23af047aaa372",
+      "caller_context.py": "accfa5381890538febca64526eff91ae31432e37b58e2216d73519aa948b7617"
+    }
+  },
+  "after": {
+    "verdict": "pass",
+    "passed": 17,
+    "total": 17,
+    "source_hashes": {
+      "horch.py": "2b45f315b7e63073c638a64294c2df6229a7a7419eaebdd856ea6d9b9b6825fd",
+      "caller_context.py": "accfa5381890538febca64526eff91ae31432e37b58e2216d73519aa948b7617"
+    }
+  },
+  "observations": [
+    {
+      "case": "stale-pane-run",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "stale-pane-check",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "missing-pane-run",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "missing-pane-check",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "blank-pane-run",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "blank-pane-check",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "whitespace-pane-run",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "whitespace-pane-check",
+      "expected_error": "caller_context_invalid",
+      "before": "caller_context_invalid",
+      "after": "caller_context_invalid"
+    },
+    {
+      "case": "stale-workspace-run",
+      "expected_error": "config_invalid",
+      "before": "caller_context_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "stale-workspace-check",
+      "expected_error": "config_invalid",
+      "before": "caller_context_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "stale-tab-run",
+      "expected_error": "config_invalid",
+      "before": "caller_context_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "stale-tab-check",
+      "expected_error": "config_invalid",
+      "before": "caller_context_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "stale-workspace-and-tab-run",
+      "expected_error": "config_invalid",
+      "before": "caller_context_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "stale-workspace-and-tab-check",
+      "expected_error": "config_invalid",
+      "before": "caller_context_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "valid-context-run",
+      "expected_error": "config_invalid",
+      "before": "config_invalid",
+      "after": "config_invalid"
+    },
+    {
+      "case": "valid-context-check",
+      "expected_error": "config_invalid",
+      "before": "config_invalid",
+      "after": "config_invalid"
+    }
+  ],
+  "no_task_state_allocated": {
+    "before": true,
+    "after": true
+  },
+  "limits": [
+    "No live pane was moved; launch-ID alias resolution was reviewed against official source, not exercised here.",
+    "Configuration loading is the stopping point; worker placement and a complete model workflow were not rerun.",
+    "A stale snapshot identifying another live pane cannot establish process ownership.",
+    "Cross-server shared task stores are unsupported and were not tested."
+  ]
+}

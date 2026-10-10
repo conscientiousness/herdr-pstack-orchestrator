@@ -4,7 +4,7 @@
 Run the setup when the user asks for it, or when `horch run` fails with `config_invalid` because `workers.toml` does not exist. Ask the user one question at a time.
 
 1. Run `horch detect`. Show the user which harnesses are installed, which Pi providers have models, and the `pi_integration` status and version.
-2. Ask which workers to define. A worker is a name plus a harness, a model, an optional effort, and optional extra arguments. Users often want two or more workers on different models, so that one can review another's work.
+2. Ask which workers to define. A worker is a name plus a harness, a model, an optional effort, optional extra arguments, and an optional `description` of its intended tasks and boundaries. One worker/model is sufficient; multiple roles may share it. Different models can provide additional review perspectives when configured.
    - Pi: run `pi --list-models <text>` to find a model. Use the `provider` key with the model ID from that list. `effort` is the Pi thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`).
    - Codex: the model name that `codex -m` accepts. `effort` is the value for Codex's `model_reasoning_effort`, such as `medium` or `high`.
    - Claude Code: an alias such as `opus`, `sonnet`, or `haiku`, or a full model ID. `effort` is the value for `claude --effort`, such as `high` or `max`.
@@ -27,11 +27,13 @@ Run the setup when the user asks for it, or when `horch run` fails with `config_
 
 ## Caller context
 
-`run` and `check` require `HERDR_PANE_ID`, `HERDR_TAB_ID`, and `HERDR_WORKSPACE_ID` to identify one live controller pane. Missing pane/tab IDs or inconsistent IDs produce `caller_context_invalid` before task allocation. A missing workspace retains `not_in_herdr`; an unavailable Herdr service remains a `herdr_error`.
+`run` and `check` require `HERDR_ENV=1` and a nonblank `HERDR_PANE_ID`. They resolve the caller with `herdr pane current --current` and use its returned workspace and tab for placement. Missing or unavailable caller panes produce `caller_context_invalid` before task allocation; an unavailable Herdr service remains a `herdr_error`. Reject a blank pane ID before using `--current`: Herdr 0.9.3 can otherwise fall back to the focused pane.
 
-A harness shell snapshot can restore IDs from a different pane even when the controller process was launched with the correct environment. Confirm the actual controller's identity from its launch context and `herdr pane get <verified-controller-pane>`. Refresh all three variables together in the shell running `horch`. Never substitute the currently focused workspace; it may belong to another project. If the controller identity cannot be established, report the mismatch and leave dispatch stopped.
+A harness shell snapshot can restore another pane's ID even when the controller process was launched correctly. Confirm the actual controller's identity from its launch context, restore that `HERDR_PANE_ID` in the shell running `horch`, and resolve it through `pane current --current`. Never substitute the currently focused pane. If the controller identity cannot be established, report the mismatch and leave dispatch stopped.
 
-This check rejects missing panes and inconsistent IDs. It cannot prove ownership when stale IDs happen to identify another still-live pane consistently. Keep the verified controller context when resuming a session or moving a pane; do not relocate workers and edit task records as routine recovery.
+Moving a pane is different from restoring another pane's shell snapshot. Herdr preserves the moved terminal's launch-time ID as an alias; its live workspace/tab may legitimately differ from the inherited environment. No manual refresh of those two variables is needed. See the official [agent automation guide](https://github.com/herdrdev/herdr/blob/v0.9.3/docs/next/website/src/content/docs/agent-automation.mdx).
+
+This check cannot prove ownership when a snapshot names another still-live pane. Verify identity when resuming; do not relocate workers and edit task records as routine recovery.
 
 ## Dialogs that stop a worker before it starts
 
@@ -47,6 +49,8 @@ These appear before the worker reads its task. `horch` reports `start_failed` an
 
 `horch` reads `$XDG_CONFIG_HOME/herdr-orchestrator/workers.toml`, by default `~/.config/herdr-orchestrator/workers.toml`. The user owns this file.
 
+`description` is optional controller guidance. Existing configurations remain valid without it. Role mappings take precedence over descriptions, and `horch` does not select models or pass descriptions to harness commands. Describe task scope rather than unverified capability or cost rankings. Upgrade every installed `horch` that reads a shared configuration before adding this key; older versions reject unknown keys.
+
 ```toml
 # If you are the controller (you start herdr workers with horch), delegate only
 # through the herdr-orchestrator skill. Never use native subagents.
@@ -55,18 +59,21 @@ max_active_workers = 4
 notify_after_minutes = 180
 
 [workers.glm]
+description = "Bounded tooling changes and mechanical edits."
 harness = "pi"
 provider = "zai"
 model = "glm-5.3-flash"
 effort = "max"
 
 [workers.gpt]
+description = "Implementation, ordinary fixes, and refactoring."
 harness = "codex"
 model = "gpt-6.1-sol"
 effort = "medium"
 args = ["-s", "workspace-write", "-a", "on-request", "-c", 'approvals_reviewer="auto_review"']
 
 [workers.haiku]
+description = "Independent review of a bounded diff and its evidence."
 harness = "claude"
 model = "haiku"
 effort = "max"
@@ -81,6 +88,7 @@ args = ["--permission-mode", "auto"]
 | `workers.<name>.model` | The model as the harness accepts it on its command line. |
 | `workers.<name>.provider` | Pi only. Passed as `--provider`. |
 | `workers.<name>.effort` | Optional reasoning effort. |
+| `workers.<name>.description` | Optional string describing intended tasks and boundaries for the controller. |
 | `workers.<name>.args` | Optional extra arguments, such as permission flags. They come last. |
 | `roles` | Optional. Read only by the `pstack-herdr` skill. |
 

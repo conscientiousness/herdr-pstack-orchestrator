@@ -94,8 +94,8 @@ Once setup is done, delegation is one sentence:
 
 ```text
 Use herdr-orchestrator to fix the login redirect loop in this repository:
-create a git worktree, delegate the fix to a worker, and have a worker on a
-different model review the diff before you report back.
+create a git worktree, delegate the fix to a worker, and have a fresh worker
+independently review the diff before you report back.
 ```
 
 ## Configuration
@@ -130,7 +130,7 @@ The controller never answers worker dialogs. Choose permission flags during setu
 
 Automatic approval can deny an action; denial handling is unverified. A new location can also trigger a trust dialog. See [setup and dialog handling](skills/herdr-orchestrator/references/setup.md).
 
-`max_active_workers` defaults to 4; `notify_after_minutes` defaults to 180. The notification reports elapsed time, not whether the worker is making useful progress. The optional `[roles]` table selects workers for pstack.
+`max_active_workers` defaults to 4; `notify_after_minutes` defaults to 180. The notification reports elapsed time, not whether the worker is making useful progress. The optional `[roles]` table selects workers for pstack. Each worker can also have an optional `description` explaining its intended tasks; existing configurations need no changes. See [configuration](skills/herdr-orchestrator/references/setup.md#configuration).
 
 Task directories live under `~/.local/state/herdr-orchestrator/tasks/`, or the corresponding `$XDG_STATE_HOME` path. Briefs and results remain until you delete them. Controllers sharing that task store share the worker limit; workers execute concurrently after startup.
 
@@ -218,7 +218,7 @@ All three controller harnesses read roles directly from `workers.toml`. Configur
 "interrogate reviewers" = ["glm", "haiku"]
 ```
 
-A single role names one worker; a panel lists one worker per task. The controller selects one worker from `arena cross-judge pool`. Other workflows use their original role names, such as `how explorer` or `architect runners`.
+A single role names one worker; a panel lists one worker per task. Roles may share one worker/model, and repeated panel entries start separate processes. Disclose when a chosen upstream workflow's panel size or model-diversity requirement is unmet; same-model reviews are not cross-model validation. The controller selects one worker from `arena cross-judge pool`. Other workflows use their original role names, such as `how explorer` or `architect runners`. Assignments outside a named playbook also use applicable configured roles first, with optional worker descriptions guiding otherwise unmatched tasks.
 
 The [adapter instructions](skills/pstack-herdr/SKILL.md) define workflow coordination and review. Read-only assignments rely on worker briefs and harness permissions; `horch` does not enforce a separate sandbox.
 
