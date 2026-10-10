@@ -21,9 +21,15 @@ The bundle's workflow entries load this mapping automatically; pure guidance kee
 
 On Claude Code, Codex, and Pi, read `$XDG_CONFIG_HOME/herdr-orchestrator/workers.toml`, or `~/.config/herdr-orchestrator/workers.toml` when `XDG_CONFIG_HOME` is unset. Its `[roles]` values name workers from `[workers]`. This is the only role configuration. Upstream `setup-pstack` maps to the companion skill's setup and these TOML roles; do not create a separate model sheet or import one.
 
-Keep upstream role names. A single role names one worker, which may handle several fresh tasks. Panels (`interrogate reviewers`, `arena runners`, `architect runners`) are lists with one task per entry. `arena cross-judge pool` is also a list, but the controller selects one entry as the skill directs. Configure only roles needed by the selected workflow; preserve its required panel size and model diversity.
+Keep upstream role names. A single role names one worker, which may handle several fresh tasks. Panels (`interrogate reviewers`, `arena runners`, `architect runners`) are lists with one fresh task per entry, including repeated worker names. `arena cross-judge pool` is also a list, but the controller selects one entry as the skill directs. Configure only roles needed by the selected workflow. Roles may share one worker and model; additional providers or models are optional.
 
-Use each worker's configured harness, model, and effort. If a needed role or worker is missing, invalid, or names `auto` or `inherit-parent`, complete setup with the user before dispatch. Never substitute upstream model defaults or native subagents. For an ad-hoc task without a named upstream role, explicitly select a suitable configured worker.
+Use each worker's configured harness, model, and effort. If a needed role or worker is missing, invalid, or names `auto` or `inherit-parent`, complete setup with the user before dispatch. Never substitute upstream model defaults or native subagents.
+
+Classify the assignment before selecting a worker, including tasks outside a named playbook. Use an applicable configured role first: source mapping fits `how explorer`, root-cause investigation fits `why investigators`, and implementation fits `feature, refactoring`. Using a role does not require running that role's whole playbook. If no configured role fits, select a configured worker using its optional `description` and the assignment's requirements. Worker names are user-defined; never assume a particular name or model family exists. A description explains intended use, not measured capability, price, or a routing override.
+
+Every brief names the matched role (or says no role fits), selected worker, and one concrete reason. If a seemingly related role does not fit, name the task-specific constraint; a generic claim that the work needs judgment is insufficient. When a role applies, use its configured worker or panel. Descriptions and controller model preferences do not authorize replacing that assignment. Do not add automatic retries or model fallbacks.
+
+For formal `interrogate` review, run the entire configured reviewer panel; do not relabel it as an ad-hoc task to omit reviewers. A bounded evidence audit may use one worker and must be reported as that limited audit. Same-model reviewers still use separate processes and independent briefs, but do not provide cross-model validation. If the upstream workflow requires a larger or more diverse panel than configured, disclose that gap and do not claim full workflow compliance; it does not block unrelated work or a clearly identified limited review.
 
 On setup, ask which configured workers should fill each role. For example:
 
@@ -32,6 +38,8 @@ On setup, ask which configured workers should fill each role. For example:
 "feature, refactoring" = "glm"
 "interrogate reviewers" = ["ds", "haiku"]
 ```
+
+For a single configured worker named `solo`, these roles can instead use `"solo"` and `["solo", "solo"]`. Each review entry starts a separate process; this provides two review tasks, not two models.
 
 ## Review loop
 

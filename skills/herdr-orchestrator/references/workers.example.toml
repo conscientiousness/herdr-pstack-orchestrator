@@ -14,6 +14,9 @@
 #     python3 <skill-dir>/scripts/horch.py check --cwd /some/work/dir
 #
 # A worker name must match [a-z][a-z0-9-]{0,15}.
+# Descriptions are optional controller guidance, not model capability rankings.
+# Keep just one worker if desired; roles can share it. Upgrade older installed
+# horch scripts before adding description to a shared configuration.
 
 # Most tasks with an open pane at one time. Default 4.
 max_active_workers = 4
@@ -23,12 +26,14 @@ max_active_workers = 4
 notify_after_minutes = 180
 
 [workers.glm]
+description = "Bounded tooling changes and mechanical edits."
 harness = "pi"
 provider = "zai"
 model = "glm-5.3-flash"
 effort = "max" # Pi thinking level: off, minimal, low, medium, high, xhigh, max
 
 [workers.gpt]
+description = "Implementation, ordinary fixes, and refactoring."
 harness = "codex"
 model = "gpt-6.1-sol"
 effort = "medium" # becomes Codex model_reasoning_effort
@@ -38,6 +43,7 @@ effort = "medium" # becomes Codex model_reasoning_effort
 args = ["-s", "workspace-write", "-a", "on-request", "-c", 'approvals_reviewer="auto_review"']
 
 [workers.haiku]
+description = "Independent review of a bounded diff and its evidence."
 harness = "claude"
 model = "haiku"
 effort = "max" # passed as claude --effort
@@ -45,7 +51,9 @@ args = ["--permission-mode", "auto"]
 
 # Optional. Read only by the pstack-herdr skill; horch itself ignores it.
 # A single role names one worker from [workers]; a panel role lists one
-# worker per review task.
+# worker per review task. Repeated names start separate fresh processes.
 [roles]
 "feature, refactoring" = "gpt"
 "interrogate reviewers" = ["glm", "haiku"]
+# With only gpt configured, use ["gpt", "gpt"] for two same-model reviews.
+# Disclose when a chosen upstream workflow requires model diversity.

@@ -26,7 +26,7 @@ from pathlib import Path
 
 HARNESSES = ("pi", "codex", "claude")
 CONFIG_TOP_KEYS = {"max_active_workers", "notify_after_minutes", "workers", "roles"}
-WORKER_KEYS = {"harness", "model", "provider", "effort", "args"}
+WORKER_KEYS = {"harness", "model", "provider", "effort", "args", "description"}
 WORKER_NAME_RE = re.compile(r"[a-z][a-z0-9-]{0,15}")
 TASK_ID_RE = re.compile(r"t-[0-9a-f]{6}")
 MISSING_PANE_CODES = {"pane_not_found", "tab_not_found", "workspace_not_found"}
@@ -362,6 +362,8 @@ def load_config():
         unknown = sorted(set(spec) - WORKER_KEYS)
         if unknown:
             fail("config_invalid", f"worker {name!r} has unknown keys: {', '.join(unknown)}")
+        if "description" in spec and not isinstance(spec["description"], str):
+            fail("config_invalid", f"worker {name!r} description must be a string")
         harness = spec.get("harness")
         if harness not in HARNESSES:
             fail("config_invalid", f"worker {name!r} needs harness set to one of: {', '.join(HARNESSES)}")
@@ -386,6 +388,7 @@ def load_config():
             "provider": provider,
             "effort": effort,
             "args": extra,
+            "description": spec.get("description"),
         }
     return {"max_active_workers": max_active, "notify_after_minutes": notify_minutes, "workers": workers}
 

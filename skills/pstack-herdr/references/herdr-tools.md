@@ -17,7 +17,9 @@ Original pstack describes Cursor tools and agents. With `pstack-herdr` active, t
 | Follow up with `SendMessage` | Wait for the prior task to settle. Start a new task with the complete brief, previous report, and current branch or revision. |
 | Stop a subagent | `horch close <task-id>` closes only that task's recorded pane. Read a problem pane before closing it. |
 
-For a panel role such as `interrogate reviewers`, start one task for each configured worker name. Give every reviewer the same intent, revision, rubric, and code scope. The `arena cross-judge pool` selects one worker after candidates finish; it is not a panel. Compare configured models when upstream requires diversity; `horch` does not enforce it.
+For a panel role such as `interrogate reviewers`, start one task per configured entry, including repeated worker names. Give every reviewer the same intent, revision, rubric, and code scope in a fresh process. The `arena cross-judge pool` selects one worker after candidates finish; it is not a panel. Roles may share a single model. Compare configured models when upstream requires diversity and disclose any unmet requirement; `horch` does not enforce it. A same-model panel is not cross-model validation.
+
+For assignments outside a named playbook, use an applicable configured role before selecting a worker directly. Optional worker descriptions guide the choice only when no role fits. Record the role, worker, and concrete reason in the brief; follow the [role resolution rules](../SKILL.md#resolve-roles).
 
 `horch wait` returns when at least one task changes state, so keep waiting until every required review reports `state: "done"`. An early report or result file cannot replace that state. Closing a running worker cancels it and leaves the review gate unresolved. A `done` state confirms a valid task result and an ended turn; it does not approve the code. Treat `blocked`, `start_failed`, `not_started`, `exited`, `result_missing`, and `result_invalid` as unresolved review work. Follow `herdr-orchestrator` for notification and pane inspection.
 

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Check caller-context resolution through the real CLI and live Herdr reads.
+"""Check caller and config preflight through the real CLI and live Herdr reads.
 
 Check unavailable or missing pane IDs and canonicalization of stale inherited
 workspace/tab IDs for both run and check, plus a valid-context control. This
 driver does not move real panes or exercise a moved pane's launch-ID alias.
 
-Every invocation uses an empty isolated configuration directory. That second
-preflight failure prevents worker creation even on the unfixed implementation.
+Config failure modes: rejecting legacy workers without descriptions, rejecting
+string descriptions or single-worker roles, and accepting non-string metadata.
+Caller cases use an empty isolated config; config cases use a missing brief or
+unknown worker to prevent worker creation even on the unfixed implementation.
 No model calls, pane mutations, or changes to the user's configuration occur.
 """
 
@@ -35,7 +37,7 @@ def main():
     root = Path(tempfile.mkdtemp(prefix="caller-context-", dir=output))
     checks, observations = [], []
     evidence = {"schema": "horch/caller-context-e2e/v1", "verdict": "fail",
-                "scope": "live Herdr reads and CLI preflight; no worker launch",
+                "scope": "live Herdr reads and caller/config CLI preflight; no worker launch",
                 "source_hashes": {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                                   for p in (HORCH, Path(__file__))},
                 "checks": checks, "observations": observations}
@@ -56,8 +58,24 @@ def main():
                                          "HERDR_TAB_ID": "wrong-tab"}, "config_invalid"),
             ("valid-context", {}, "config_invalid"),
         ]
+        for label, description in (("legacy-config", ""),
+                                   ("described-config", 'description = "General implementation and review"\n'),
+                                   ("invalid-description", "description = 42\n")):
+            config_root = root / label
+            config_path = config_root / "herdr-orchestrator" / "workers.toml"
+            config_path.parent.mkdir(parents=True)
+            config_path.write_text('[roles]\nimplementation = "solo"\nreview = "solo"\n'
+                                   '[workers.solo]\nharness = "codex"\nmodel = "single-model"\n'
+                                   + description)
+            cases.append((label, {"XDG_CONFIG_HOME": str(config_root)}, None))
         for label, overrides, expected in cases:
-            for command in (["run", "probe", "--brief", str(root / "unused.md")], ["check", "probe"]):
+            config_case = expected is None
+            for command in (["run", "solo" if config_case else "probe", "--brief", str(root / "unused.md")],
+                            ["check", "absent" if config_case else "probe"]):
+                expected_error = expected
+                if config_case:
+                    expected_error = ("config_invalid" if label == "invalid-description" else
+                                      "brief_not_found" if command[0] == "run" else "unknown_worker")
                 case_env = dict(env, **overrides)
                 case_env = {key: value for key, value in case_env.items() if value is not None}
                 proc = subprocess.run([sys.executable, str(HORCH), *command],
@@ -66,8 +84,8 @@ def main():
                 (root / (name + ".stdout")).write_text(proc.stdout)
                 (root / (name + ".stderr")).write_text(proc.stderr)
                 error = json.loads(proc.stdout).get("error")
-                observations.append({"case": name, "expected_error": expected, "actual_error": error})
-                checks.append({"name": name, "ok": proc.returncode == 1 and error == expected})
+                observations.append({"case": name, "expected_error": expected_error, "actual_error": error})
+                checks.append({"name": name, "ok": proc.returncode == 1 and error == expected_error})
         checks.append({"name": "no task state allocated", "ok": not (root / "state").exists()})
         evidence["verdict"] = "pass" if all(row["ok"] for row in checks) else "fail"
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:

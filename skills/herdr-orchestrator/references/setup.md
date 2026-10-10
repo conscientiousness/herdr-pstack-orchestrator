@@ -4,7 +4,7 @@
 Run the setup when the user asks for it, or when `horch run` fails with `config_invalid` because `workers.toml` does not exist. Ask the user one question at a time.
 
 1. Run `horch detect`. Show the user which harnesses are installed, which Pi providers have models, and the `pi_integration` status and version.
-2. Ask which workers to define. A worker is a name plus a harness, a model, an optional effort, and optional extra arguments. Users often want two or more workers on different models, so that one can review another's work.
+2. Ask which workers to define. A worker is a name plus a harness, a model, an optional effort, optional extra arguments, and an optional `description` of its intended tasks and boundaries. One worker/model is sufficient; multiple roles may share it. Different models can provide additional review perspectives when configured.
    - Pi: run `pi --list-models <text>` to find a model. Use the `provider` key with the model ID from that list. `effort` is the Pi thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`).
    - Codex: the model name that `codex -m` accepts. `effort` is the value for Codex's `model_reasoning_effort`, such as `medium` or `high`.
    - Claude Code: an alias such as `opus`, `sonnet`, or `haiku`, or a full model ID. `effort` is the value for `claude --effort`, such as `high` or `max`.
@@ -49,6 +49,8 @@ These appear before the worker reads its task. `horch` reports `start_failed` an
 
 `horch` reads `$XDG_CONFIG_HOME/herdr-orchestrator/workers.toml`, by default `~/.config/herdr-orchestrator/workers.toml`. The user owns this file.
 
+`description` is optional controller guidance. Existing configurations remain valid without it. Role mappings take precedence over descriptions, and `horch` does not select models or pass descriptions to harness commands. Describe task scope rather than unverified capability or cost rankings. Upgrade every installed `horch` that reads a shared configuration before adding this key; older versions reject unknown keys.
+
 ```toml
 # If you are the controller (you start herdr workers with horch), delegate only
 # through the herdr-orchestrator skill. Never use native subagents.
@@ -57,18 +59,21 @@ max_active_workers = 4
 notify_after_minutes = 180
 
 [workers.glm]
+description = "Bounded tooling changes and mechanical edits."
 harness = "pi"
 provider = "zai"
 model = "glm-5.3-flash"
 effort = "max"
 
 [workers.gpt]
+description = "Implementation, ordinary fixes, and refactoring."
 harness = "codex"
 model = "gpt-6.1-sol"
 effort = "medium"
 args = ["-s", "workspace-write", "-a", "on-request", "-c", 'approvals_reviewer="auto_review"']
 
 [workers.haiku]
+description = "Independent review of a bounded diff and its evidence."
 harness = "claude"
 model = "haiku"
 effort = "max"
@@ -83,6 +88,7 @@ args = ["--permission-mode", "auto"]
 | `workers.<name>.model` | The model as the harness accepts it on its command line. |
 | `workers.<name>.provider` | Pi only. Passed as `--provider`. |
 | `workers.<name>.effort` | Optional reasoning effort. |
+| `workers.<name>.description` | Optional string describing intended tasks and boundaries for the controller. |
 | `workers.<name>.args` | Optional extra arguments, such as permission flags. They come last. |
 | `roles` | Optional. Read only by the `pstack-herdr` skill. |
 
