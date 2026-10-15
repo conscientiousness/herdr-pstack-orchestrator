@@ -1,0 +1,101 @@
+{
+  "verdict": "pass",
+  "recorded_at": "2026-10-15T08:10:11.471899+00:00",
+  "source_revision": "e61e3e9c2c692b46cc20cb8ec8b25f23416d7316",
+  "source_skills_git_tree": "75ddf501bcd858b753f164c8bf5adbe72a5852d0",
+  "upstream": {
+    "repository": "https://github.com/cursor/plugins.git",
+    "revision": "e5136d82418d2db3165ea1050d17577cd618cc05",
+    "version": "0.15.25"
+  },
+  "scope": "installation_and_catalogs",
+  "driver_sha256": "32b9b7eabe38429a421ec0de0d92bdef8ac1e37c374db4a2acb3c5c8562e469f",
+  "original_receipt_sha256": "c92704d1a3fef88b0e826da4c6cdf9d1c675a4d2474ba49109c7ecdc6bc91cbb",
+  "checks": {
+    "installed_catalog": true,
+    "all_files_preserved": true,
+    "claude_entries": true,
+    "pi_catalog": true,
+    "codex_catalog": true,
+    "codex_no_errors": true
+  },
+  "installed_skills": 56,
+  "installed_files": 197,
+  "file_differences": [],
+  "installed_tree_sha256": "46f233b9dbabd9121693c905d62d020efe3141ad287be6e6bc0709917e9d4d6c",
+  "native_catalogs": {
+    "pi": {
+      "discovered_skills": 56,
+      "new_skills_discovered": []
+    },
+    "codex": {
+      "discovered_skills": 56,
+      "new_skills_discovered": []
+    }
+  },
+  "installation": {
+    "method": "Installed a temporary copy of the complete skills tree into a disposable project, deleted the source, then verified all installed files and native Pi/Codex catalogs.",
+    "command": [
+      "npx",
+      "--yes",
+      "skills@1.7.1",
+      "add",
+      "<temporary-source>",
+      "-s",
+      "*",
+      "-a",
+      "codex",
+      "-a",
+      "claude-code",
+      "-a",
+      "pi",
+      "-y"
+    ],
+    "global_install": false,
+    "temporary_source_removed_before_catalog_check": true,
+    "versions": {
+      "python": "Python 3.14.7",
+      "npx": "11.20.0",
+      "pi": "1.2.0",
+      "codex": "codex-cli 0.162.1",
+      "git": "git version 2.55.0"
+    }
+  },
+  "regeneration": {
+    "verdict": "pass",
+    "full_skills_tree_matches": true,
+    "driver_sha256": "0494c6575ac512cf93337cdc4625f0cb6fdb5d939ffd04cd6e57aa7260d4753c"
+  },
+  "upstream_check": {
+    "status": "current",
+    "compared_paths": [
+      "pstack/",
+      "cursor-team-kit/"
+    ],
+    "repository": "https://github.com/cursor/plugins.git",
+    "pinned_revision": "e5136d82418d2db3165ea1050d17577cd618cc05",
+    "pinned_version": "0.15.25",
+    "default_branch": "main",
+    "upstream_revision": "e5136d82418d2db3165ea1050d17577cd618cc05",
+    "compare_url": "https://github.com/cursor/plugins/compare/e5136d82418d2db3165ea1050d17577cd618cc05...e5136d82418d2db3165ea1050d17577cd618cc05",
+    "upstream_version": "0.15.25",
+    "changed_files": []
+  },
+  "reproduction": {
+    "procedure": ".agents/skills/verify-herdr-orchestrator/features/discovery.md",
+    "catalog_command": "python3 e2e/skill_catalogs.py <disposable-consumer>",
+    "regeneration_command": "python3 scripts/prepare_pstack.py --source <clean-pinned-source> --output <new-package-directory>",
+    "regeneration_comparison": "diff -r --exclude=__pycache__ skills <new-package-directory>/skills",
+    "upstream_command": "python3 scripts/check_upstream.py --output <artifact-directory>/upstream.json"
+  },
+  "scope_limits": [
+    "No authenticated model workflow was run; revised guidance and ketchup remain runtime unverified.",
+    "Claude Code installation was checked; native Claude Code discovery was not measured.",
+    "Installation used a local source copy, not a remote GitHub URL.",
+    "Historical receipts retain their original source attribution."
+  ],
+  "cleanup": {
+    "owned_install_directories_removed": true,
+    "receipts_retained": true
+  }
+}
