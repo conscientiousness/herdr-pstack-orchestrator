@@ -8,7 +8,7 @@
 
 [![Package validation](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml)
 [![Pstack upstream](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml)
-[![Pstack source: 0.15.24](https://img.shields.io/badge/pstack_source-0.15.24-blue)](https://github.com/cursor/plugins/tree/1e5c90a4b6f249917bd21fe361b3a2a7deb741b8/pstack)
+[![Pstack source: 0.15.25](https://img.shields.io/badge/pstack_source-0.15.25-blue)](https://github.com/cursor/plugins/tree/e5136d82418d2db3165ea1050d17577cd618cc05/pstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Run coding agents from one conversation and inspect their work in [Herdr](https://herdr.dev). The controller assigns tasks, waits for results, and verifies the work.
@@ -199,7 +199,7 @@ Wait for `state: "done"` before consuming a result. A worker can write files whi
 
 ## Optional: original pstack through Herdr
 
-The adapter tracks [original pstack](https://github.com/cursor/plugins/tree/1e5c90a4b6f249917bd21fe361b3a2a7deb741b8/pstack) 0.15.24. The bundle contains 56 installable entries: 51 pstack skills, three team-kit dependencies, and two Herdr adapters. It preserves supporting files and licenses. Workflow entries load the Herdr mapping; pure guidance keeps its original body.
+The adapter tracks [original pstack](https://github.com/cursor/plugins/tree/e5136d82418d2db3165ea1050d17577cd618cc05/pstack) 0.15.25. The bundle contains 56 installable entries: 51 pstack skills, three team-kit dependencies, and two Herdr adapters. It preserves supporting files and licenses. Workflow entries load the Herdr mapping; pure guidance keeps its original body.
 
 After installation, start a fresh session and invoke a skill directly:
 
@@ -239,11 +239,13 @@ Cursor modes, hooks, `/loop`, cloud execution, and unavailable MCP or app-drivin
 
 ## Verification
 
-The current 0.15.24 bundle passed local installation and native discovery checks. Earlier results retain their original source attribution:
+The current 0.15.25 bundle passed local installation and native discovery checks. Earlier results retain their original source attribution:
 
 | Scope | Evidence |
 |---|---|
 | Workspace worker capacity | Two workspaces sharing one task store each held two workers. Legacy records, local `run`/`check` refusal, five delivered model results, released capacity, and cleanup passed 49 checks. See the [workspace quota receipt](e2e/evidence/workspace-limits.json). |
+| Local bundled installation (pstack 0.15.25) | A temporary local source-copy install preserved all 56 entries and 197 files for Codex, Pi, and Claude Code, with no file differences. The source was deleted before native catalog checks. |
+| Native discovery (pstack 0.15.25) | All 56 entries appeared in Pi and Codex catalogs. Claude Code installation was checked; native discovery was not measured. |
 | Local bundled installation (pstack 0.15.24) | A temporary local source-copy install preserved all 56 entries and 197 files for Codex, Pi, and Claude Code, with no file differences. The source was deleted before native catalog checks. |
 | Native discovery (pstack 0.15.24) | All 56 entries appeared in Pi and Codex catalogs. Claude Code installation was checked; native discovery was not measured. |
 | Local bundled installation (pstack 0.15.21) | A temporary local source-copy install preserved all 54 entries and 193 files for Codex, Pi, and Claude Code, with no file differences. The source was deleted before native catalog checks. |
@@ -257,7 +259,7 @@ The current 0.15.24 bundle passed local installation and native discovery checks
 | Original pstack `how` (v0.2.0) | A Pi controller completed three explorer tasks and one explainer task through Herdr, with delivery and cleanup verified. |
 | Historical package CI | Python 3.11/3.14, installed file comparisons, and regeneration from the then-pinned upstream source. |
 
-See the current [0.15.24 upstream-sync receipt](e2e/evidence/upstream-sync-0.15.24.json), historical [0.15.21 receipt](e2e/evidence/upstream-sync-0.15.21.json), [0.15.18 receipt](e2e/evidence/upstream-sync-0.15.18.json), [0.15.17 receipt](e2e/evidence/upstream-sync-0.15.17.json), [bundled-install receipt](e2e/evidence/bundled-install.json), and [discovery/routing receipt](e2e/evidence/skill-discovery.json). Updated workflows and scripts, `ketchup`, other original skills, and `poteto-mode` playbooks remain runtime unverified. Discovery does not prove workflow execution.
+See the current [0.15.25 upstream-sync receipt](e2e/evidence/upstream-sync-0.15.25.json), historical [0.15.24 receipt](e2e/evidence/upstream-sync-0.15.24.json), [0.15.21 receipt](e2e/evidence/upstream-sync-0.15.21.json), [0.15.18 receipt](e2e/evidence/upstream-sync-0.15.18.json), [0.15.17 receipt](e2e/evidence/upstream-sync-0.15.17.json), [bundled-install receipt](e2e/evidence/bundled-install.json), and [discovery/routing receipt](e2e/evidence/skill-discovery.json). Updated workflows and scripts, `ketchup`, other original skills, and `poteto-mode` playbooks remain runtime unverified. Discovery does not prove workflow execution.
 
 Earlier core, review-loop, and controller tests retain their original source revisions in the [E2E guide](e2e/README.md#evidence-and-source-attribution). They are not new v0.2.0 workflow tests. Runtime checks used Linux; macOS, deliberate approval denial, and task completion beyond 30 minutes remain unverified.
 
