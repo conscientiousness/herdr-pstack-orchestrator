@@ -1,0 +1,147 @@
+{
+  "verdict": "pass",
+  "scope": "installation_and_catalogs",
+  "driver_sha256": "32b9b7eabe38429a421ec0de0d92bdef8ac1e37c374db4a2acb3c5c8562e469f",
+  "checks": {
+    "installed_catalog": true,
+    "all_files_preserved": true,
+    "claude_entries": true,
+    "pi_catalog": true,
+    "codex_catalog": true,
+    "codex_no_errors": true
+  },
+  "installed_files": 605,
+  "file_differences": [],
+  "installed_tree_sha256": "7e9457cbef8e37ac9fad449301555e87f4878f1a7859293aac20ff1a2673dc47",
+  "recorded_at": "2026-10-28T03:50:17.321629+00:00",
+  "source_base_revision": "9ce46ee87b3e81eaea866ab6ca6f9f4e482d8393",
+  "source_skills_git_tree": "3a602b7ba794869ba00cef5d16e2e394020f193b",
+  "source_attribution": "Installed from a working tree based on source_base_revision. source_skills_git_tree identifies the exact tested skills tree.",
+  "original_receipt_sha256": "d6a7230e77c4cb8367dbdf6ca0241ccbe33877daba10adb22aacaee51b987b70",
+  "upstream": {
+    "repository": "https://github.com/cursor/plugins.git",
+    "revision": "c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+    "version": "0.15.36"
+  },
+  "previous_upstream": {
+    "revision": "99b609a72323b70204eab407c622f436e858e112",
+    "version": "0.15.32"
+  },
+  "installed_skills": 60,
+  "native_catalogs": {
+    "pi": {
+      "discovered_skills": 60,
+      "new_skills_discovered": []
+    },
+    "codex": {
+      "discovered_skills": 60,
+      "new_skills_discovered": []
+    }
+  },
+  "reviewed_changes": {
+    "comparison": "https://github.com/cursor/plugins/compare/99b609a72323b70204eab407c622f436e858e112...c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+    "direct_sync": [
+      "pstack/skills/create-formal-verification-skill/SKILL.md",
+      "pstack/skills/ketchup-video/SKILL.md",
+      "pstack/skills/principle-explain-the-number/SKILL.md",
+      "pstack/skills/statechart/"
+    ],
+    "existing_adapted_sync": [
+      "pstack/skills/arena/SKILL.md",
+      "pstack/skills/interrogate/SKILL.md",
+      "pstack/skills/poteto-mode/"
+    ],
+    "new_adapted_skills": [],
+    "added_skills": [],
+    "removed_skills": [],
+    "removed_resources": [
+      "pstack/skills/interrogate/references/",
+      "pstack/skills/poteto-mode/scripts/orch/",
+      "previous statechart .mjs implementation and fixtures"
+    ],
+    "unchanged_exclusions": [
+      "make-bot-ui",
+      "poteto-help",
+      "setup-pstack"
+    ],
+    "mapping_updates": [
+      "Replace removed Interrogate references and read-only review with isolated writable repro worktrees and controller replay; review-only requests apply no fixes.",
+      "Select only a different-family Arena cross-judge; disclose skipped judging or an unknown controller-family check. Configured workers and no model fallbacks still govern.",
+      "Map Orchestrate program notes/store to controller artifacts and required dispatch/wait to Horch. Preserve configured concurrency, no nested delegation, no automatic model retries, and explicit merge authorization; leave required unsupported capabilities unresolved.",
+      "Retain subtitled silent-video requirements, outside-repository rendering, frame inspection, and measured slide holds."
+    ],
+    "distribution_decision": "Preserve original skill bodies and resource trees with 19 existing adapted headers and current local Herdr mapping. Upstream README, guides, plugin manifests, and excluded Cursor setup/help remain outside this bundle.",
+    "statechart_decision": "Preserve the TypeScript rewrite, launcher, modules, upstream tests, recorded TLC corpus, and external Pele 1.9.0 SVG rendering reference. Old .mjs subcommands and built-in rendering are removed. The launcher requires compatible Node, Bun, or Deno; model checking locates/installs TLC and Java with mise unless overridden. Bundling installs no runtime tools. Corpus recordings remain upstream fixture material, not fresh verification evidence.",
+    "legacy_driver_limit": "The optional formal-review audit in e2e/design_loop.py targets the previous Interrogate protocol and removed references. It is documented as incompatible with the current protocol, without weakening its assertions or claiming a current runtime pass.",
+    "independent_compatibility_review": "Read-only review found no actionable contradiction in the revised local Interrogate, Arena, and Orchestrate mappings. This is source compatibility review, not an executed workflow.",
+    "agents_and_team_kit_changed": false
+  },
+  "installation": {
+    "method": "Installed a temporary copy of the complete skills tree into a disposable project, deleted the source, then verified all installed files and native Pi/Codex catalogs.",
+    "command": [
+      "npx",
+      "--yes",
+      "skills@1.7.1",
+      "add",
+      "<temporary-source>",
+      "-s",
+      "*",
+      "-a",
+      "codex",
+      "-a",
+      "claude-code",
+      "-a",
+      "pi",
+      "-y"
+    ],
+    "global_install": false,
+    "temporary_source_removed_before_catalog_check": true,
+    "versions": {
+      "python": "Python 3.14.8",
+      "node": "v26.12.0",
+      "npx": "11.20.0",
+      "pi": "1.3.0",
+      "codex": "codex-cli 0.165.0",
+      "git": "git version 2.56.0"
+    }
+  },
+  "regeneration": {
+    "verdict": "pass",
+    "full_skills_tree_matches": true,
+    "driver_sha256": "d43c82640bb8f1f571f3fc3c05d77112cab6379ca295ba473492906038f56187"
+  },
+  "upstream_check": {
+    "status": "current",
+    "compared_paths": [
+      "pstack/",
+      "cursor-team-kit/"
+    ],
+    "repository": "https://github.com/cursor/plugins.git",
+    "pinned_revision": "c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+    "pinned_version": "0.15.36",
+    "default_branch": "main",
+    "upstream_revision": "c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+    "compare_url": "https://github.com/cursor/plugins/compare/c742dd61706fbacc1b95f1a20b7b988cf096ce6c...c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+    "upstream_version": "0.15.36",
+    "changed_files": []
+  },
+  "reproduction": {
+    "procedure": ".agents/skills/verify-herdr-orchestrator/features/discovery.md",
+    "catalog_command": "python3 e2e/skill_catalogs.py <disposable-consumer>",
+    "regeneration_command": "python3 scripts/prepare_pstack.py --source <clean-pinned-source> --output <new-package-directory>",
+    "regeneration_comparison": "diff -r --exclude=__pycache__ skills <new-package-directory>/skills",
+    "upstream_command": "python3 scripts/check_upstream.py --output <artifact-directory>/upstream.json"
+  },
+  "scope_limits": [
+    "No authenticated model workflow, new Interrogate repro scenario, Orchestrate program, TLC model check, SVG render, or subtitled-video render was run; these runtime behaviors remain unverified.",
+    "The adapter does not supply cloud VMs, native fork/resume, worker steering, event subscriptions, or nested sub-coordinators.",
+    "The legacy design-loop formal-review audit does not verify the current Interrogate protocol.",
+    "Claude Code installation was checked; native Claude Code discovery was not measured.",
+    "Installation used a local source copy, not a remote GitHub URL.",
+    "Historical receipts and upstream recorded TLC fixtures retain their original source attribution."
+  ],
+  "cleanup": {
+    "owned_install_directories_removed": true,
+    "receipts_retained": true
+  }
+}

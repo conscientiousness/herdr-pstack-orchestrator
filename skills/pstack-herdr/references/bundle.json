@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/cursor/plugins.git",
-  "revision": "99b609a72323b70204eab407c622f436e858e112",
-  "version": "0.15.32",
+  "revision": "c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+  "version": "0.15.36",
   "excluded_skills": {
     "make-bot-ui": "Requires unavailable Cursor Routines and secret-request tools; no coding workflow depends on it.",
     "poteto-help": "Cursor-specific setup and navigation duplicate the adapter docs and require unbundled guide pages; no workflow depends on it.",
@@ -18,7 +18,7 @@
       "name": "arena",
       "adapted": true,
       "source": "pstack/skills/arena/SKILL.md",
-      "source_sha256": "ed72f6c132b1ce3974d949581d0adc5dade424fe20793ac3b4c4fae22ecb9354"
+      "source_sha256": "d0adeca6c9b19d43d90ed8f0484f0ddd362f05006d628b8f4cc6c9b55fa4d2b3"
     },
     {
       "name": "automate-me",
@@ -54,7 +54,7 @@
       "name": "create-formal-verification-skill",
       "adapted": false,
       "source": "pstack/skills/create-formal-verification-skill/SKILL.md",
-      "source_sha256": "5e489d938620883502c27c9c2f32143ae7aa8c0543088dad996b2c815d2acc52"
+      "source_sha256": "30ef0ac27612ecd16fdc081112113221d673053cef3f8603db11932193861211"
     },
     {
       "name": "create-verification-skill",
@@ -84,7 +84,7 @@
       "name": "interrogate",
       "adapted": true,
       "source": "pstack/skills/interrogate/SKILL.md",
-      "source_sha256": "a16dfe179005abc22a4651b82f25b0c8ab953284276efe4e6dc341958fb63647"
+      "source_sha256": "3f3c2e9b8cf6b180dba9f32a4aff85e5691b09805232468e37a0ba45437a9984"
     },
     {
       "name": "ketchup",
@@ -96,7 +96,7 @@
       "name": "ketchup-video",
       "adapted": false,
       "source": "pstack/skills/ketchup-video/SKILL.md",
-      "source_sha256": "74f1b9e61f8479e2be5b91a4f53136f6ad8e144fd950c9848de6aa1cdbb7645c"
+      "source_sha256": "027aed9a01adf208aeac3a134f47d12f7c1e42d6fea03095aedc2bae58cdcfd1"
     },
     {
       "name": "maintain-formal-verification-skill",
@@ -120,7 +120,7 @@
       "name": "poteto-mode",
       "adapted": true,
       "source": "pstack/skills/poteto-mode/SKILL.md",
-      "source_sha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544"
+      "source_sha256": "ee1848c973a112026f09ba12ea7a13c1654006e7bf170d1c34bf5d5816bc439b"
     },
     {
       "name": "principle-attack-the-premise",
@@ -162,7 +162,7 @@
       "name": "principle-explain-the-number",
       "adapted": false,
       "source": "pstack/skills/principle-explain-the-number/SKILL.md",
-      "source_sha256": "cd5a25f9e7cf023627ccb470dc5faa97542f29b4319496a32b839a8e1e988047"
+      "source_sha256": "3c84fbf9a7d9842abcfcd134010782b32092ac3d3fb4aaf9ed5732dca83aa58c"
     },
     {
       "name": "principle-fix-root-causes",
@@ -294,7 +294,7 @@
       "name": "statechart",
       "adapted": false,
       "source": "pstack/skills/statechart/SKILL.md",
-      "source_sha256": "b1c544782b1527ba09e63311e4faa4c277c86aa33b0506590f8082b7b4bea505"
+      "source_sha256": "010b7b4532406739b1c3a426d1a45f02bb618a42561fc96b3976e064a7f8384d"
     },
     {
       "name": "swarm",

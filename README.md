@@ -8,7 +8,7 @@
 
 [![Package validation](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml)
 [![Pstack upstream](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml)
-[![Pstack source: 0.15.32](https://img.shields.io/badge/pstack_source-0.15.32-blue)](https://github.com/cursor/plugins/tree/99b609a72323b70204eab407c622f436e858e112/pstack)
+[![Pstack source: 0.15.36](https://img.shields.io/badge/pstack_source-0.15.36-blue)](https://github.com/cursor/plugins/tree/c742dd61706fbacc1b95f1a20b7b988cf096ce6c/pstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Add agent orchestration to your existing workflow without changing application
@@ -249,7 +249,7 @@ horch wait t-0a1b2c  # use the task_id returned by run
 
 ## Optional: original pstack through Herdr
 
-The adapter tracks [original pstack](https://github.com/cursor/plugins/tree/99b609a72323b70204eab407c622f436e858e112/pstack) 0.15.32 at `99b609a` and bundles 60 installable entries: 55 pstack skills, three team-kit dependencies, and two Herdr adapters, with supporting files and licenses preserved. Nineteen adapted workflow entries load the Herdr mapping; the rest keep their complete original `SKILL.md`.
+The adapter tracks [original pstack](https://github.com/cursor/plugins/tree/c742dd61706fbacc1b95f1a20b7b988cf096ce6c/pstack) 0.15.36 at `c742dd6` and bundles 60 installable entries: 55 pstack skills, three team-kit dependencies, and two Herdr adapters, with supporting files and licenses preserved. Nineteen adapted workflow entries load the Herdr mapping; the rest keep their complete original `SKILL.md`.
 
 After installation, start a fresh session and invoke a skill directly:
 
@@ -282,7 +282,7 @@ ordinary functionality review; original playbook eligibility remains separate.
 The [adoption evidence page](docs/RELEASE-EVIDENCE.md) collects this workflow,
 reversible installation, role routing and live worker replacement.
 
-Runtime checks run on Linux with real Pi workers. Real Codex and Claude Code controller runs are also recorded. The verified set covers worker setup, the implementation and review loop, a controller-level run, workspace limits, invalid record handling, and Pi preflight. The 0.15.32 bundle at `99b609a` passed a local installation check and native discovery in the Pi and Codex catalogs. A receipt for each verified claim is linked in [evidence and source attribution](e2e/README.md#evidence-and-source-attribution).
+Runtime checks run on Linux with real Pi workers. Real Codex and Claude Code controller runs are also recorded. The verified set covers worker setup, the implementation and review loop, a controller-level run, workspace limits, invalid record handling, and Pi preflight. The 0.15.36 bundle at `c742dd6` passed a local installation check and native discovery in the Pi and Codex catalogs. A receipt for each verified claim is linked in [evidence and source attribution](e2e/README.md#evidence-and-source-attribution).
 
 The original Prototype playbook has an [ordered six-stage core workflow receipt](e2e/evidence/playbook-prototype.json) for a fixed-direction behavioral fork. Both independent alternatives and their labeled runner were replayed; the production build remains a separate Feature task. Live worker replacement also has [independent evidence](e2e/evidence/hot-swap.json).
 
