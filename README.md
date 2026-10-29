@@ -6,6 +6,8 @@
 
 # herdr-pstack-orchestrator
 
+[![Package validation](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml)
+[![Pstack upstream](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml)
 [![Pstack source: 0.15.36](https://img.shields.io/badge/pstack_source-0.15.36-blue)](https://github.com/cursor/plugins/tree/c742dd61706fbacc1b95f1a20b7b988cf096ce6c/pstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -20,16 +22,13 @@ workflows such as independent review and multi-step implementation. You can use
 one configured worker or several, including workers from different harnesses.
 No changes to your application code are needed.
 
-<details>
-<summary>See an example implementation and review workflow</summary>
+[Latest release](https://github.com/conscientiousness/herdr-pstack-orchestrator/releases/latest).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/workflow-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/workflow-light.svg">
-  <img alt="An example workflow: the controller delegates implementation, checks the result, and coordinates independent review and fixes" src="assets/workflow-light.svg" width="100%">
+  <img alt="Your controller briefs an implementation worker, verifies its diff, and dispatches independent reviewers. After all reviewers finish, the controller assesses findings. Accepted findings go to a fresh fix worker and a fresh review panel; no unresolved blockers leads to a verified result." src="assets/workflow-light.svg" width="100%">
 </picture>
-
-</details>
 
 ## Requirements
 
