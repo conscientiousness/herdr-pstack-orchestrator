@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 handoff/
+.commandcode/
 .archify/
 assets/*.delivery.json
 # Only reviewed, portable E2E artifacts belong in the public repository.
