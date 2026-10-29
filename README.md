@@ -33,8 +33,8 @@ No changes to your application code are needed.
 
 ## Requirements
 
-- [Herdr](https://herdr.dev) 0.9.3 or later, with your controller agent running in a Herdr pane.
-- Python 3.11 or later. Linux has been tested; macOS is not yet verified.
+- [Herdr](https://herdr.dev) 0.9.3 or later, with your controller agent running in a Herdr pane (`HERDR_ENV=1`).
+- Python 3.11 or later with POSIX file locks. Linux has been tested; macOS is not yet verified.
 - Node.js and npm for the installer.
 - The agent CLIs you want to use—`pi`, `codex`, or `claude`—installed and authenticated.
 - For Pi workers, install Herdr's integration: `herdr integration install pi`.
