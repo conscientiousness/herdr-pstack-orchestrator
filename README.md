@@ -34,23 +34,24 @@ No changes to your application code are needed.
 
 - [Herdr](https://herdr.dev) 0.9.3 or later, with your controller agent running in a Herdr pane (`HERDR_ENV=1`).
 - Python 3.11 or later with POSIX file locks. Linux has been tested; macOS is not yet verified.
-- Node.js and npm for the installer.
+- Node.js 22.20 or later and npm for the installer.
 - The agent CLIs you want to use—`pi`, `codex`, or `claude`—installed and authenticated.
 - For Pi workers, install Herdr's integration: `herdr integration install pi`.
 
 ## Install
 
-Run one of these commands from your project. For delegation alone, install the
-core skill:
+Run one of these commands from your project. `skills@latest` uses the latest
+[Skills CLI](https://github.com/vercel-labs/skills) from npm. For delegation
+alone, install the core skill:
 
 ```bash
-npx skills@1.7.1 add conscientiousness/herdr-pstack-orchestrator -s herdr-orchestrator
+npx skills@latest add conscientiousness/herdr-pstack-orchestrator -s herdr-orchestrator
 ```
 
 For pstack workflows as well, install the full bundle:
 
 ```bash
-npx skills@1.7.1 add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*'
+npx skills@latest add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*'
 ```
 
 Choose your agent harnesses and project or global scope in the installer, and

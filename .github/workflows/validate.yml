@@ -60,7 +60,8 @@ jobs:
         run: |
           package_check=$(mktemp -d)
           cd "$package_check"
-          npx --yes skills@1.7.1 add "$GITHUB_WORKSPACE/skills" -s '*' -a claude-code -a codex -a pi -y
+          npx --yes skills@latest --version
+          npx --yes skills@latest add "$GITHUB_WORKSPACE/skills" -s '*' -a claude-code -a codex -a pi -y
           python "$GITHUB_WORKSPACE/e2e/skill_catalogs.py" "$package_check" --installation-only
           python .agents/skills/herdr-orchestrator/scripts/horch.py --help
           test ! -e .agents/skills/herdr-orchestrator/scripts/e2e.py

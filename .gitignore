@@ -116,3 +116,5 @@ e2e/evidence/*
 !e2e/evidence/playbook-babysit-overlap-audit.json
 !e2e/evidence/playbook-refactor-preservation.json
 !e2e/evidence/playbook-refactor-preservation-audit.json
+
+!e2e/evidence/skills-installer-latest.json

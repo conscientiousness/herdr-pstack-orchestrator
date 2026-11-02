@@ -488,6 +488,17 @@ Historical evidence keeps its original source attribution. Moving the driver cha
 
 ## Reproduce original skill discovery
 
+[skills-installer-latest.json](evidence/skills-installer-latest.json) records
+`skills@latest` resolving to 1.7.4: local and GitHub bundle installations
+preserved all 605 files across 60 skills and passed native Pi/Codex catalog
+checks. The local installation remained complete after deleting its temporary
+source. The README core-skill command also installed successfully, with its
+files, CLI entry point, and native catalogs verified. An initial extra core
+path check incorrectly expected `.pi/skills`; that failed check is retained
+alongside the separate successful shared `.agents/skills` and catalog checks.
+Claude Code file installation was checked; runtime discovery and model
+workflows were not measured. Future installer releases need fresh CI results.
+
 [upstream-frontmatter.json](evidence/upstream-frontmatter.json) records upstream frontmatter preservation, regeneration, installation, and native Pi/Codex catalogs. Its Phase A measured Pi model visibility and explicit expansion for `unslop` and `typescript-best-practices`, aborting before provider work, plus enabled Codex catalog entries. Codex explicit invocation, implicit selection, `paths:` activation, Claude Code runtime behavior, and model workflows were not measured; Codex/Claude invocation semantics are documented only. The local Pi probe script and extension are not distributed; those observations are supporting evidence, not an additional portable test command. The distributed `skill_catalogs.py` reproduces installation/catalog checks only.
 
 [upstream-sync-0.15.36.json](evidence/upstream-sync-0.15.36.json) records the current 60-entry pstack 0.15.36 bundle at `c742dd6`, all 605 files preserved for Codex, Pi, and Claude Code after deleting its local installation source, and native Pi/Codex discovery. Regeneration and the upstream freshness check passed. Source review covered rewritten Interrogate/Orchestrate guidance, strict Arena cross-judge diversity, subtitled video recap, and the TypeScript statechart rewrite. No authenticated model workflow, review repro scenario, Orchestrate program, TLC model check, or SVG/video rendering was run. The upstream TLC corpus is bundled source material, not a fresh verification result. Claude Code installation was checked; native discovery was not measured.
@@ -525,7 +536,7 @@ The current bundle is installed in one command. For an isolated installation, us
 ```bash
 consumer=$(mktemp -d)
 cd "$consumer"
-npx --yes skills@1.7.1 add \
+npx --yes skills@latest add \
   https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills \
   -s '*' -a codex -a claude-code -a pi -y
 ```
