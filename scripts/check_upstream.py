@@ -25,7 +25,9 @@ def git(repo, *args):
         GIT_CONFIG_GLOBAL=os.devnull,
         GIT_TERMINAL_PROMPT="0",
     )
-    command = ["git", "-c", "credential.helper=", "-c", "core.hooksPath=/dev/null"]
+    # A detached maintenance process can race with temporary checkout cleanup.
+    command = ["git", "-c", "credential.helper=", "-c", "core.hooksPath=/dev/null",
+               "-c", "maintenance.auto=false"]
     if repo is not None:
         command += ["-C", str(repo)]
     result = subprocess.run(
