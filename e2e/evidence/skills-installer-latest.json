@@ -1,0 +1,104 @@
+{
+  "verdict": "pass",
+  "recorded_at": "2026-11-02T05:54:23.422870+00:00",
+  "installer": {
+    "requested": "skills@latest",
+    "resolved_version": "1.7.4",
+    "repository": "https://github.com/vercel-labs/skills",
+    "release": "https://github.com/vercel-labs/skills/releases/tag/v1.7.4",
+    "minimum_node_version": "22.20.0"
+  },
+  "versions": {
+    "python": "Python 3.14.9",
+    "node": "v26.12.1",
+    "npm": "11.20.0",
+    "pi": "1.4.0",
+    "codex": "codex-cli 0.166.0"
+  },
+  "source_base_revision": "1cc460c9d46c2e20c96ca69eb9806b0ac1cf9491",
+  "local_bundle": {
+    "verdict": "pass",
+    "checks": {
+      "installed_catalog": true,
+      "all_files_preserved": true,
+      "claude_entries": true,
+      "pi_catalog": true,
+      "codex_catalog": true,
+      "codex_no_errors": true
+    },
+    "installed_skills": 60,
+    "installed_files": 605,
+    "installed_tree_sha256": "e789fea1373c117809b8a299ec43ea0568fb07dd1aea80335022aca5b369fae4",
+    "driver_sha256": "32b9b7eabe38429a421ec0de0d92bdef8ac1e37c374db4a2acb3c5c8562e469f",
+    "original_receipt_sha256": "f07bed5d8f1a8c32ca671890c0a05cac22de85084328dacb7fc2318c31b7d96c",
+    "temporary_source_removed_before_catalog_check": true,
+    "source_attribution": "Working tree based on source_base_revision, with the installer command in skills/pstack-herdr/references/compatibility.md changed from skills@1.7.1 to skills@latest.",
+    "changed_skill_files": {
+      "pstack-herdr/references/compatibility.md": "588112f952959f73a0fa00f7ad56fac383dbd9c170e1428c23e39702f476eca7"
+    }
+  },
+  "github_bundle": {
+    "verdict": "pass",
+    "checks": {
+      "installed_catalog": true,
+      "all_files_preserved": true,
+      "claude_entries": true,
+      "pi_catalog": true,
+      "codex_catalog": true,
+      "codex_no_errors": true
+    },
+    "installed_skills": 60,
+    "installed_files": 605,
+    "installed_tree_sha256": "7e9457cbef8e37ac9fad449301555e87f4878f1a7859293aac20ff1a2673dc47",
+    "driver_sha256": "32b9b7eabe38429a421ec0de0d92bdef8ac1e37c374db4a2acb3c5c8562e469f",
+    "original_receipt_sha256": "d6a7230e77c4cb8367dbdf6ca0241ccbe33877daba10adb22aacaee51b987b70",
+    "source_revision": "1cc460c9d46c2e20c96ca69eb9806b0ac1cf9491",
+    "source": "https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills",
+    "source_attribution": "Remote main matched source_base_revision before installation. The existing catalog driver ran from an archive of that exact revision."
+  },
+  "github_core": {
+    "verdict": "pass",
+    "checks": {
+      "shared_files_preserved": true,
+      "claude_files_preserved": true,
+      "only_core_skill": true,
+      "installed_cli_help": true,
+      "pi_catalog": true,
+      "codex_catalog": true,
+      "codex_no_errors": true
+    },
+    "correction": "The initial path check expected .pi/skills and failed. Skills 1.7.4 uses the shared .agents/skills location for Pi and Codex. The original check is retained unchanged; this separate receipt verifies the installed files and both native catalogs.",
+    "installer_source": "https://github.com/vercel-labs/skills/blob/v1.7.4/src/agents.ts#L572-L583"
+  },
+  "initial_core_path_check": {
+    "verdict": "fail",
+    "checks": {
+      ".agents": true,
+      ".claude": true,
+      ".pi": false,
+      "only_core_skill": true,
+      "installed_cli_help": true
+    },
+    "interpretation": "Checker assumption failure: the installer succeeded, but the extra path check expected .pi/skills. The separate github_core receipt verifies the shared .agents/skills files and actual Pi/Codex catalogs; the initial failed result is retained."
+  },
+  "reproduce": {
+    "procedure": ".agents/skills/verify-herdr-orchestrator/features/discovery.md",
+    "local_install": "npx --yes skills@latest add <temporary-source> -s '*' -a codex -a claude-code -a pi -y",
+    "github_core_install": "npx --yes skills@latest add conscientiousness/herdr-pstack-orchestrator --skill herdr-orchestrator -a codex -a claude-code -a pi -y",
+    "github_bundle_install": "npx --yes skills@latest add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*' -a codex -a claude-code -a pi -y",
+    "catalog_check": "python3 e2e/skill_catalogs.py <consumer>",
+    "catalog_source_note": "Run the driver from the same skills revision as the installed bundle. Record the actual installer version because latest can change."
+  },
+  "limits": [
+    "No model calls or worker workflows were run.",
+    "Claude Code installed files were checked; native runtime discovery was not measured.",
+    "Global installation and removal were not exercised.",
+    "This receipt verifies resolved version 1.7.4; future latest releases require fresh CI results."
+  ],
+  "cleanup": {
+    "owned_installation_scratch_removed": true,
+    "local_catalog_receipt_retained": true,
+    "remote_catalog_receipt_retained": true,
+    "private_installer_logs_and_catalogs_retained": true
+  }
+}

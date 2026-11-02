@@ -14,13 +14,13 @@ Use the [single bundle installation command](../../../../skills/pstack-herdr/ref
 
 ## Driving it with existing scripts
 
-Doctor: check `python3 --version`, `npx --version`, `pi --version`, and `codex --version`. No Herdr or model authentication is required. Run from the repository root with `repo` and `proof` from the verification skill's Launch section.
+Doctor: check `python3 --version`, `npx --version`, `npx --yes skills@latest --version`, `pi --version`, and `codex --version`. Record the resolved installer version with the receipt. No Herdr or model authentication is required. Run from the repository root with `repo` and `proof` from the verification skill's Launch section.
 
 ```bash
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/herdr-install-XXXXXXXX")
 mkdir "$scratch/consumer"
 cp -R skills "$scratch/source"
-(cd "$scratch/consumer" && npx --yes skills@1.7.1 add \
+(cd "$scratch/consumer" && npx --yes skills@latest add \
   "$scratch/source" -s '*' -a codex -a claude-code -a pi -y) \
   > "$proof/install.log" 2>&1
 ```

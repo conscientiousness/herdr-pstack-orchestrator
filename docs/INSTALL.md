@@ -59,10 +59,10 @@ example. After either update, start a new controller session inside Herdr.
 To remove the core skill from a project, run this in that project:
 
 ```bash
-npx skills@1.7.1 remove herdr-orchestrator -y
+npx skills@latest remove herdr-orchestrator -y
 ```
 
-To remove the full bundle, run `npx skills@1.7.1 remove` and select its entries,
+To remove the full bundle, run `npx skills@latest remove` and select its entries,
 leaving unrelated skills unselected. For complete project removal, omit `-a`;
 selecting specific agents can leave shared copies. Use `-g` for a global
 installation. Empty directories and installer lock metadata may remain. Start a

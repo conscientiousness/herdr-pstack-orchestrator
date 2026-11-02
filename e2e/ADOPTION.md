@@ -96,7 +96,7 @@ Record its exact skill names. After installation, add one unrelated local skill
 and keep a sentinel application file. Remove only the recorded bundle names:
 
 ```bash
-npx skills@1.7.1 remove <bundle-skill-name-1> <bundle-skill-name-2> ... -y
+npx skills@latest remove <bundle-skill-name-1> <bundle-skill-name-2> ... -y
 ```
 
 Omit agent selection for complete removal of shared copies. Do not use `--all`

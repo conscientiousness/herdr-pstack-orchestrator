@@ -5,7 +5,7 @@ This bundle tracks [Lauren Tan's original pstack](https://github.com/cursor/plug
 ## Install
 
 ```bash
-npx skills@1.7.1 add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*'
+npx skills@latest add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*'
 ```
 
 Choose your harnesses and project or global scope in the installer. Review existing skill-name conflicts before replacing user skills. The `skills/` URL installs the bundled catalog and both Herdr adapters, leaving out repository development skills. Selecting only `-s pstack-herdr` installs only that adapter; the installer does not resolve dependencies.
