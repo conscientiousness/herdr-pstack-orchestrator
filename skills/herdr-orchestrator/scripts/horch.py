@@ -137,8 +137,8 @@ def _herdr_message(payload, returncode, stderr):
     return (stderr or "").strip()[:500] or f"herdr exited with status {returncode}"
 
 
-def herdr(*args, timeout=120.0, env=None):
-    """Run one herdr command and return its parsed stdout JSON document."""
+def herdr(*args, timeout=120.0, env=None, expect_json=True):
+    """Run a Herdr command, parsing JSON unless its output is requested as text."""
     argv = ["herdr", *[str(a) for a in args]]
     try:
         proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=env)
@@ -150,6 +150,8 @@ def herdr(*args, timeout=120.0, env=None):
         parsed = _read_json_text(proc.stderr) or _read_json_text(proc.stdout)
         payload = parsed if isinstance(parsed, dict) else {"raw": (proc.stderr or proc.stdout).strip()[:2000]}
         raise HerdrError(_herdr_message(payload, proc.returncode, proc.stderr), payload)
+    if not expect_json:
+        return proc.stdout
     parsed = _read_json_text(proc.stdout)
     if not isinstance(parsed, dict):
         raise HerdrError(f"herdr {' '.join(str(a) for a in args)} did not return a JSON object")
@@ -846,7 +848,7 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
                 assignments = [f"{k}={env[k]}" for k in (*binding["env"], "HC_SESSION", "HC_SOCKET")]
                 command = shlex.join(["env", "-u", "HC_TERMINAL_ID", *assignments,
                                       binding["executable"], "attach", binding["terminal"]])
-                herdr("pane", "run", pane_id, command, timeout=30)
+                herdr("pane", "run", pane_id, command, timeout=30, expect_json=False)
             except HerdrError as exc:
                 warning = f"core worker retained; optional hcOrch presentation failed: {exc}; "
                 warning += "inspect for an empty viewer pane after ambiguous placement"
@@ -1179,7 +1181,6 @@ def evaluate_task(info, agent, config):
 
 
 def poll_round(infos, previous, config):
-    """Observe backend facts for unsettled tasks; return (changed, polled)."""
     legacy = any(not is_core(info["task"]) and not info["state"]["closed"] for info in infos)
     index = agent_index() if legacy else {}
     if index is None:
@@ -1783,7 +1784,7 @@ def build_parser():
     p_stats.add_argument("--days", type=int, help="only tasks created in the last n days")
     p_stats.set_defaults(func=cmd_stats)
 
-    p_close = sub.add_parser("close", help="close the pane of a task horch started")
+    p_close = sub.add_parser("close", help="close the task's backend terminal and owned viewer")
     p_close.add_argument("task_id", help="task to close")
     p_close.set_defaults(func=cmd_close)
 

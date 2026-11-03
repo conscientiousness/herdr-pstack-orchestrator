@@ -1,5 +1,3 @@
-"""Local core protocol operations. Task policy and persistence belong to horch."""
-
 from __future__ import annotations
 
 from contextlib import ExitStack
@@ -196,7 +194,6 @@ def fingerprint(terminal):
 
 
 def wait_changes(observations, seconds):
-    """Subscribe with snapshots so a change between get and subscribe is not lost."""
     if seconds <= 0:
         return
     try:

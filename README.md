@@ -120,8 +120,8 @@ explains how to update a manual clone or remove the skills.
 ## Troubleshooting
 
 Ask your agent to run `horch detect` to check available harnesses and Pi
-integration. Tasks pin their backend and endpoint at launch, so later preference
-changes cannot reroute waits or cleanup. If a worker stops or fails, inspect its
+integration. Tasks keep their launch backend. Core tasks also pin the endpoint,
+so later installation or environment changes do not reroute their cleanup. If a worker stops or fails, inspect its
 recorded backend terminal before closing it. The [setup guide](skills/herdr-orchestrator/references/setup.md) and [task
 recovery guide](skills/herdr-orchestrator/references/lifecycle.md#problem-recovery)
 cover common problems.

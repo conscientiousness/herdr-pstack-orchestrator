@@ -36,9 +36,16 @@ refusing legacy fallback. Private receipts remain outside the public checkout.
 
 Native startup probes reported idle for installed Pi, Codex with `--no-daemon`,
 and Claude Code. These probes and deterministic fixtures do not prove configured
-model delivery. Actual configured-worker delivery, visible `hcOrch` and `horch`
-tabs, absence-only live legacy fallback, and mixed-backend affinity still need
-controller verification. No new Herdr app is installed or required. Core support
+model delivery for every harness. A configured Pi worker completed a decimal-ledger
+CLI task through core and through genuine executable-absence fallback. Independent
+CLI oracles verified both results. The controller observed `hcOrch` and `horch`
+tabs without focus changes and confirmed worker/viewer cleanup. Waiting still used
+the stored core endpoint after session and PATH changes; the legacy task still used
+legacy execution after core became visible on PATH. A repeated core run confirmed
+that successful empty viewer-launch output produces no warning.
+
+Configured Codex and Claude task delivery remains unverified beyond native startup.
+No new Herdr app is installed or required. Core support
 currently uses local POSIX endpoints; remote core orchestration is not provided.
 
 ## Evidence still needed

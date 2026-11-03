@@ -42,7 +42,8 @@ without a GUI or `HERDR_ENV`. Only executable absence selects legacy Herdr;
 connection and startup failures remain core errors. Core uses native harness
 status rather than custom hooks. With an existing Herdr UI, optional viewers
 use `hcOrch` tabs; legacy runtime keeps `horch` tabs. Stored tasks retain their
-backend and endpoint across installation changes.
+backend across installation changes. Core tasks also retain their endpoint.
+Keep each legacy task store scoped to its original Herdr server.
 
 ## Update
 
