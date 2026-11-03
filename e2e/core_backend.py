@@ -276,6 +276,89 @@ class Run:
             not (t := self.get(address)) or t.get("state") != "live"))
         self.no_guard()
 
+    def settled_endpoint(self):
+        first, second = Run(self.args, self.core), Run(self.args, self.core)
+        second.env["XDG_STATE_HOME"] = first.env["XDG_STATE_HOME"]
+        first_cleaned = False
+        passed = False
+        for child in (first, second):
+            child.evidence.update(mode="settled-endpoint-child", verdict="scenario-fail",
+                                  scope="two owned real cores sharing a scratch task store; settled endpoint isolation; no models")
+        self.evidence["settled_endpoint"] = {"artifacts": [str(first.root), str(second.root)]}
+        try:
+            for child in (first, second):
+                child.check("settled endpoint owned core starts", child.hc("server", "start").returncode == 0)
+                child.check("settled endpoint owned core initially empty", not child.terminals())
+            launched = first.launch("blocked")
+            first.check("settled endpoint blocked run succeeds", launched.returncode == 0)
+            old = rows(launched.stdout)[0]
+            first.until("blocked fixture consumes prompt", lambda: (first.root / "blocked.prompt.json").exists())
+            prompt = json.loads((first.root / "blocked.prompt.json").read_text())
+            first.check("settled endpoint blocked prompt identity", prompt["task_id"] == old["task_id"])
+            blocked = first.cli("wait", old["task_id"], "--max-seconds", "2")
+            first.check("settled endpoint stores blocked state", blocked.returncode == 0
+                        and rows(blocked.stdout)[0]["state"] == "blocked")
+            stored = Path(old["task_dir"]) / "state.json"
+            before = stored.read_bytes()
+            first.cleanup()
+            first_cleaned = True
+            first.check("settled endpoint first core cleanup succeeds", first.evidence["cleanup"]["ok"])
+            binding = json.loads((Path(old["task_dir"]) / "task.json").read_text())["backend"]
+            first.check("settled endpoint is unavailable", not Path(binding["endpoint"]).exists())
+            launched = second.launch("valid")
+            second.check("settled endpoint healthy run succeeds", launched.returncode == 0)
+            live = rows(launched.stdout)[0]
+            second.until("healthy fixture consumes prompt", lambda: (second.root / "valid.prompt.json").exists())
+            prompt = json.loads((second.root / "valid.prompt.json").read_text())
+            second.check("settled endpoint healthy prompt identity", prompt["task_id"] == live["task_id"])
+            result = Path(live["task_dir"]) / "result.json"
+            second.until("healthy fixture writes result", result.exists)
+            payload = json.loads(result.read_text())
+            second.check("settled endpoint exact nonce result", set(payload) == RESULT_KEYS
+                         and payload["task_id"] == live["task_id"] and payload["nonce"] == prompt["nonce"]
+                         and payload["status"] == "completed" and payload["files"] == []
+                         and payload["question"] is None
+                         and payload["summary"] == "Deterministic interactive fixture result.")
+            (second.root / "valid.release").write_text("release\n")
+            ended = second.until("healthy independent native ended turn", lambda: (
+                t if (t := second.get(live["terminal_id"])) and
+                (t.get("status") or {}).get("state") == "done" and t.get("turn", 0) > 0 else None))
+            (second.root / "independent-ended.json").write_text(json.dumps(ended, indent=2) + "\n")
+            second.check("settled endpoint healthy native turn advanced", ended["turn"] > 0)
+            batch = second.cli("wait", old["task_id"], live["task_id"], "--max-seconds", "2")
+            recheck = second.cli("wait", old["task_id"], "--recheck", "--max-seconds", "2")
+            self.evidence["settled_endpoint"].update(
+                batch_returncode=batch.returncode, batch_stdout=batch.stdout,
+                recheck_returncode=recheck.returncode, recheck_stdout=recheck.stdout)
+            actual = rows(batch.stdout)
+            second.check("settled endpoint batch delivers stored blocked and healthy done",
+                         batch.returncode == 0 and len(actual) == 2
+                         and actual[0]["task_id"] == old["task_id"] and actual[0]["state"] == "blocked"
+                         and not actual[0]["closed"] and actual[0]["summary"] is None
+                         and actual[1]["task_id"] == live["task_id"] and actual[1]["state"] == "done"
+                         and actual[1]["closed"] and actual[1]["summary"] == payload["summary"])
+            second.check("settled endpoint explicit recheck reports transport error",
+                         recheck.returncode == 1 and rows(recheck.stdout)[0].get("error") == "core_error")
+            second.check("settled endpoint problem state unchanged", stored.read_bytes() == before)
+            healthy = second.cli("wait", live["task_id"], "--max-seconds", "2")
+            second.check("settled endpoint healthy delivery remains available", healthy.returncode == 0
+                         and rows(healthy.stdout)[0]["state"] == "done" and rows(healthy.stdout)[0]["closed"])
+            second.check("settled endpoint healthy terminal is closed", not (t := second.get(live["terminal_id"]))
+                         or t.get("state") != "live")
+            first.no_guard()
+            second.no_guard()
+            passed = True
+        finally:
+            if not first_cleaned:
+                first.cleanup()
+            second.cleanup()
+            for child in (first, second):
+                child.evidence["verdict"] = "scenario-pass" if passed and child.evidence["cleanup"]["ok"] else "scenario-fail"
+                self.checks.extend(child.checks)
+                (child.root / "evidence.json").write_text(json.dumps(child.evidence, indent=2) + "\n")
+            self.check("settled endpoint both owned cores cleaned", all(
+                child.evidence["cleanup"]["ok"] and not child.runtime.exists() for child in (first, second)))
+
     def broken_core(self):
         broken = dict(self.env, HC_SESSION="invalid/session")
         probe = self.hc("ls", env=broken)
@@ -352,6 +435,7 @@ def main():
             for mode, expected in SCENARIOS.items():
                 run.scenario(mode, expected)
             run.broken_core()
+            run.settled_endpoint()
             run.evidence["verdict"] = "pass"
     except Exception:
         (run.root / "failure.txt").write_text(traceback.format_exc())

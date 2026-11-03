@@ -1181,13 +1181,16 @@ def evaluate_task(info, agent, config):
 
 
 def poll_round(infos, previous, config):
-    legacy = any(not is_core(info["task"]) and not info["state"]["closed"] for info in infos)
+    observing = {info["task_id"]: info for info in infos
+                 if not info["state"]["closed"] and info["state"]["state"] != "done"
+                 and (info["state"]["state"] not in SETTLED_STATES or info.get("recheck"))}
+    legacy = any(not is_core(info["task"]) for info in observing.values())
     index = agent_index() if legacy else {}
     if index is None:
         return False, False
     observations = {}
-    for info in infos:
-        if is_core(info["task"]) and not info["state"]["closed"]:
+    for info in observing.values():
+        if is_core(info["task"]):
             terminal = core.get(info["task"]["backend"])
             info["terminal_observation"] = terminal
             observations[info["task_id"]] = core_agent(terminal)
@@ -1200,7 +1203,7 @@ def poll_round(infos, previous, config):
             state = load_state(directory)
             info["state"] = state
             old_state = state["state"]
-            if state["closed"] or old_state == "done" or (
+            if info["task_id"] not in observing or state["closed"] or old_state == "done" or (
                     old_state in SETTLED_STATES and not info.pop("recheck", False)):
                 reported = old_state
             else:
