@@ -18,8 +18,10 @@ python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
 Product mode exercises core preference, an early valid result while working,
 post-prompt turn completion, missing and invalid results, blocked workers,
 cancellation, and cleanup. It also checks that an installed core rejecting its
-session does not invoke legacy Herdr. `--baseline` is only for a pre-core revision
-that explicitly rejects headless execution with `baseline-unsupported`.
+session does not invoke legacy Herdr. A two-core scenario verifies that a stored
+problem on an offline core cannot abort a healthy task's delivery. Explicit
+`--recheck` still reports that endpoint's error. `--baseline` is only for a
+pre-core revision that rejects headless execution with `baseline-unsupported`.
 
 The driver uses the real core server and independent `herdr-core ls/get` reads.
 Its scratch `pi` is a deterministic interactive fixture that reads the brief
@@ -34,6 +36,11 @@ hashes, versions, command output, checks, and cleanup results outside the
 checkout. Cleanup stops only the owned core and CLI wait processes. Visible
 `hcOrch` tabs, legacy `horch` tabs, and live absence-only legacy fallback remain
 unverified by this headless driver.
+
+The existing model drivers inspect legacy panes and workspaces. Use those drivers
+on the legacy lane, with both `herdr-core` and a verified `hc` alias absent from
+PATH while keeping Herdr and the selected harness available. Their pane oracles
+do not verify the core backend. The core driver above owns its isolated runtime.
 
 The current release scope is [adoption evidence](../docs/RELEASE-EVIDENCE.md):
 reversible project setup, configured role routing, worker replacement and one

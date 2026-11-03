@@ -1,0 +1,100 @@
+{
+  "schema": "horch/core-backend-acceptance/v1",
+  "kind": "sanitized acceptance summary; raw receipts retained privately",
+  "platform": "Linux",
+  "core_version": "0.1.17",
+  "fixture": {
+    "driver": "e2e/core_backend.py",
+    "command": "python3 e2e/core_backend.py --output /tmp/horch-core-proof --core-only",
+    "verdict": "pass",
+    "assertions": 75,
+    "cleanup_ok": true,
+    "scope": "real core with deterministic interactive Pi fixture; no models",
+    "includes": "two-core stored-problem isolation and explicit recheck semantics"
+  },
+  "configured_pi": {
+    "core": {
+      "verdict": "pass",
+      "checks": {
+        "task acknowledged": true,
+        "viewer has no presentation warning": true,
+        "one worker viewer or legacy pane": true,
+        "backend-specific tab name": true,
+        "focus preserved": true,
+        "stored backend affinity delivers": true,
+        "delivery confirms closure": true,
+        "result completed": true,
+        "independent CLI oracle": true,
+        "saved output matches oracle": true,
+        "owned pane removed": true
+      },
+      "cleanup_ok": true,
+      "owned_core_stopped": true
+    },
+    "absence_only_legacy": {
+      "verdict": "pass",
+      "checks": {
+        "task acknowledged": true,
+        "one worker viewer or legacy pane": true,
+        "backend-specific tab name": true,
+        "focus preserved": true,
+        "stored backend affinity delivers": true,
+        "delivery confirms closure": true,
+        "result completed": true,
+        "independent CLI oracle": true,
+        "saved output matches oracle": true,
+        "owned pane removed": true
+      },
+      "cleanup_ok": true
+    },
+    "scenario": "JSONL ledger CLI with exact decimal cents, duplicate identities, invalid lines and Unicode accounts; independent CLI oracle",
+    "source_matches_runtime_revision": true
+  },
+  "native_startup": {
+    "pi": "1.4.0",
+    "codex": "0.166.0 with --no-daemon",
+    "claude": "2.1.316",
+    "scope": "reported native idle on real core, without sending a task"
+  },
+  "installation": {
+    "skills_cli": "1.7.6",
+    "verdict": "pass",
+    "checks": {
+      "runtime_module_present": true,
+      "installed_help_passed": true,
+      "source_removed": true
+    },
+    "catalog_checks": {
+      "installed_catalog": true,
+      "all_files_preserved": true,
+      "claude_entries": true
+    },
+    "cleanup_ok": true
+  },
+  "limits": [
+    "Configured Codex and Claude task delivery was not run.",
+    "macOS runtime was not verified.",
+    "Remote core orchestration is not provided; endpoints are local POSIX sockets.",
+    "Legacy tasks retain the one-server-per-store requirement.",
+    "Other model E2E drivers retain legacy pane oracles."
+  ],
+  "independent_review": {
+    "status": "no remaining verified code findings",
+    "runtime_target": "9f2942a4ef4bc74f485dbc585b81a803aa1efe44",
+    "rounds": 2,
+    "processes_per_round": 3,
+    "model_families": 2,
+    "accepted_unique_defects": 1,
+    "fixed": "skip live observation for stored settled tasks unless recheck is explicit",
+    "dropped_unique_proposals": 1,
+    "dropped_reason": "post-exit turn advancement cannot distinguish done from exit without a done report; existing settlement gate retained",
+    "trail_limit": "initial caller viewport was not exported; later reconfirmation is preserved and does not reconstruct the historical observation",
+    "audit_scope": "source and receipt audit; full controller transcript unavailable"
+  },
+  "runtime_revision": "9f2942a4ef4bc74f485dbc585b81a803aa1efe44",
+  "runtime_sources_sha256": {
+    "skills/herdr-orchestrator/scripts/horch.py": "0ddebe555ceb4052a143492a66ebfd9aa560c1974593014f5fa7caeb6f35447b",
+    "skills/herdr-orchestrator/scripts/core_backend.py": "434313588b94e5f180cb19dc3d5fa17fcd2c213b827d510bd39f49c3b511d50b",
+    "e2e/core_backend.py": "c953455657eb909e502b50c39535ae23bd3c87f1711f4d0a5f25d5fa31aa6dec"
+  }
+}

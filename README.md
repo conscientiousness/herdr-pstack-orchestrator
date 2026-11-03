@@ -34,7 +34,11 @@ No changes to your application code are needed.
 
 ## Requirements
 
-- Installed herdr-core with native OSC 7501 status reporting. Core 0.1.17 has deterministic Linux E2E coverage. If core is absent, [Herdr](https://herdr.dev) 0.9.3 or later with your controller in a Herdr pane (`HERDR_ENV=1`) supplies the legacy fallback. An unhealthy installed core does not fall back.
+- [herdr-core](https://github.com/herdrdev/herdr-core), with agent CLIs that report
+  native OSC 7501 status. Core 0.1.17 has Linux E2E coverage. If core is absent,
+  [Herdr](https://herdr.dev) 0.9.3 or later supplies the legacy fallback, with your
+  controller in a Herdr pane (`HERDR_ENV=1`). An unhealthy installed core does not
+  fall back.
 - Python 3.11 or later with POSIX file locks. Linux has been tested; macOS is not yet verified.
 - Node.js 22.20 or later and npm for the installer.
 - The agent CLIs you want to use—`pi`, `codex`, or `claude`—installed and authenticated.

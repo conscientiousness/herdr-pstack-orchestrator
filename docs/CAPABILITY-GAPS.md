@@ -28,7 +28,10 @@ cloud service, scheduler, background watcher or replacement ownership witness.
 
 ## Core backend verification
 
-The unchanged `e2e/core_backend.py --core-only` driver verifies real core 0.1.17
+The [sanitized acceptance summary](../e2e/evidence/core-backend.json) records the
+committed runtime revision, check results, review outcome, and remaining limits.
+
+The `e2e/core_backend.py --core-only` driver verifies real core 0.1.17
 with a deterministic interactive Pi fixture and no models. Its scenarios cover
 headless core preference, early-result rejection, ended native turns, missing
 and invalid results, blocked/cancel cleanup, and an installed but unusable core
