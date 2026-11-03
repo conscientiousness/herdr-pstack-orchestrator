@@ -14,8 +14,10 @@
 Give your coding agent a team of workers in [Herdr](https://herdr.dev). Ask one
 agent to coordinate a task; it can delegate investigation or implementation to
 Pi, Codex CLI, or Claude Code workers, collect their results, and check the work.
-Workers open in their own Herdr panes, while your controller stays in its
-original tab.
+Installed herdr-core runs workers in persistent terminals, including headless
+sessions. In an existing Herdr UI, optional viewer panes open in `hcOrch` tabs
+without changing your controller tab. Only core's absence selects the original
+Herdr runtime, whose worker tabs stay `horch`.
 
 Use the core skill for delegation, or add the optional **pstack** bundle for
 workflows such as independent review and multi-step implementation. You can use
@@ -32,11 +34,11 @@ No changes to your application code are needed.
 
 ## Requirements
 
-- [Herdr](https://herdr.dev) 0.9.3 or later, with your controller agent running in a Herdr pane (`HERDR_ENV=1`).
+- Installed herdr-core with native OSC 7501 status reporting. Core 0.1.17 has deterministic Linux E2E coverage. If core is absent, [Herdr](https://herdr.dev) 0.9.3 or later with your controller in a Herdr pane (`HERDR_ENV=1`) supplies the legacy fallback. An unhealthy installed core does not fall back.
 - Python 3.11 or later with POSIX file locks. Linux has been tested; macOS is not yet verified.
 - Node.js 22.20 or later and npm for the installer.
 - The agent CLIs you want to use—`pi`, `codex`, or `claude`—installed and authenticated.
-- For Pi workers, install Herdr's integration: `herdr integration install pi`.
+- For legacy Pi workers only, install Herdr's integration with `herdr integration install pi`. Core uses native status and needs no custom hooks or extensions.
 
 ## Install
 
@@ -55,13 +57,13 @@ npx skills@latest add https://github.com/conscientiousness/herdr-pstack-orchestr
 ```
 
 Choose your agent harnesses and project or global scope in the installer, and
-review any same-name skill conflicts. Then start a **new agent session inside
-Herdr** so it can load the skills. See the [installation guide](docs/INSTALL.md)
+review any same-name skill conflicts. Then start a **new agent session** so it
+can load the skills. Core can run headless; legacy execution requires Herdr. See the [installation guide](docs/INSTALL.md)
 for manual installation, updates, and removal.
 
 ## Quickstart
 
-In your new Herdr session, ask your agent to set up its workers:
+In your new controller session, ask your agent to set up its workers:
 
 ```text
 Set up the herdr-orchestrator skill with me. Find the available harnesses,
@@ -111,15 +113,16 @@ see the [playbook inventory](e2e/PLAYBOOKS.md) for current results.
 ## Update
 
 To update, rerun the [install command](#install) you chose, select the same
-harnesses and scope, and start a new Herdr session. These commands install from
+harnesses and scope, and start a new controller session. These commands install from
 this repository's `main` branch. The [installation guide](docs/INSTALL.md) also
 explains how to update a manual clone or remove the skills.
 
 ## Troubleshooting
 
 Ask your agent to run `horch detect` to check available harnesses and Pi
-integration. If a worker stops or fails, inspect its Herdr pane before closing
-it. The [setup guide](skills/herdr-orchestrator/references/setup.md) and [task
+integration. Tasks pin their backend and endpoint at launch, so later preference
+changes cannot reroute waits or cleanup. If a worker stops or fails, inspect its
+recorded backend terminal before closing it. The [setup guide](skills/herdr-orchestrator/references/setup.md) and [task
 recovery guide](skills/herdr-orchestrator/references/lifecycle.md#problem-recovery)
 cover common problems.
 

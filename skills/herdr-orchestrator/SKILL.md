@@ -1,6 +1,6 @@
 ---
 name: herdr-orchestrator
-description: "Delegate tasks to worker agents (Pi, Codex, Claude Code) that run in their own herdr panes, then wait for and read their file results. Use when the user asks to delegate, dispatch, or parallelize work through herdr or horch, to run several models on one task, or to set up herdr workers. Requires HERDR_ENV=1 for orchestration. Also use to review how configured workers perform or whether they are efficient."
+description: "Delegate tasks to Pi, Codex, or Claude Code workers through horch, then wait for their file results. Prefer installed herdr-core, including headless operation; fall back to legacy Herdr only when core is absent. Use for Herdr delegation, multi-model tasks, worker setup, or worker efficiency review."
 ---
 
 # herdr-orchestrator
@@ -26,7 +26,7 @@ Use the absolute path inside this installed skill:
 python3 <skill-dir>/scripts/horch.py <command> ...
 ```
 
-Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1`). Pi workers also require `herdr integration install pi` so startup dialogs cannot receive task prompts. `stats` reads stored history outside Herdr too. Commands print JSON; operational errors use `{"error": "<code>", "message": "<text>"}` and exit 1. CLI help and argument errors use argparse output.
+Requires Python 3.11+ with POSIX file locks. Installed `herdr-core` is preferred over the `hc` alias. Core works headless without `HERDR_ENV` or a legacy CLI. Only core executable absence selects legacy Herdr, which requires a controller inside Herdr (`HERDR_ENV=1`) and `herdr integration install pi` for Pi workers. An installed but unhealthy core is an error, never a fallback. `stats` and `list` read stored history outside Herdr too. Commands print JSON; operational errors use `{"error": "<code>", "message": "<text>"}` and exit 1. CLI help and argument errors use argparse output.
 
 | Command | Purpose |
 |---|---|
@@ -34,13 +34,17 @@ Requires Python 3.11+ on Linux/macOS and a controller inside Herdr (`HERDR_ENV=1
 | `wait [<task-id> ...] [--max-seconds <n>] [--recheck]` | Wait for a state change. No IDs selects all unsettled tasks. See waiting below. |
 | `list` | List task, worker, pane, and state. |
 | `stats [--workspace <id>] [--days <n>]` | Review configured workers from stored facts, without Herdr calls or writes. |
-| `close <task-id>` | Close that task's recorded pane. |
+| `close <task-id>` | Close the recorded backend terminal and any owned viewer pane. |
 | `detect` | List installed harnesses, versions, Pi providers, and Pi integration status. |
 | `check [<worker> ...] [--cwd <dir>] [--max-seconds <n>] [--caller-pane <id>]` | Verify configured workers with real tasks; default wait cap 300 seconds. |
 
-Workers open in `horch` tabs in your workspace, at most four panes per tab, without taking focus or using your tab. `max_active_workers` applies independently to each workspace; controllers sharing a workspace and task store share that workspace's slots. An unclosed task occupies a slot in the workspace that launched it.
+Core workers run in persistent terminals. Inside legacy Herdr, an optional owned pane runs the pinned core's `attach` in `hcOrch` tabs. Legacy workers run directly in `horch` tabs. Both layouts allow at most four panes per tab without taking focus or using your tab. Viewer failures produce a warning, retain recorded cleanup facts, and never change the runtime backend.
 
-`HERDR_PANE_ID` is a claim, not proof of which pane hosts this conversation. Shell snapshots and shared agent daemons can carry another live pane's ID. `run` and `check` therefore require the named pane's shell to be an ancestor of the `horch` process, then place workers in Herdr's live workspace and tab for that pane. A moved pane's launch-time ID still resolves.
+Core `max_active_workers` counts all unclosed core tasks on the same core ID in this task store. With a GUI caller, legacy reservations in its workspace also count. This conservative session-wide core quota also works headless. Legacy launches keep per-workspace limits and count core tasks presented in that workspace. Unclosed invalid records reserve a slot in every scope.
+
+Each task pins its backend at creation. A core binding records the executable, session, endpoint, permanent core ID and terminal address. A record without `backend` remains legacy forever. `wait` and `close` use stored affinity even if the environment or installed preference changes. Viewer IDs are separate from terminal identity. See [lifecycle](references/lifecycle.md) for endpoint errors and cleanup.
+
+For legacy execution or an optional core viewer, `HERDR_PANE_ID` is a claim, not proof of which pane hosts this conversation. Shell snapshots and shared agent daemons can carry another live pane's ID. `run` and `check` therefore require the named pane's shell to be an ancestor of the `horch` process, then place workers in Herdr's live workspace and tab for that pane. A moved pane's launch-time ID still resolves.
 
 On `caller_context_invalid`, follow [caller context recovery](references/setup.md#caller-context). If the message says `horch` is outside every pane's process tree (for example, Codex tools run by a shared `codex app-server`), confirm the controller pane as described there and pass `--caller-pane <id>` to every `run` and `check`. Do not choose a workspace from UI focus or create replacement panes to work around the error.
 
@@ -54,7 +58,7 @@ On `caller_context_invalid`, follow [caller context recovery](references/setup.m
 
 ## Wait without repeated short calls
 
-`horch wait <task-id> ...` has no default time cap and returns when any waited task changes state. It polls Herdr internally; those polls do not invoke a model. Wait again for the remaining running tasks after handling each change.
+`horch wait <task-id> ...` has no default time cap and returns when any waited task changes state. It uses native core events with snapshots, or the existing legacy Herdr polling loop. Neither invokes a model. Wait again for the remaining running tasks after handling each change.
 
 - With background commands or yielded shell sessions, run `horch wait` **without `--max-seconds`** and resume that same process/session until it returns. A shell tool's yield timeout returns control to you; it does not require a timeout on `horch`. Post user updates while the wait stays alive. Claude Code supports background commands; Codex runtimes with yielded exec sessions can resume the returned session handle.
 - If the runtime only supports blocking shell calls (including Pi without a background facility), use `horch wait <task-id> ... --max-seconds 300` and a shell-tool timeout above 300 seconds. Use a shorter cap only when tool limits, a required update cadence, or a user request requires it.
@@ -62,11 +66,11 @@ On `caller_context_invalid`, follow [caller context recovery](references/setup.m
 
 Do not turn repeated `--max-seconds 1` calls into a status loop. While workers run, prepare independent briefs or assess already delivered evidence. For an occasional stored-state lookup, use `horch list`; use the existing wait process to observe delivery.
 
-For a routine progress check, use `herdr agent get <agent-name>` and, if needed, `herdr agent read <agent-name> --source visible`. Reserve native harness transcripts for explicit debugging, not a second status loop. Lifecycle activity does not establish that the work is correct; verify the delivered artifacts.
+For a core progress check, use the recorded executable with `HC_SESSION` and `HC_SOCKET` from the backend binding, then `get <terminal_id>` or passive `read <terminal_id> --lines 0`. Never use the current endpoint for an old task. For legacy tasks, use `herdr agent get <agent-name>` and, if needed, `herdr agent read <agent-name> --source visible`. Reserve native harness transcripts for explicit debugging, not a second status loop. Lifecycle activity does not establish that the work is correct; verify the delivered artifacts.
 
 ## Problems
 
-1. Read the pane before closing it: `herdr pane read <pane_id> --source visible`. This is passive; recent-history reads can scroll an idle full-screen agent.
+1. Inspect the recorded backend before closing it. For core use its pinned endpoint and `read <terminal_id> --lines 0`. For legacy use `herdr pane read <pane_id> --source visible`. These are passive; history reads can scroll an idle full-screen agent.
 2. Tell the user the task, state, and what the pane shows. Never answer a dialog yourself.
 3. Follow the user's decision to close or retry. Start retries as fresh tasks. If the original task recovered after inspection, use explicit `--recheck` as described in [lifecycle and recovery](references/lifecycle.md).
 

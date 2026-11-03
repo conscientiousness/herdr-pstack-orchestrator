@@ -12,15 +12,14 @@ models or mutate real Herdr panes.
 
 ```bash
 python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
-  --output /tmp/horch-core-proof --core-only --baseline
+  --output /tmp/horch-core-proof --core-only
 ```
 
-`--baseline` records the current explicit headless rejection as
-`baseline-unsupported`. Remove `--baseline` after product implementation to
-exercise core preference, an early valid result while working, post-prompt turn
-completion, missing and invalid results, blocked workers, cancellation, and
-cleanup. Product mode also checks that an installed core rejecting its session
-does not invoke legacy Herdr. Product mode must fail until core support exists.
+Product mode exercises core preference, an early valid result while working,
+post-prompt turn completion, missing and invalid results, blocked workers,
+cancellation, and cleanup. It also checks that an installed core rejecting its
+session does not invoke legacy Herdr. `--baseline` is only for a pre-core revision
+that explicitly rejects headless execution with `baseline-unsupported`.
 
 The driver uses the real core server and independent `herdr-core ls/get` reads.
 Its scratch `pi` is a deterministic interactive fixture that reads the brief

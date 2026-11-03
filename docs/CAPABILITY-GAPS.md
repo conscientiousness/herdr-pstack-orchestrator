@@ -26,6 +26,21 @@ No cloud provider or remote Herdr environment has been authorized for these
 experiments. These prerequisites remain gaps; this change does not create a
 cloud service, scheduler, background watcher or replacement ownership witness.
 
+## Core backend verification
+
+The unchanged `e2e/core_backend.py --core-only` driver verifies real core 0.1.17
+with a deterministic interactive Pi fixture and no models. Its scenarios cover
+headless core preference, early-result rejection, ended native turns, missing
+and invalid results, blocked/cancel cleanup, and an installed but unusable core
+refusing legacy fallback. Private receipts remain outside the public checkout.
+
+Native startup probes reported idle for installed Pi, Codex with `--no-daemon`,
+and Claude Code. These probes and deterministic fixtures do not prove configured
+model delivery. Actual configured-worker delivery, visible `hcOrch` and `horch`
+tabs, absence-only live legacy fallback, and mixed-backend affinity still need
+controller verification. No new Herdr app is installed or required. Core support
+currently uses local POSIX endpoints; remote core orchestration is not provided.
+
 ## Evidence still needed
 
 | Evidence gap | Current boundary |
