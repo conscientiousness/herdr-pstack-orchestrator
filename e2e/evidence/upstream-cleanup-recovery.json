@@ -1,0 +1,114 @@
+{
+  "verdict": "pass",
+  "scope": "checker_cleanup_fix",
+  "recorded_at": "2026-11-02T10:13:24.121772+00:00",
+  "source_base_revision": "8b7c52aea2d301f43fd80c9fb43cc79132802612",
+  "tested_revision": "02f25a622c67bea43107b2cddfde0e18975d664c",
+  "checker_sha256": "c9ce29d06078c1b82ef708ef2051c116ae0bf38d3b1305d3ce9b6ab97ae2fbc2",
+  "incident": {
+    "run_id": 41422355619,
+    "url": "https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/runs/41422355619",
+    "original_and_rerun_results": [
+      {
+        "attempt": 1,
+        "artifact_id": 13130093310,
+        "result_sha256": "c67c4399604f23962c16b409e14854f3cf09a009d9776722f5d7302ca8548669",
+        "status": "error",
+        "error": "[Errno 39] Directory not empty: 'objects'"
+      },
+      {
+        "attempt": 2,
+        "artifact_id": 13132331777,
+        "result_sha256": "c67c4399604f23962c16b409e14854f3cf09a009d9776722f5d7302ca8548669",
+        "status": "error",
+        "error": "[Errno 39] Directory not empty: 'objects'"
+      }
+    ],
+    "interpretation": "Both attempts completed comparison with zero relevant changes, then reported ENOTEMPTY during temporary checkout cleanup. Both remain failures."
+  },
+  "diagnosis": {
+    "mitigation": "Disable maintenance.auto for Git commands in the temporary upstream checkout.",
+    "reference": "https://git-scm.com/docs/git-config#Documentation/git-config.txt-maintenanceauto",
+    "causal_limit": "A detached Git maintenance process racing with cleanup is the supported hypothesis; the historical logs do not identify the actual concurrent writer."
+  },
+  "local_checker": {
+    "verdict": "pass",
+    "exit_code": 0,
+    "result": {
+      "status": "current",
+      "compared_paths": [
+        "pstack/",
+        "cursor-team-kit/"
+      ],
+      "repository": "https://github.com/cursor/plugins.git",
+      "pinned_revision": "c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+      "pinned_version": "0.15.36",
+      "default_branch": "main",
+      "upstream_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
+      "compare_url": "https://github.com/cursor/plugins/compare/c742dd61706fbacc1b95f1a20b7b988cf096ce6c...ae5650febf4320793844c12c4adaa937f417f8da",
+      "upstream_version": "0.15.36",
+      "changed_files": []
+    },
+    "temporary_checkouts_remaining": []
+  },
+  "github_checker": {
+    "run_id": 41426847483,
+    "head_sha": "02f25a622c67bea43107b2cddfde0e18975d664c",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "result": {
+      "status": "current",
+      "compared_paths": [
+        "pstack/",
+        "cursor-team-kit/"
+      ],
+      "repository": "https://github.com/cursor/plugins.git",
+      "pinned_revision": "c742dd61706fbacc1b95f1a20b7b988cf096ce6c",
+      "pinned_version": "0.15.36",
+      "default_branch": "main",
+      "upstream_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
+      "compare_url": "https://github.com/cursor/plugins/compare/c742dd61706fbacc1b95f1a20b7b988cf096ce6c...ae5650febf4320793844c12c4adaa937f417f8da",
+      "upstream_version": "0.15.36",
+      "changed_files": []
+    },
+    "url": "https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/runs/41426847483"
+  },
+  "isolated_local_recovery_candidate": {
+    "verdict": "fail",
+    "scope": "Only the staged runner checked_result helper executed against the real failing GitHub run. No service, model, sync, PR merge, or release was invoked.",
+    "runner_sha256": "46e4d3a3ebad754e6f6fc996fbd66f3550c706a169c8ab32080b2c9e946fa059",
+    "ledger": {
+      "run_id": 41422355619,
+      "head_sha": "8b7c52aea2d301f43fd80c9fb43cc79132802612",
+      "original_attempt": 1,
+      "stage": "failed",
+      "original_error": "Upstream freshness unknown: artifact reports an error",
+      "recovered_attempt": 2,
+      "error": "Upstream freshness unknown: artifact reports an error"
+    },
+    "retry_budget_audit": {
+      "verdict": "pass",
+      "scope": "Independent retry-budget audit after a real failed recovery. This does not promote the failed recovery to success.",
+      "reason": "Automatic checker recovery already used; inspect retained evidence",
+      "attempt_before": 2,
+      "attempt_after": 2,
+      "preserved_error_attempts": [
+        1,
+        2
+      ]
+    },
+    "review": "An independent review found an interrupted-request propagation gap. It was corrected to poll until the existing deadline without reissuing the request; the follow-up review found no remaining blocker.",
+    "installed": false,
+    "interpretation": "One automatic rerun was requested and both error artifacts retained. The unchanged original checker failed again; the helper correctly withheld sync and the separate audit confirmed no third attempt. This is not a successful recovery or full-service pass."
+  },
+  "reproduce": {
+    "checker": "python3 scripts/check_upstream.py --output <private-artifact-directory>/upstream-result.json",
+    "github": "gh workflow run upstream.yml --repo conscientiousness/herdr-pstack-orchestrator --ref <branch-containing-tested_revision>",
+    "notes": "Retain the result after temporary checkout cleanup. Exit 0 means current, 1 means relevant updates, and 2 means unknown freshness. The machine-local runner and its private exercise script are not distributed; that trial is supporting evidence, not another portable test command."
+  },
+  "limits": [
+    "The persistent local runner was not changed and its failed service was not restarted.",
+    "No claim of arbitrary automatic code repair, model-driven sync, merge, or release verification is made.",
+    "The fixed GitHub checker was exercised on the feature branch; main still requires the reviewed fix."
+  ]
+}

@@ -551,6 +551,15 @@ It compares installed names and every file against this repository's bundle, che
 
 For a live routing check, install into the controller's normal skill locations, start a fresh controller in its own Herdr tab, and ask it to use `how` to explain the worker lifecycle across configuration, startup, delivery, and cleanup. Supply the repository, read-only scope, and a local output path, but no skill file path or dispatch sequence. The real invocation should discover `how`, load its adapter, use the configured explorer/explainer roles, wait for delivered results, and clean up its own workers. Inspect actual task records and the controller's local tool trace before accepting the explanation. Keep transcripts and machine-specific paths private. This checks one original skill workflow, not every `poteto-mode` playbook.
 
+[upstream-cleanup-recovery.json](evidence/upstream-cleanup-recovery.json) records
+two real GitHub monitor failures during temporary checkout cleanup, followed by
+a passing local check and feature-branch GitHub check with automatic Git
+maintenance disabled. The historical concurrent writer is not identified. An
+isolated local-runner candidate requested the second attempt, retained both
+errors, and refused further retries or sync; that recovery remains failed.
+The separate retry-budget audit passed. The persistent local runner was not
+changed, and no service, model workflow, merge, or release was exercised.
+
 The daily monitor can also run locally without models:
 
 ```bash

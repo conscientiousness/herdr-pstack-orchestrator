@@ -118,3 +118,5 @@ e2e/evidence/*
 !e2e/evidence/playbook-refactor-preservation-audit.json
 
 !e2e/evidence/skills-installer-latest.json
+
+!e2e/evidence/upstream-cleanup-recovery.json
