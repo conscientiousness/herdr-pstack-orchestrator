@@ -10,6 +10,7 @@ e2e/*
 !e2e/review_loop.py
 !e2e/workspace_limits.py
 !e2e/check_workers.py
+!e2e/core_backend.py
 !e2e/pi_startup.py
 !e2e/controller_loop.py
 !e2e/startup-findings.md
