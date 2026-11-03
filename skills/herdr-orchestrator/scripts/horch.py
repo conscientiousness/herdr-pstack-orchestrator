@@ -9,12 +9,14 @@ errors are one {"error": code, "message": text} object with exit status 1.
 from __future__ import annotations
 
 import argparse
+import core_backend as core
 import fcntl
 import json
 import math
 import os
 import re
 import secrets
+import shlex
 import shutil
 import statistics
 import subprocess
@@ -43,6 +45,7 @@ SETTLED_STATES = {
     "exited",
     "result_missing",
     "result_invalid",
+    "error",
 }
 
 POLL_SECONDS = 2.0
@@ -134,11 +137,11 @@ def _herdr_message(payload, returncode, stderr):
     return (stderr or "").strip()[:500] or f"herdr exited with status {returncode}"
 
 
-def herdr(*args, timeout=120.0):
-    """Run one herdr command and return its parsed stdout JSON document."""
+def herdr(*args, timeout=120.0, env=None, expect_json=True):
+    """Run a Herdr command, parsing JSON unless its output is requested as text."""
     argv = ["herdr", *[str(a) for a in args]]
     try:
-        proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=env)
     except FileNotFoundError as exc:
         raise HerdrError("herdr CLI not found on PATH") from exc
     except subprocess.TimeoutExpired as exc:
@@ -147,6 +150,8 @@ def herdr(*args, timeout=120.0):
         parsed = _read_json_text(proc.stderr) or _read_json_text(proc.stdout)
         payload = parsed if isinstance(parsed, dict) else {"raw": (proc.stderr or proc.stdout).strip()[:2000]}
         raise HerdrError(_herdr_message(payload, proc.returncode, proc.stderr), payload)
+    if not expect_json:
+        return proc.stdout
     parsed = _read_json_text(proc.stdout)
     if not isinstance(parsed, dict):
         raise HerdrError(f"herdr {' '.join(str(a) for a in args)} did not return a JSON object")
@@ -334,7 +339,24 @@ def load_task(directory, task_id):
             raise ValueError("missing timezone")
     except ValueError as exc:
         raise TaskInvalidError(f"task {task_id} has an invalid created_at in task.json") from exc
+    binding = task.get("backend", {"kind": "legacy"})
+    if not isinstance(binding, dict) or binding.get("kind") not in ("legacy", "core"):
+        raise TaskInvalidError(f"task {task_id} has an unknown backend")
+    if binding["kind"] == "core":
+        try:
+            core.validate(binding)
+            viewer = task.get("viewer")
+            if viewer is not None and (not isinstance(viewer, dict) or any(
+                    not isinstance(viewer.get(k), str) or not viewer[k]
+                    for k in ("pane_id", "tab_id", "socket_path"))):
+                raise ValueError("invalid core viewer binding")
+        except ValueError as exc:
+            raise TaskInvalidError(f"task {task_id}: {exc}") from exc
     return task
+
+
+def is_core(task):
+    return task.get("backend", {}).get("kind") == "core"
 
 
 def all_task_ids():
@@ -352,7 +374,7 @@ def active_task_count(workspace_id):
     return task_capacity(workspace_id)[0]
 
 
-def task_capacity(workspace_id):
+def task_capacity(workspace_id, binding=None):
     """Return the reservation count and invalid IDs from the same bulk scan."""
     active = 0
     legacy_panes = []
@@ -369,7 +391,15 @@ def task_capacity(workspace_id):
             active += 1  # unknown owner and pane; reserve a slot in every workspace
             invalid.append(task_id)
             continue
-        if "workspace_id" not in task:
+        if binding is not None and is_core(task):
+            if task["backend"]["core_id"] == binding["core_id"]:
+                active += 1
+        elif binding is not None and workspace_id is None:
+            continue
+        elif is_core(task):
+            if task.get("workspace_id") == workspace_id:
+                active += 1
+        elif "workspace_id" not in task:
             legacy_panes.append(task["pane_id"])
         elif task["workspace_id"] == workspace_id:
             active += 1
@@ -489,10 +519,11 @@ def herdr_error_code(exc):
     return error.get("code") if isinstance(error, dict) else None
 
 
-def close_pane(pane_id):
+def close_pane(pane_id, *, socket_path=None):
     """Close the authoritative pane, independent of the caller's workspace."""
+    env = dict(os.environ, HERDR_SOCKET_PATH=socket_path) if socket_path else None
     try:
-        pane = herdr_path(herdr("pane", "get", pane_id, timeout=30.0), "result", "pane")
+        pane = herdr_path(herdr("pane", "get", pane_id, timeout=30.0, env=env), "result", "pane")
     except HerdrError as exc:
         if herdr_error_code(exc) in MISSING_PANE_CODES:
             return "already_gone"
@@ -501,7 +532,7 @@ def close_pane(pane_id):
     if not isinstance(target, str) or not target:
         raise HerdrError("herdr pane get has a pane without pane_id")
     try:
-        herdr("pane", "close", target, timeout=30.0)
+        herdr("pane", "close", target, timeout=30.0, env=env)
     except HerdrError as exc:
         if herdr_error_code(exc) in MISSING_PANE_CODES:
             return "already_gone"  # it vanished after pane get
@@ -532,13 +563,13 @@ def split_pane(source, direction, cwd):
     return herdr_id(doc, "result", "pane", id_key="pane_id")
 
 
-def place_pane(workspace, cwd, caller_tab):
+def place_pane(workspace, cwd, caller_tab, label=PANE_LABEL):
     """Return (pane_id, tab_id) for a fresh worker pane; never touches caller_tab."""
     tabs = herdr_path(herdr("tab", "list", "--workspace", workspace, timeout=30.0), "result", "tabs")
     panes = workspace_panes(workspace)
     for tab in tabs:
         tab_id = tab.get("tab_id") if isinstance(tab, dict) else None
-        if not isinstance(tab_id, str) or tab_id == caller_tab or tab.get("label") != PANE_LABEL:
+        if not isinstance(tab_id, str) or tab_id == caller_tab or tab.get("label") != label:
             continue
         count = tab.get("pane_count")
         if not isinstance(count, int) or count < 1 or count >= PANES_PER_TAB:
@@ -554,7 +585,7 @@ def place_pane(workspace, cwd, caller_tab):
         "tab", "create",
         "--workspace", workspace,
         "--cwd", str(cwd),
-        "--label", PANE_LABEL,
+        "--label", label,
         "--no-focus",
         timeout=60.0,
     )
@@ -705,8 +736,10 @@ def require_caller_context(claimed=None):
 
 
 def cmd_run(args):
-    require_herdr_env()
-    require_caller_context(args.caller_pane)
+    binary = core.executable()
+    if binary is None:
+        require_herdr_env()
+        require_caller_context(args.caller_pane)
     config = load_config()
     brief_source = Path(args.brief).expanduser()
     try:
@@ -717,15 +750,154 @@ def cmd_run(args):
         fail("brief_not_found", f"brief file not found: {args.brief}")
     brief_text = brief_source.read_text(encoding="utf-8", errors="replace")
     worker = config["workers"].get(args.worker)
-    if worker is not None and worker["harness"] == "pi":
+    if binary is None and worker is not None and worker["harness"] == "pi":
         require_pi_integration()
-    emit(start_task(config, args.worker, brief_text, resolve_cwd(args.cwd), caller_pane=args.caller_pane))
+    binding = core.new_binding(binary) if binary else None
+    emit(start_task(config, args.worker, brief_text, resolve_cwd(args.cwd),
+                    caller_pane=args.caller_pane, binding=binding))
 
 
-def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False, caller_pane=None):
+def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False, caller_pane=None, binding=None):
     # Startup includes placement, publication, and acknowledgement, never completion.
     with task_store_lock():
+        if binding is not None:
+            return start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, binding)
         return _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, caller_pane)
+
+
+def core_agent(terminal):
+    if terminal is None or terminal.get("state") != "live":
+        return None
+    return {"agent_status": core.status(terminal), "completion_seq": terminal.get("turn")}
+
+
+def close_task_resources(task):
+    if not is_core(task):
+        return {"pane": close_pane(task["pane_id"])}
+    outcome = core.close(task["backend"])
+    viewer = task.get("viewer")
+    if task.get("viewer_unresolved"):
+        raise HerdrError("viewer placement outcome is unknown; inspect the recorded viewer endpoint before releasing this reservation")
+    outcome["viewer"] = (close_pane(viewer["pane_id"], socket_path=viewer["socket_path"])
+                         if viewer else "not_created")
+    return outcome
+
+
+def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, binding):
+    worker = config["workers"].get(worker_name)
+    if worker is None:
+        fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
+    caller = require_caller_context(caller_pane) if os.environ.get("HERDR_ENV") == "1" else None
+    active, invalid = task_capacity(caller["workspace_id"] if caller else None, binding)
+    if active >= config["max_active_workers"]:
+        if skip_if_full:
+            return None
+        fail("worker_limit", f"core session {binding['session']} has {active} reserved tasks; "
+             f"max_active_workers = {config['max_active_workers']}; invalid tasks: {invalid}")
+    task_id = "t-" + secrets.token_hex(3)
+    directory = task_dir(task_id)
+    while directory.exists():
+        task_id = "t-" + secrets.token_hex(3)
+        directory = task_dir(task_id)
+    nonce = secrets.token_hex(8)
+    argv = launch_args(worker, directory)
+    if worker["harness"] == "codex":
+        if any(arg == "--daemon" or arg.startswith(("--daemon=", "--no-daemon=")) for arg in argv):
+            fail("config_invalid", "core Codex requires --no-daemon; conflicting daemon arguments were not changed")
+        if "--no-daemon" not in argv:
+            argv.append("--no-daemon")
+    binding = dict(binding, terminal="horch-" + task_id[2:], name="horch-" + task_id[2:], nonce=nonce)
+    task = {"task_id": task_id, "nonce": nonce, "worker": worker_name,
+            "harness": worker["harness"], "model": worker["model"], "cwd": str(cwd),
+            "task_dir": str(directory), "brief_path": str(directory / "brief.md"),
+            "result_path": str(directory / "result.json"), "agent": binding["name"],
+            "pane_id": binding["terminal"], "argv": argv, "created_at": iso_now(),
+            "backend": binding, "viewer": None}
+    if caller:
+        task["workspace_id"] = caller["workspace_id"]
+    directory.mkdir(parents=True)
+    write_brief(directory, brief_text, task_id, nonce)
+    write_json(directory / "task.json", task)
+    state = default_state()
+    save_state(directory, state)
+    warning = None
+    try:
+        try:
+            terminal = core.launch(binding, worker["harness"], argv, cwd)
+        except core.CoreError as exc:
+            terminal = core.get(binding)
+            if terminal is None:
+                raise core.CoreError(f"creation outcome unresolved: {exc}; reservation retained. "
+                                     f"Inspect {binding['name']} at the stored endpoint; do not relaunch") from exc
+        binding["terminal"] = terminal["address"]
+        task["pane_id"] = terminal["address"]
+        write_json(directory / "task.json", task)
+        if caller:
+            try:
+                viewer_socket = os.environ.get("HERDR_SOCKET_PATH")
+                if not viewer_socket:
+                    raise HerdrError("cannot pin viewer endpoint without HERDR_SOCKET_PATH; no GUI writes attempted")
+                task["viewer_socket"] = viewer_socket
+                task["viewer_unresolved"] = True
+                write_json(directory / "task.json", task)
+                pane_id, tab_id = place_pane(caller["workspace_id"], cwd, caller["tab_id"], "hcOrch")
+                task["viewer"] = {"pane_id": pane_id, "tab_id": tab_id, "socket_path": viewer_socket}
+                task["viewer_unresolved"] = False
+                write_json(directory / "task.json", task)
+                env = core.cli_env(binding)
+                assignments = [f"{k}={env[k]}" for k in (*binding["env"], "HC_SESSION", "HC_SOCKET")]
+                command = shlex.join(["env", "-u", "HC_TERMINAL_ID", *assignments,
+                                      binding["executable"], "attach", binding["terminal"]])
+                herdr("pane", "run", pane_id, command, timeout=30, expect_json=False)
+            except HerdrError as exc:
+                warning = f"core worker retained; optional hcOrch presentation failed: {exc}; "
+                warning += "inspect for an empty viewer pane after ambiguous placement"
+                task["viewer_warning"] = warning
+                write_json(directory / "task.json", task)
+        terminal = core.ready(binding, START_TIMEOUT_MS / 1000)
+        baseline = terminal.get("turn")
+        if isinstance(baseline, bool) or not isinstance(baseline, int) or baseline < 0:
+            raise core.CoreError("native turn baseline missing; no task was sent")
+        state["baseline_seq"] = baseline
+        save_state(directory, state)
+    except core.CoreError as exc:
+        state["state"] = "start_failed"
+        state["problem"] = str(exc)
+        save_state(directory, state)
+    if state["state"] == "running" and not state["closed"]:
+        pointer = f"New task {task_id}. Read {directory / 'brief.md'} in full and follow it exactly."
+        try:
+            sent = core.call(binding, "terminal.send", terminal=binding["terminal"], text=pointer, **{"if": "idle"})
+            terminal = core.get(binding)
+            observed = core_agent(terminal)
+            acknowledged = sent.get("started") is True or (observed and (
+                observed["agent_status"] in ("working", "blocked", "error") or
+                observed.get("completion_seq", baseline) > baseline))
+            if not acknowledged:
+                raise core.CoreError("prompt acknowledgement not observed; never resend automatically")
+            if observed and observed["agent_status"] in ("blocked", "error"):
+                state["state"] = observed["agent_status"]
+                state["problem"] = "worker reported " + observed["agent_status"]
+            else:
+                state["saw_working"] = True
+        except core.CoreError as exc:
+            state["state"] = "not_started"
+            state["problem"] = f"send outcome unresolved: {exc}; inspect native state, then use wait --recheck; do not resend"
+            try:
+                observed = core_agent(core.get(binding))
+                if observed and (observed["agent_status"] in ("working", "blocked", "error")
+                                 or observed["completion_seq"] > baseline):
+                    state["state"] = observed["agent_status"] if observed["agent_status"] in ("blocked", "error") else "running"
+                    state["saw_working"] = True
+                    state["problem"] = ("worker reported " + state["state"]
+                                        if state["state"] in ("blocked", "error") else None)
+            except core.CoreError as reconcile_error:
+                state["problem"] += f"; endpoint reconciliation failed: {reconcile_error}"
+        save_state(directory, state)
+    return {"task_id": task_id, "worker": worker_name, "agent": task["agent"],
+            "pane_id": task["pane_id"], "terminal_id": binding["terminal"], "backend": "core",
+            "viewer": task["viewer"], "state": state["state"], "message": state["problem"],
+            "warning": warning, "brief_path": task["brief_path"], "task_dir": str(directory)}
 
 
 def wait_for_pi_session(agent, deadline):
@@ -808,6 +980,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         "tab_id": tab_id,
         "workspace_id": caller["workspace_id"],
         "argv": launch_args(worker, directory),
+        "backend": {"kind": "legacy"},
         "created_at": iso_now(),
     }
     state = default_state()
@@ -971,11 +1144,15 @@ def evaluate_task(info, agent, config):
     state, task = info["state"], info["task"]
     if agent is None:
         state["state"] = "exited"
-        state["problem"] = f"worker {task['worker']} ({task['agent']}) is gone from herdr"
+        state["problem"] = f"worker {task['worker']} ({task['agent']}) has finished or is gone from its backend"
         return "exited"
     status = agent.get("agent_status")
     if status == "working":
         state["saw_working"] = True
+    if status == "error":
+        state["state"] = "error"
+        state["problem"] = f"worker {task['worker']} reported a native error"
+        return "error"
     if status == "blocked":
         state["state"] = "blocked"
         state["problem"] = f"worker {task['worker']} is waiting at a dialog in pane {task['pane_id']}"
@@ -1004,10 +1181,19 @@ def evaluate_task(info, agent, config):
 
 
 def poll_round(infos, previous, config):
-    """One herdr agent list poll for all unsettled tasks; returns (changed, polled)."""
-    index = agent_index()
+    observing = {info["task_id"]: info for info in infos
+                 if not info["state"]["closed"] and info["state"]["state"] != "done"
+                 and (info["state"]["state"] not in SETTLED_STATES or info.get("recheck"))}
+    legacy = any(not is_core(info["task"]) for info in observing.values())
+    index = agent_index() if legacy else {}
     if index is None:
         return False, False
+    observations = {}
+    for info in observing.values():
+        if is_core(info["task"]):
+            terminal = core.get(info["task"]["backend"])
+            info["terminal_observation"] = terminal
+            observations[info["task_id"]] = core_agent(terminal)
     changed = False
     for info in infos:
         directory = info["dir"]
@@ -1017,11 +1203,13 @@ def poll_round(infos, previous, config):
             state = load_state(directory)
             info["state"] = state
             old_state = state["state"]
-            if state["closed"] or old_state == "done" or (
+            if info["task_id"] not in observing or state["closed"] or old_state == "done" or (
                     old_state in SETTLED_STATES and not info.pop("recheck", False)):
                 reported = old_state
             else:
-                reported = evaluate_task(info, index.get(info["task"]["agent"]), config)
+                agent = (observations.get(info["task_id"]) if is_core(info["task"])
+                         else index.get(info["task"]["agent"]))
+                reported = evaluate_task(info, agent, config)
                 cleanup = reported == "done"
                 if reported == "long_running":
                     notice = (f"worker {info['task']['worker']} has run longer than "
@@ -1033,9 +1221,9 @@ def poll_round(infos, previous, config):
         if cleanup:
             cleanup_error = None
             try:
-                close_pane(info["task"]["pane_id"])
-            except HerdrError as exc:
-                cleanup_error = f"pane cleanup failed: {exc}; retry with horch close {info['task_id']}"
+                close_task_resources(info["task"])
+            except (HerdrError, core.CoreError) as exc:
+                cleanup_error = f"task cleanup failed: {exc}; retry with horch close {info['task_id']}"
             with task_state_lock(directory):
                 state = load_state(directory)
                 if not state["closed"]:
@@ -1047,7 +1235,8 @@ def poll_round(infos, previous, config):
                 info["state"] = state
         # Notices are claimed in the state transaction, sent outside the lock.
         # Suppress a notice if a concurrent close has already completed.
-        if notice and not load_state(directory)["closed"]:
+        if (notice and not load_state(directory)["closed"]
+                and (not is_core(info["task"]) or info["task"].get("viewer"))):
             notify(f"horch: {info['task_id']}", notice)
         info["reported"] = reported
         if previous.get(info["task_id"]) != reported:
@@ -1082,7 +1271,6 @@ def make_info(task_id):
 
 
 def cmd_wait(args):
-    require_herdr_env()
     config = load_config()
     if args.recheck and not args.task_ids:
         fail("invalid_arguments", "wait --recheck requires explicit task IDs")
@@ -1137,9 +1325,17 @@ def wait_until_change(infos, config, max_seconds):
         now = time.monotonic()
         if deadline is not None and now >= deadline:
             return
-        gap = POLL_SECONDS if deadline is None else min(POLL_SECONDS, deadline - now)
+        native_only = all(is_core(info["task"]) for info in infos)
+        interval = 180.0 if native_only else POLL_SECONDS
+        gap = interval if deadline is None else min(interval, deadline - now)
         if gap > 0:
-            time.sleep(gap)
+            observations = [(info["task"]["backend"], info.get("terminal_observation"))
+                            for info in infos if is_core(info["task"]) and not info["state"]["closed"]
+                            and info["state"]["state"] not in SETTLED_STATES]
+            if observations:
+                core.wait_changes(observations, gap)
+            else:
+                time.sleep(gap)
 
 
 # ---------------------------------------------------------------------------
@@ -1328,7 +1524,6 @@ def cmd_stats(args):
 
 
 def cmd_list(args):
-    require_herdr_env()
     rows = []
     for task_id in all_task_ids():
         try:
@@ -1349,6 +1544,9 @@ def cmd_list(args):
                     "worker": task.get("worker"),
                     "agent": task.get("agent"),
                     "pane_id": task.get("pane_id"),
+                    "backend": task.get("backend", {"kind": "legacy"}),
+                    "terminal_id": task["backend"]["terminal"] if is_core(task) else None,
+                    "viewer": task.get("viewer"),
                     "workspace_id": task.get("workspace_id"),
                     "state": state["state"],
                     "closed": bool(state.get("closed")),
@@ -1362,20 +1560,19 @@ def cmd_list(args):
 
 
 def cmd_close(args):
-    require_herdr_env()
     directory = task_dir(args.task_id)
     try:
         task = load_task(directory, args.task_id)
     except TaskInvalidError as exc:
         fail("task_invalid", f"{exc}; pane is unknown. Check herdr pane list for a leftover "
              f"horch pane, then remove task directory {directory} by hand")
-    outcome = close_pane(task["pane_id"])
+    outcome = close_task_resources(task)
     with task_state_lock(directory):
         current = load_state(directory)
         current["closed"] = True
         current["problem"] = None
         write_json(directory / "state.json", current)
-    emit({"task_id": args.task_id, "closed": True, "pane": outcome})
+    emit({"task_id": args.task_id, "closed": True, **outcome})
 
 
 # ---------------------------------------------------------------------------
@@ -1464,28 +1661,35 @@ def herdr_server_version():
 
 
 def cmd_detect(args):
+    binary = core.executable()
     harnesses = {name: tool_version(name) for name in HARNESSES}
     emit({
+        "backend": "core" if binary else "legacy",
+        "core": {"path": binary, "status_source": "native OSC 7501"} if binary else None,
         "herdr_env": os.environ.get("HERDR_ENV") == "1",
-        "herdr": tool_version("herdr"),
-        "herdr_server_version": herdr_server_version(),
+        "herdr": tool_version("herdr") if not binary else None,
+        "herdr_server_version": herdr_server_version() if not binary else None,
         "python": ".".join(str(part) for part in sys.version_info[:3]),
         "harnesses": harnesses,
         "pi_providers": pi_providers() if harnesses["pi"] else [],
-        "pi_integration": pi_integration_status(),
+        "pi_integration": ({"status": "native", "version": None} if binary else pi_integration_status()),
         "config": {"path": str(config_path()), "exists": config_path().is_file()},
     })
 
 
 def cmd_check(args):
-    require_herdr_env()
-    caller = require_caller_context(args.caller_pane)
+    binary = core.executable()
+    if binary is None:
+        require_herdr_env()
+    caller = (require_caller_context(args.caller_pane)
+              if binary is None or os.environ.get("HERDR_ENV") == "1" else None)
+    binding = core.new_binding(binary) if binary else None
     config = load_config()
     names = list(dict.fromkeys(args.workers or list(config["workers"])))
     unknown = [name for name in names if name not in config["workers"]]
     if unknown:
         fail("unknown_worker", f"no worker named {', '.join(unknown)} in {config_path()}")
-    if any(config["workers"][name]["harness"] == "pi" for name in names):
+    if binary is None and any(config["workers"][name]["harness"] == "pi" for name in names):
         require_pi_integration()
     cwd = resolve_cwd(args.cwd)
     deadline = time.monotonic() + args.max_seconds
@@ -1498,9 +1702,10 @@ def cmd_check(args):
         while pending and time.monotonic() < deadline:
             name = pending[0]
             began = time.monotonic()
-            run = start_task(config, name, CHECK_BRIEF, cwd, skip_if_full=True, caller_pane=args.caller_pane)
+            run = start_task(config, name, CHECK_BRIEF, cwd, skip_if_full=True,
+                             caller_pane=args.caller_pane, binding=binding)
             if run is None:
-                _, invalid = task_capacity(caller["workspace_id"])
+                _, invalid = task_capacity(caller["workspace_id"] if caller else None, binding)
                 capacity_invalid.update(invalid)
                 break  # poll our started tasks before retrying pending workers
             pending.pop(0)
@@ -1582,7 +1787,7 @@ def build_parser():
     p_stats.add_argument("--days", type=int, help="only tasks created in the last n days")
     p_stats.set_defaults(func=cmd_stats)
 
-    p_close = sub.add_parser("close", help="close the pane of a task horch started")
+    p_close = sub.add_parser("close", help="close the task's backend terminal and owned viewer")
     p_close.add_argument("task_id", help="task to close")
     p_close.set_defaults(func=cmd_close)
 
@@ -1613,6 +1818,8 @@ def main(argv=None):
         fail("task_invalid", str(exc))
     except HerdrError as exc:
         fail("herdr_error", str(exc), exc.payload)
+    except core.CoreError as exc:
+        fail("core_error", str(exc))
     except KeyboardInterrupt:
         sys.exit(130)
     except Exception as exc:  # never crash with a traceback at the controller

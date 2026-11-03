@@ -4,6 +4,44 @@ For agent-driven verification, use the project-local [verify-herdr-orchestrator 
 
 These files are repository tooling, outside the installed skills.
 
+## Verify the preferred core backend
+
+Run the black-box headless driver with the official `herdr-core` binary installed.
+It creates a private `HC_SESSION` and scratch XDG directories. It does not call
+models or mutate real Herdr panes.
+
+```bash
+python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
+  --output /tmp/horch-core-proof --core-only
+```
+
+Product mode exercises core preference, an early valid result while working,
+post-prompt turn completion, missing and invalid results, blocked workers,
+cancellation, and cleanup. It also checks that an installed core rejecting its
+session does not invoke legacy Herdr. A two-core scenario verifies that a stored
+problem on an offline core cannot abort a healthy task's delivery. Explicit
+`--recheck` still reports that endpoint's error. `--baseline` is only for a
+pre-core revision that rejects headless execution with `baseline-unsupported`.
+
+The driver uses the real core server and independent `herdr-core ls/get` reads.
+Its scratch `pi` is a deterministic interactive fixture that reads the brief
+pointer, emits OSC7501 status, and writes nonce-bound results. This is not proof
+of real Pi integration or model execution. Scratch `herdr` and `hc` refusal
+guards record accidental legacy calls or use of a potentially unrelated alias.
+They do not simulate legacy lifecycle. Core launches must resolve the official
+`herdr-core` executable even when `hc` is occupied.
+
+The printed `evidence.json` path is the receipt. It retains source and binary
+hashes, versions, command output, checks, and cleanup results outside the
+checkout. Cleanup stops only the owned core and CLI wait processes. Visible
+`hcOrch` tabs, legacy `horch` tabs, and live absence-only legacy fallback remain
+unverified by this headless driver.
+
+The existing model drivers inspect legacy panes and workspaces. Use those drivers
+on the legacy lane, with both `herdr-core` and a verified `hc` alias absent from
+PATH while keeping Herdr and the selected harness available. Their pane oracles
+do not verify the core backend. The core driver above owns its isolated runtime.
+
 The current release scope is [adoption evidence](../docs/RELEASE-EVIDENCE.md):
 reversible project setup, configured role routing, worker replacement and one
 practical implementation/review/private-PR workflow. Full original-playbook

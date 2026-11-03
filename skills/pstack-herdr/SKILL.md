@@ -5,7 +5,7 @@ description: "Run original pstack workflows through configured Herdr workers. Lo
 
 # pstack-herdr
 
-Installed workflow skills load this mapping before their original instructions. You can invoke `poteto-mode`, `how`, or `interrogate` directly. The bundle contains selected skills from Lauren Tan's original `cursor/plugins`, their resources, and both Herdr adapters. Read [herdr-tools.md](references/herdr-tools.md) and the companion [herdr-orchestrator skill](../herdr-orchestrator/SKILL.md) before starting. The controller runs inside a Herdr pane.
+Installed workflow skills load this mapping before their original instructions. You can invoke `poteto-mode`, `how`, or `interrogate` directly. The bundle contains selected skills from Lauren Tan's original `cursor/plugins`, their resources, and both Herdr adapters. Read [herdr-tools.md](references/herdr-tools.md) and the companion [herdr-orchestrator skill](../herdr-orchestrator/SKILL.md) before starting. Installed herdr-core is the preferred backend and works headless. Only its absence selects legacy Herdr, which requires a controller pane. Core workers can have optional `hcOrch` viewer tabs in an existing Herdr UI; legacy worker tabs remain `horch`. Tasks keep their recorded backend. Core tasks also pin their endpoint; legacy tasks retain the one-server-per-store requirement. Native core status supplies readiness and ended-turn evidence; result files alone do not complete tasks.
 
 This mapping takes precedence over upstream tool names, model defaults, configuration paths, and delegation instructions. User and project instructions retain precedence over both skills. Preserve bundled upstream instructions; report required compatibility changes separately.
 

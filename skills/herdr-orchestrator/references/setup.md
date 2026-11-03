@@ -3,7 +3,7 @@
 
 Run the setup when the user asks for it, or when `horch run` fails with `config_invalid` because `workers.toml` does not exist. Ask the user one question at a time.
 
-1. Run `horch detect`. Show the user which harnesses are installed, which Pi providers have models, and the `pi_integration` status and version.
+1. Run `horch detect`. Show the selected `backend`, installed core path, available harnesses and Pi providers. Core uses native status reporting. Legacy mode reports the `pi_integration` status and version. Core is preferred whenever installed; a broken core must be repaired, not silently replaced by legacy execution.
 2. Ask which workers to define. A worker is a name plus a harness, a model, an optional effort, optional extra arguments, and an optional `description` of its intended tasks and boundaries. One worker/model is sufficient; multiple roles may share it. Different models can provide additional review perspectives when configured.
    - Pi: run `pi --list-models <text>` to find a model. Use the `provider` key with the model ID from that list. `effort` is the Pi thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`).
    - Codex: the model name that `codex -m` accepts. `effort` is the value for Codex's `model_reasoning_effort`, such as `medium` or `high`.
@@ -20,14 +20,18 @@ Run the setup when the user asks for it, or when `horch run` fails with `config_
 
    Automatic approval can deny an action. These runs verified successful workflows; they did not deliberately trigger a denial. Inspect and report any worker problem as described below. Startup trust dialogs are separate from action approval.
 
-4. Ask for `max_active_workers` per workspace (default 4) and `notify_after_minutes` (default 180).
+4. Ask for `max_active_workers` (default 4) and `notify_after_minutes` (default 180). Core counts unclosed tasks session-wide by core ID in this store, plus legacy reservations in the GUI caller's workspace. Legacy execution retains per-workspace quotas.
    The controller needs access to both the configuration directory (`~/.config/herdr-orchestrator/`) and the task directory (`~/.local/state/herdr-orchestrator/`, or their XDG equivalents). Claude Code's `auto` mode completed a skill E2E that read the configured `workers.toml` and task results outside the project. With other permission modes, reads outside the project can prompt; the user can add the directories to `permissions.additionalDirectories` in their Claude Code settings.
 5. Write `~/.config/herdr-orchestrator/workers.toml` (or `$XDG_CONFIG_HOME/herdr-orchestrator/workers.toml`) in the format under "Configuration" below. Show the user the file.
-6. For Pi workers, install Herdr's Pi integration with `herdr integration install pi`. `horch` requires its ready-session signal before submitting a task. Run `horch check --cwd <a directory the workers will work in>`. If Herdr reports the Pi integration as missing, `run` and any `check` batch selecting Pi fail with `pi_integration_missing` before allocating any worker. Unknown or unavailable integration status still uses the live ready-session guard. Successful check output has one `ok` field per worker. For a line with `ok: false`, read `message`, look at the pane it names (see [problem handling](../SKILL.md#problems)), and tell the user. After the user clears a dialog, run `horch close <task-id>` and `horch check <worker>` again.
+6. With core, use the harness's native OSC 7501 idle readiness. Core needs no legacy integration, custom status hooks, or global settings changes. Codex runs interactively with `--no-daemon`; conflicting daemon arguments are rejected. Run `horch check --cwd <worker directory>` to verify actual configured delivery. Startup trust dialogs remain the user's decision.
+
+   For legacy Pi workers, install Herdr's Pi integration with `herdr integration install pi`. `horch` requires its ready-session signal before submitting a task. Run `horch check --cwd <a directory the workers will work in>`. If Herdr reports the Pi integration as missing, `run` and any `check` batch selecting Pi fail with `pi_integration_missing` before allocating any worker. Unknown or unavailable integration status still uses the live ready-session guard. Successful check output has one `ok` field per worker. For a line with `ok: false`, read `message`, look at the pane it names (see [problem handling](../SKILL.md#problems)), and tell the user. After the user clears a dialog, run `horch close <task-id>` and `horch check <worker>` again.
 
 ## Caller context
 
-`run` and `check` require `HERDR_ENV=1` and a nonblank caller pane ID: `--caller-pane` when given, otherwise `HERDR_PANE_ID`. Herdr's `--current` only reads `HERDR_PANE_ID`; it does not check that the pane hosts the caller. `horch` therefore proves the caller before task allocation:
+Headless core `run` and `check` need neither `HERDR_ENV` nor a legacy caller. In `HERDR_ENV=1`, core optionally presents an owned attach pane in `hcOrch` tabs using the same caller proof below. Legacy runtime uses `horch` tabs. Both paths validate the caller before any layout writes. A presentation error never changes runtime backends.
+
+Legacy execution and optional core presentation require `HERDR_ENV=1` and a nonblank caller pane ID: `--caller-pane` when given, otherwise `HERDR_PANE_ID`. Herdr's `--current` only reads `HERDR_PANE_ID`; it does not check that the pane hosts the caller. `horch` therefore proves the caller before task allocation:
 
 1. The named pane's shell (`herdr pane process-info`, `shell_pid`) must be an ancestor of the `horch` process. Then its live workspace and tab are used for placement.
 2. If another pane's shell is the ancestor, the ID is stale. The error names the pane that actually hosts `horch`; rerun with `HERDR_PANE_ID=<that pane>` if it is this controller.
@@ -45,6 +49,8 @@ Pass the confirmed ID to every `run` and `check` in this conversation. Recheck i
 Moving a pane is different from a stale ID. Herdr preserves the moved terminal's launch-time ID as an alias and the shell keeps its process, so the check above still passes and the live workspace/tab are used. See the official [CLI reference](https://raw.githubusercontent.com/herdrdev/herdr/v0.9.5/docs/next/website/src/content/docs/cli-reference.mdx).
 
 ## Dialogs that stop a worker before it starts
+
+Core requires actual native idle before task submission and leaves missing reporting or startup dialogs unresolved. The integration-specific Pi details below apply only to legacy Herdr.
 
 These appear before the worker reads its task. `horch` reports `start_failed` and leaves the pane open. The user must clear each one once, in the pane or by starting the harness there themselves.
 
@@ -95,7 +101,7 @@ args = ["--permission-mode", "auto"]
 
 | Key | Meaning |
 |---|---|
-| `max_active_workers` | Most unclosed tasks launched by each workspace at one time. Default 4 per workspace; other workspaces have their own slots. |
+| `max_active_workers` | Default 4. Core reserves slots session-wide by core ID in this store and also counts legacy tasks in a GUI caller's workspace. Legacy launches keep workspace limits. |
 | `notify_after_minutes` | When a task runs longer than this, `horch wait` notifies once. Default 180. |
 | `workers.<name>.harness` | `pi`, `codex`, or `claude`. |
 | `workers.<name>.model` | The model as the harness accepts it on its command line. |

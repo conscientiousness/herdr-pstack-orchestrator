@@ -10,12 +10,14 @@ e2e/*
 !e2e/review_loop.py
 !e2e/workspace_limits.py
 !e2e/check_workers.py
+!e2e/core_backend.py
 !e2e/pi_startup.py
 !e2e/controller_loop.py
 !e2e/startup-findings.md
 !e2e/evidence/
 e2e/evidence/*
 !e2e/evidence/verification.json
+!e2e/evidence/core-backend.json
 !e2e/evidence/review-e2e.json
 !e2e/evidence/lifecycle.json
 !e2e/evidence/recovery.json

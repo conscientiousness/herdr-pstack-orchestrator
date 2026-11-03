@@ -34,7 +34,16 @@ python3 skills/herdr-orchestrator/scripts/horch.py --help
 ```
 
 The [command guide](../skills/herdr-orchestrator/SKILL.md#run-horch) describes
-the available commands.
+the available commands. Keep the entire `scripts/` directory when copying the
+skill, including `core_backend.py`. It has no third-party Python dependencies.
+
+Installed `herdr-core` takes priority over a verified `hc` alias. Core works
+without a GUI or `HERDR_ENV`. Only executable absence selects legacy Herdr;
+connection and startup failures remain core errors. Core uses native harness
+status rather than custom hooks. With an existing Herdr UI, optional viewers
+use `hcOrch` tabs; legacy runtime keeps `horch` tabs. Stored tasks retain their
+backend across installation changes. Core tasks also retain their endpoint.
+Keep each legacy task store scoped to its original Herdr server.
 
 ## Update
 
@@ -52,7 +61,8 @@ git pull --ff-only
 
 Symlinks use the updated files; if you copied the skills instead, copy them
 again. Keep your existing `workers.toml` rather than replacing it with the
-example. After either update, start a new controller session inside Herdr.
+example. After either update, start a new controller session. Legacy execution
+still requires that session to run inside Herdr.
 
 ## Remove
 
