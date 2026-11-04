@@ -15,9 +15,9 @@ Give your coding agent a team of workers in [Herdr](https://herdr.dev). Ask one
 agent to coordinate a task; it can delegate investigation or implementation to
 Pi, Codex CLI, or Claude Code workers, collect their results, and check the work.
 Installed herdr-core runs workers in persistent terminals, including headless
-sessions. In an existing Herdr UI, optional viewer panes open in `hcOrch` tabs
-without changing your controller tab. Only core's absence selects the original
-Herdr runtime, whose worker tabs stay `horch`.
+sessions. Controllers running in Herdr must show workers in `hcOrch` viewer
+tabs in the same verified workspace, keeping focus and the controller tab unchanged.
+Only core's absence selects the original Herdr runtime, whose worker tabs stay `horch`.
 
 Use the core skill for delegation, or add the optional **pstack** bundle for
 workflows such as independent review and multi-step implementation. You can use

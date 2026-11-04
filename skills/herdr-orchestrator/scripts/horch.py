@@ -735,11 +735,28 @@ def require_caller_context(claimed=None):
     return pane
 
 
+def core_caller_context(claimed=None):
+    """Require a viewer for Herdr callers, even when HERDR_ENV was dropped."""
+    has_context = claimed is not None or os.environ.get("HERDR_ENV") == "1" or any(
+        os.environ.get(key) for key in (
+            "HERDR_PANE_ID", "HERDR_TAB_ID", "HERDR_WORKSPACE_ID", "HERDR_SOCKET_PATH"))
+    if not has_context:
+        return None
+    caller = require_caller_context(claimed)
+    if not os.environ.get("HERDR_SOCKET_PATH", "").strip():
+        fail("caller_context_invalid",
+             "Herdr viewer requires HERDR_SOCKET_PATH before worker launch. "
+             "Restore the controller's endpoint; do not bypass placement by clearing Herdr context.")
+    return caller
+
+
 def cmd_run(args):
     binary = core.executable()
     if binary is None:
         require_herdr_env()
         require_caller_context(args.caller_pane)
+    else:
+        core_caller_context(args.caller_pane)
     config = load_config()
     brief_source = Path(args.brief).expanduser()
     try:
@@ -787,7 +804,7 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
     worker = config["workers"].get(worker_name)
     if worker is None:
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
-    caller = require_caller_context(caller_pane) if os.environ.get("HERDR_ENV") == "1" else None
+    caller = core_caller_context(caller_pane)
     active, invalid = task_capacity(caller["workspace_id"] if caller else None, binding)
     if active >= config["max_active_workers"]:
         if skip_if_full:
@@ -850,7 +867,7 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
                                       binding["executable"], "attach", binding["terminal"]])
                 herdr("pane", "run", pane_id, command, timeout=30, expect_json=False)
             except HerdrError as exc:
-                warning = f"core worker retained; optional hcOrch presentation failed: {exc}; "
+                warning = f"core worker retained; required hcOrch viewer failed: {exc}; "
                 warning += "inspect for an empty viewer pane after ambiguous placement"
                 task["viewer_warning"] = warning
                 write_json(directory / "task.json", task)
@@ -1547,6 +1564,7 @@ def cmd_list(args):
                     "backend": task.get("backend", {"kind": "legacy"}),
                     "terminal_id": task["backend"]["terminal"] if is_core(task) else None,
                     "viewer": task.get("viewer"),
+                    "warning": task.get("viewer_warning"),
                     "workspace_id": task.get("workspace_id"),
                     "state": state["state"],
                     "closed": bool(state.get("closed")),
@@ -1681,8 +1699,8 @@ def cmd_check(args):
     binary = core.executable()
     if binary is None:
         require_herdr_env()
-    caller = (require_caller_context(args.caller_pane)
-              if binary is None or os.environ.get("HERDR_ENV") == "1" else None)
+    caller = (require_caller_context(args.caller_pane) if binary is None
+              else core_caller_context(args.caller_pane))
     binding = core.new_binding(binary) if binary else None
     config = load_config()
     names = list(dict.fromkeys(args.workers or list(config["workers"])))
@@ -1747,8 +1765,11 @@ def cmd_check(args):
             "task_id": info["task_id"],
             "state": state,
             "ok": state == "done" and status == "completed" and info["state"]["closed"]
-                  and result_verdict(info["dir"], info["task"]) == "valid",
+                  and result_verdict(info["dir"], info["task"]) == "valid"
+                  and not info["task"].get("viewer_warning"),
             "pane_id": None if info["state"]["closed"] else info["task"]["pane_id"],
+            "viewer": info["task"].get("viewer"),
+            "warning": info["task"].get("viewer_warning"),
             "seconds": round(settled_times.get(name, time.monotonic()) - began),
             "message": message,
         })

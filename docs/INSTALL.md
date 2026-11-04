@@ -40,8 +40,10 @@ skill, including `core_backend.py`. It has no third-party Python dependencies.
 Installed `herdr-core` takes priority over a verified `hc` alias. Core works
 without a GUI or `HERDR_ENV`. Only executable absence selects legacy Herdr;
 connection and startup failures remain core errors. Core uses native harness
-status rather than custom hooks. With an existing Herdr UI, optional viewers
-use `hcOrch` tabs; legacy runtime keeps `horch` tabs. Stored tasks retain their
+status rather than custom hooks. Controllers running in Herdr require `hcOrch`
+viewer tabs in the verified caller's same workspace; legacy runtime keeps `horch`
+tabs. Missing caller context must be recovered before dispatch, and viewer
+failures must be reported. Controllers outside Herdr can run headless. Stored tasks retain their
 backend across installation changes. Core tasks also retain their endpoint.
 Keep each legacy task store scoped to its original Herdr server.
 

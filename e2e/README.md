@@ -33,9 +33,26 @@ They do not simulate legacy lifecycle. Core launches must resolve the official
 
 The printed `evidence.json` path is the receipt. It retains source and binary
 hashes, versions, command output, checks, and cleanup results outside the
-checkout. Cleanup stops only the owned core and CLI wait processes. Visible
-`hcOrch` tabs, legacy `horch` tabs, and live absence-only legacy fallback remain
-unverified by this headless driver.
+checkout. Cleanup stops only the owned core and CLI wait processes. The default
+headless mode does not verify `hcOrch` tabs, legacy `horch` tabs, or live
+absence-only legacy fallback.
+
+To verify core viewers from inside Herdr, add `--viewer` instead of `--core-only`:
+
+```bash
+python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
+  --output /tmp/horch-core-viewer-proof --viewer
+```
+
+This requires `HERDR_ENV=1`, `HERDR_SOCKET_PATH`, and the real `herdr` CLI. It also
+creates an owned workspace without focusing it, then launches two deterministic
+workers from its controller pane with `HERDR_ENV` removed: one uses an explicit
+`--caller-pane`, the other inherits the pane ID. Both must display their actual
+worker output through separate attach panes in the same `hcOrch` tab and caller
+workspace. The receipt checks unchanged user focus, incomplete-context rejection
+for `run` and `check` without worker allocation, delivery/cancellation cleanup,
+and removal of the owned workspace. It still does not verify model execution or
+legacy worker tabs.
 
 The existing model drivers inspect legacy panes and workspaces. Use those drivers
 on the legacy lane, with both `herdr-core` and a verified `hc` alias absent from
