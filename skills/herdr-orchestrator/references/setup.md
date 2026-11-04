@@ -29,15 +29,17 @@ Run the setup when the user asks for it, or when `horch run` fails with `config_
 
 ## Caller context
 
-Headless core `run` and `check` need neither `HERDR_ENV` nor a legacy caller. In `HERDR_ENV=1`, core optionally presents an owned attach pane in `hcOrch` tabs using the same caller proof below. Legacy runtime uses `horch` tabs. Both paths validate the caller before any layout writes. A presentation error never changes runtime backends.
+Core controllers outside Herdr can run headless without `HERDR_ENV` or a legacy caller. Controllers in Herdr must present each core worker in an owned attach pane in `hcOrch` tabs in the verified caller's live workspace. Legacy runtime uses `horch` tabs. Keep the caller's focus and tab unchanged. Both paths validate the caller before any layout writes. A presentation error never changes runtime backends and must be reported to the user.
 
-Legacy execution and optional core presentation require `HERDR_ENV=1` and a nonblank caller pane ID: `--caller-pane` when given, otherwise `HERDR_PANE_ID`. Herdr's `--current` only reads `HERDR_PANE_ID`; it does not check that the pane hosts the caller. `horch` therefore proves the caller before task allocation:
+Legacy execution requires `HERDR_ENV=1`. Core requires caller verification whenever `--caller-pane` is supplied, `HERDR_ENV=1`, or any nonempty `HERDR_PANE_ID`, `HERDR_TAB_ID`, `HERDR_WORKSPACE_ID`, or `HERDR_SOCKET_PATH` is inherited. This preserves viewer placement when tools lose `HERDR_ENV`. Core also requires `HERDR_SOCKET_PATH` before launch to pin viewer cleanup. A nonblank caller pane ID comes from `--caller-pane` when given, otherwise `HERDR_PANE_ID`. Herdr's `--current` only reads `HERDR_PANE_ID`; it does not check that the pane hosts the caller. `horch` therefore proves the caller before task allocation:
 
 1. The named pane's shell (`herdr pane process-info`, `shell_pid`) must be an ancestor of the `horch` process. Then its live workspace and tab are used for placement.
 2. If another pane's shell is the ancestor, the ID is stale. The error names the pane that actually hosts `horch`; rerun with `HERDR_PANE_ID=<that pane>` if it is this controller.
 3. If no pane's shell is an ancestor, the environment came from elsewhere, so `HERDR_PANE_ID` is rejected even when it happens to be right. Only an explicit `--caller-pane` is accepted, and that pane's foreground must run the controller's harness. When the controller exports `CODEX_THREAD_ID` or `CLAUDE_CODE_SESSION_ID` and the pane reports a session for that harness, the two must match.
 
 Missing or unavailable caller panes also produce `caller_context_invalid`; an unavailable Herdr service remains a `herdr_error`. Never substitute the currently focused pane.
+
+If this conversation is in Herdr but its tool environment has lost all Herdr context, restore the controller's context before `run` or `check`; the CLI cannot infer an absent association. Do not treat a missing environment flag as a headless request or clear inherited context to bypass a failure. After launching, verify `viewer` belongs to the confirmed workspace and an `hcOrch` tab, and report any viewer warning or failed attachment immediately. Preserve the running task rather than redispatching it.
 
 A shared agent daemon reaches case 3. Codex 0.162 runs a conversation's tools in a `codex app-server` process with parent PID 1 that keeps the environment of the pane that started it, so every Codex conversation using that daemon sees that pane's ID. Herdr's Codex hook runs there too, so Herdr can attach a Codex session to the wrong pane. Before passing `--caller-pane`, confirm the controller pane and record the evidence for the user:
 

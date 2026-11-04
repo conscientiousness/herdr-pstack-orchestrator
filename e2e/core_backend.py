@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Black-box core backend E2E with real herdr-core and a deterministic Pi fixture.
 
-No models, real Pi integration, legacy lifecycle, or graphical tabs are tested.
+No models, real Pi integration, or legacy lifecycle are tested.
+Optional --viewer checks real Herdr attachment with HERDR_ENV absent: explicit
+and inherited caller identity must create same-workspace viewers, incomplete
+context must stop both run/check before launch, and cleanup must close viewers.
 Evidence survives cleanup. Product mode is expected to fail before core support.
 """
 
@@ -10,6 +13,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
@@ -51,6 +55,7 @@ while True:
     nonce = re.search(r'"nonce"\s*:\s*"([^"]+)"', text).group(1)
     result = re.search(r"Write `result.json` at exactly this path:\s*([^\s]+)", text).group(1)
     report("working")
+    os.write(1, ("CORE_E2E_CASE=" + mode + "\r\n").encode())
     row = {"brief": str(brief), "task_id": task_id, "nonce": nonce,
            "result_path": result, "pid": os.getpid(), "mode": mode}
     (root / (mode + ".prompt.json")).write_text(json.dumps(row))
@@ -371,6 +376,105 @@ class Run:
         self.check("broken core does not allocate another terminal", self.terminals() == before)
         self.no_guard()
 
+    def viewer(self, herdr_binary, socket_path):
+        gui_bin = self.root / "viewer-bin"
+        gui_bin.mkdir()
+        (gui_bin / "herdr").symlink_to(herdr_binary)
+        env = dict(self.env, HERDR_SOCKET_PATH=socket_path,
+                   PATH=str(gui_bin) + os.pathsep + self.env["PATH"])
+
+        def gui(*argv):
+            proc = self.command([str(herdr_binary), *argv], env=env, timeout=60)
+            if proc.returncode:
+                raise RuntimeError("Herdr viewer driver command failed: " + proc.stderr)
+            return unwrap(json.loads(proc.stdout)) if proc.stdout.strip() else {}
+
+        def focused():
+            return [(w["workspace_id"], w["active_tab_id"]) for w in
+                    gui("workspace", "list")["workspaces"] if w.get("focused")]
+
+        workspace = None
+        self.evidence["viewer"] = {"scope": "owned Herdr workspace; two real attach viewers; no models"}
+        before = focused()
+        try:
+            made = gui("workspace", "create", "--cwd", str(self.root),
+                       "--label", "core-viewer-e2e", "--no-focus")
+            workspace = made["workspace"]["workspace_id"]
+            controller = made["root_pane"]["pane_id"]
+            controller_tab = made["tab"]["tab_id"]
+            tasks = []
+            for mode in ("valid", "missing"):
+                # Reuse fixture modes from headless runs but hold both new turns.
+                for suffix in (".release", ".prompt.json", ".ended"):
+                    (self.root / (mode + suffix)).unlink(missing_ok=True)
+                brief = self.root / (mode + "-viewer.md")
+                brief.write_text("CORE_E2E_CASE=" + mode + "\n")
+                out = self.root / (mode + "-viewer.stdout")
+                err = self.root / (mode + "-viewer.stderr")
+                rc = self.root / (mode + "-viewer.rc")
+                assignments = {k: env[k] for k in (
+                    "PATH", "HC_SESSION", "XDG_CONFIG_HOME", "XDG_STATE_HOME",
+                    "XDG_RUNTIME_DIR", "CORE_E2E_ROOT", "HERDR_SOCKET_PATH")}
+                extra = ["--caller-pane", controller] if mode == "valid" else []
+                if mode == "missing":
+                    assignments["HERDR_PANE_ID"] = controller
+                argv = ["env", "-u", "HERDR_ENV", "-u", "HERDR_PANE_ID",
+                        "-u", "HERDR_TAB_ID", "-u", "HERDR_WORKSPACE_ID",
+                        *[f"{k}={v}" for k, v in assignments.items()],
+                        sys.executable, str(self.args.horch), "run", "fixture",
+                        "--brief", str(brief), "--cwd", str(self.root), *extra]
+                script = self.root / (mode + "-viewer.sh")
+                script.write_text(shlex.join(argv) + " > " + shlex.quote(str(out))
+                                  + " 2> " + shlex.quote(str(err))
+                                  + '\nprintf "%s" "$?" > ' + shlex.quote(str(rc)) + "\n")
+                gui("pane", "run", controller, shlex.join(["sh", str(script)]))
+                self.until(mode + " viewer run returns", rc.exists, seconds=120)
+                self.check(mode + " viewer run succeeds without HERDR_ENV", rc.read_text() == "0")
+                task = rows(out.read_text())[0]
+                self.check(mode + " viewer run is working with no warning",
+                           task["state"] == "running" and not task["warning"] and task["viewer"])
+                viewer = task["viewer"]
+                pane = gui("pane", "get", viewer["pane_id"])["pane"]
+                tab = gui("tab", "get", viewer["tab_id"])["tab"]
+                self.check(mode + " viewer uses same workspace and separate hcOrch tab",
+                           pane["workspace_id"] == workspace and tab["workspace_id"] == workspace
+                           and viewer["tab_id"] != controller_tab and tab["label"] == "hcOrch")
+                read = self.command([str(herdr_binary), "pane", "wait-output", viewer["pane_id"],
+                                     "--match", "CORE_E2E_CASE=" + mode, "--timeout", "30000"], env=env)
+                self.check(mode + " actual attach displays worker output", read.returncode == 0)
+                tasks.append(task)
+            self.check("viewers share hcOrch tab with separate panes",
+                       tasks[0]["viewer"]["tab_id"] == tasks[1]["viewer"]["tab_id"]
+                       and tasks[0]["viewer"]["pane_id"] != tasks[1]["viewer"]["pane_id"])
+            self.check("viewer dispatch preserves user focus", focused() == before)
+            self.evidence["viewer"]["tasks"] = tasks
+            started = set(self.root.glob("fixture-start-*"))
+            terminals = self.terminals()
+            for command in ("run", "check"):
+                extra = ["--brief", str(brief)] if command == "run" else []
+                rejected = self.cli(command, "fixture", *extra, env=env)
+                self.check(command + " incomplete GUI context rejects before launch",
+                           rejected.returncode == 1
+                           and rows(rejected.stdout)[0].get("error") == "caller_context_invalid")
+            self.check("rejected context creates no workers", self.terminals() == terminals
+                       and set(self.root.glob("fixture-start-*")) == started)
+            (self.root / "valid.release").write_text("release\n")
+            done = self.cli("wait", tasks[0]["task_id"], "--max-seconds", "30", env=env)
+            self.check("viewer task delivers and auto-closes", done.returncode == 0
+                       and rows(done.stdout)[0]["state"] == "done" and rows(done.stdout)[0]["closed"])
+            closed = self.cli("close", tasks[1]["task_id"], env=env)
+            self.check("second viewer cancellation closes", closed.returncode == 0)
+            panes = gui("pane", "list", "--workspace", workspace)["panes"]
+            self.check("viewer cleanup preserves only owned controller pane",
+                       {p["pane_id"] for p in panes} == {controller})
+            self.no_guard()
+        finally:
+            if workspace:
+                gui("workspace", "close", workspace)
+                self.evidence["viewer"]["workspace_closed"] = workspace not in {
+                    w["workspace_id"] for w in gui("workspace", "list")["workspaces"]}
+                self.check("viewer owned workspace removed", self.evidence["viewer"]["workspace_closed"])
+
     def cleanup(self):
         errors = []
         for proc, out, err in self.waiters:
@@ -412,6 +516,8 @@ def main():
     parser.add_argument("--baseline", action="store_true", help="expect current headless rejection")
     parser.add_argument("--core-only", "--headless", action="store_true", default=True,
                         help="owned headless core only; this is also the default")
+    parser.add_argument("--viewer", action="store_true",
+                        help="also verify two live attach viewers in an owned Herdr workspace")
     args = parser.parse_args()
     args.horch = args.horch.expanduser().resolve()
     args.output = args.output.expanduser().resolve()
@@ -420,6 +526,9 @@ def main():
     core = shutil.which("herdr-core")
     if not core:
         parser.error("official herdr-core executable required; hc alias is not sufficient")
+    herdr_binary, socket_path = shutil.which("herdr"), os.environ.get("HERDR_SOCKET_PATH")
+    if args.viewer and (os.environ.get("HERDR_ENV") != "1" or not herdr_binary or not socket_path):
+        parser.error("--viewer requires HERDR_ENV=1, herdr, and HERDR_SOCKET_PATH")
     args.output.mkdir(parents=True, exist_ok=True)
     run = Run(args, Path(core).resolve())
     try:
@@ -436,6 +545,11 @@ def main():
                 run.scenario(mode, expected)
             run.broken_core()
             run.settled_endpoint()
+            if args.viewer:
+                run.viewer(Path(herdr_binary).resolve(), socket_path)
+                run.evidence["scope"] += "; real Herdr attach viewers in an owned workspace"
+                run.evidence["unverified"].remove("visible hcOrch tabs and legacy horch tabs")
+                run.evidence["unverified"].append("legacy horch tabs")
             run.evidence["verdict"] = "pass"
     except Exception:
         (run.root / "failure.txt").write_text(traceback.format_exc())
