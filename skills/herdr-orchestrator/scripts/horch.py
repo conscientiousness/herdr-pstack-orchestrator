@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import core_backend as core
 import fcntl
+import hashlib
 import json
 import math
 import os
@@ -266,6 +267,9 @@ def default_state():
         "problem": None,
         "settled_at": None,
         "first_done_at": None,
+        "startup_ready": False,
+        "submission": None,
+        "native_status": None,
     }
 
 
@@ -660,8 +664,8 @@ def process_ancestors():
     return chain
 
 
-def pane_process_info(pane_id):
-    return herdr_path(herdr("pane", "process-info", "--pane", pane_id, timeout=30.0),
+def pane_process_info(pane_id, *, env=None):
+    return herdr_path(herdr("pane", "process-info", "--pane", pane_id, timeout=30.0, env=env),
                       "result", "process_info")
 
 
@@ -676,13 +680,40 @@ def pane_owning_process(ancestors):
     return None
 
 
-def require_caller_context(claimed=None):
-    """Return the controller's live pane after proving that it hosts this process.
+def controller_process_ancestor(ancestors):
+    try:
+        listing = subprocess.run(["ps", "-A", "-o", "pid=,comm="], capture_output=True,
+                                 text=True, timeout=10, check=True).stdout
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return any(len(fields := line.split()) == 2 and fields[0].isdigit()
+               and int(fields[0]) in ancestors and Path(fields[1]).name in HARNESSES
+               for line in listing.splitlines())
 
-    HERDR_PANE_ID alone is not proof: a shell snapshot or a shared agent daemon
-    can carry another live pane's ID. The pane's shell must be an ancestor of
-    horch. Without any pane ancestor, only an explicit --caller-pane is accepted,
-    and its foreground must run the controller's harness.
+
+def visible_text(pane_id, *, env=None):
+    return herdr("pane", "read", pane_id, "--source", "visible", timeout=30,
+                 env=env, expect_json=False)
+
+
+def caller_verification(pane, info, method, text):
+    return dict(pane, controller_verification={
+        "pane_id": pane["pane_id"], "workspace_id": pane["workspace_id"],
+        "tab_id": pane["tab_id"], "cwd": str(Path.cwd().resolve()),
+        "shell_pid": info.get("shell_pid"), "method": method,
+        "controller_processes": [{"pid": p["pid"], "name": p["name"]}
+                                 for p in info.get("foreground_processes") or []
+                                 if p.get("name") in HARNESSES and isinstance(p.get("pid"), int)],
+        "screen_sha256": hashlib.sha256(text.encode()).hexdigest(), "verified_at": iso_now(),
+    })
+
+
+def require_caller_context(claimed=None, caller_text=None):
+    """Prove the conversation's live pane, independently of a daemon's process host.
+
+    Agent controllers require explicit pane and unique screen evidence even
+    when their daemon remains a descendant of its original pane's shell.
+    Ordinary shell automation can use its actual pane ancestry.
     """
     source = "--caller-pane" if claimed is not None else "HERDR_PANE_ID"
     pane_id = claimed if claimed is not None else os.environ.get("HERDR_PANE_ID")
@@ -705,20 +736,21 @@ def require_caller_context(claimed=None):
 
     info = pane_process_info(pane["pane_id"])
     ancestors = process_ancestors()
-    if info.get("shell_pid") in ancestors:
-        return pane
+    controllers = [h for h, var in CONTROLLER_SESSION_ENV.items() if os.environ.get(var)]
+    needs_screen = bool(controllers) or controller_process_ancestor(ancestors) or caller_text is not None
+    if info.get("shell_pid") in ancestors and not needs_screen:
+        return caller_verification(pane, info, "process_ancestry", visible_text(pane["pane_id"]))
     owner = pane_owning_process(ancestors)
-    if owner is not None:
+    if owner is not None and not needs_screen:
         fail("caller_context_invalid",
              f"{source} names pane {pane_id!r}, but horch runs inside pane {owner!r}. "
              f"Rerun with HERDR_PANE_ID={owner} if that pane is this controller. {guidance}")
     if claimed is None:
         fail("caller_context_invalid",
-             f"horch is not running inside any Herdr pane's process tree, so HERDR_PANE_ID={pane_id!r} "
-             "cannot be trusted; a shared agent daemon may have inherited another pane's ID. "
-             f"Confirm the controller's pane and pass --caller-pane <pane-id>. {guidance}")
+             f"HERDR_PANE_ID={pane_id!r} cannot prove this conversation's pane; "
+             "a shared daemon may inherit another pane's environment and ancestry. "
+             f"Confirm the controller and pass --caller-pane <pane-id> --caller-text <unique-text>. {guidance}")
 
-    controllers = [h for h in ("codex", "claude") if os.environ.get(CONTROLLER_SESSION_ENV[h])]
     expected = controllers or list(HARNESSES)
     names = {p.get("name") for p in info.get("foreground_processes") or [] if isinstance(p, dict)}
     if not names.intersection(expected):
@@ -732,17 +764,41 @@ def require_caller_context(claimed=None):
             fail("caller_context_invalid",
                  f"--caller-pane {pane_id!r} reports {harness} session {session['value']!r}, "
                  f"not this controller's {own!r}. {guidance}")
-    return pane
+    if not caller_text or len(caller_text.strip()) < 16:
+        fail("caller_context_invalid",
+             "Agent-controller dispatch requires --caller-text with at least 16 characters unique to this "
+             "conversation's visible screen, alongside --caller-pane. Session IDs alone are insufficient.")
+    foreground = info.get("foreground_processes") or []
+    if not any(p.get("name") in expected and p.get("cwd")
+               and Path(p["cwd"]).resolve() == Path.cwd().resolve() for p in foreground):
+        fail("caller_context_invalid", "Controller foreground cwd does not match this conversation's cwd. " + guidance)
+    needle = " ".join(caller_text.split())
+    matches = []
+    screen = None
+    for candidate in herdr_path(herdr("pane", "list", timeout=30), "result", "panes"):
+        candidate_id = candidate["pane_id"]
+        candidate_info = pane_process_info(candidate_id)
+        if not any(p.get("name") in expected for p in candidate_info.get("foreground_processes") or []):
+            continue
+        text = visible_text(candidate_id)
+        if needle in " ".join(text.split()):
+            matches.append(candidate_id)
+            if candidate_id == pane["pane_id"]:
+                screen = text
+    if matches != [pane["pane_id"]]:
+        fail("caller_context_invalid",
+             f"Conversation text must match only the claimed controller pane; matching panes: {matches}. {guidance}")
+    return caller_verification(pane, info, "conversation_text", screen)
 
 
-def core_caller_context(claimed=None):
+def core_caller_context(claimed=None, caller_text=None):
     """Require a viewer for Herdr callers, even when HERDR_ENV was dropped."""
-    has_context = claimed is not None or os.environ.get("HERDR_ENV") == "1" or any(
+    has_context = claimed is not None or caller_text is not None or os.environ.get("HERDR_ENV") == "1" or any(
         os.environ.get(key) for key in (
             "HERDR_PANE_ID", "HERDR_TAB_ID", "HERDR_WORKSPACE_ID", "HERDR_SOCKET_PATH"))
     if not has_context:
         return None
-    caller = require_caller_context(claimed)
+    caller = require_caller_context(claimed, caller_text)
     if not os.environ.get("HERDR_SOCKET_PATH", "").strip():
         fail("caller_context_invalid",
              "Herdr viewer requires HERDR_SOCKET_PATH before worker launch. "
@@ -754,9 +810,9 @@ def cmd_run(args):
     binary = core.executable()
     if binary is None:
         require_herdr_env()
-        require_caller_context(args.caller_pane)
+        require_caller_context(args.caller_pane, args.caller_text)
     else:
-        core_caller_context(args.caller_pane)
+        core_caller_context(args.caller_pane, args.caller_text)
     config = load_config()
     brief_source = Path(args.brief).expanduser()
     try:
@@ -771,15 +827,15 @@ def cmd_run(args):
         require_pi_integration()
     binding = core.new_binding(binary) if binary else None
     emit(start_task(config, args.worker, brief_text, resolve_cwd(args.cwd),
-                    caller_pane=args.caller_pane, binding=binding))
+                    caller_pane=args.caller_pane, caller_text=args.caller_text, binding=binding))
 
 
-def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False, caller_pane=None, binding=None):
+def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False, caller_pane=None, caller_text=None, binding=None):
     # Startup includes placement, publication, and acknowledgement, never completion.
     with task_store_lock():
         if binding is not None:
-            return start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, binding)
-        return _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, caller_pane)
+            return start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, caller_text, binding)
+        return _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, caller_text)
 
 
 def core_agent(terminal):
@@ -800,11 +856,156 @@ def close_task_resources(task):
     return outcome
 
 
-def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, binding):
+def verify_viewer(task):
+    task["viewer_verified"] = False
+    task["viewer_verification_error"] = None
+    task.pop("viewer_verification", None)
+    viewer = task.get("viewer")
+    if not viewer:
+        task["viewer_verification_error"] = "viewer was not created" if task.get("controller_verification") else "headless controller"
+        return
+    if not task.get("controller_verification"):
+        task["viewer_verification_error"] = "historical task has no controller verification; inspect it and use a fresh verified run after deciding recovery"
+        task["viewer_warning"] = task["viewer_verification_error"]
+        return
+    env = dict(os.environ, HERDR_SOCKET_PATH=viewer["socket_path"])
+    deadline = time.monotonic() + 5
+    while True:
+        try:
+            controller = task["controller_verification"]
+            caller = herdr_path(herdr("pane", "get", controller["pane_id"], env=env), "result", "pane")
+            controller_info = pane_process_info(caller["pane_id"], env=env)
+            if controller_info.get("shell_pid") != controller["shell_pid"]:
+                raise HerdrError("controller process identity changed; confirm the controller again")
+            processes = controller.get("controller_processes") or []
+            live = controller_info.get("foreground_processes") or []
+            if processes and not all(any(p.get("pid") == saved["pid"] and p.get("name") == saved["name"]
+                                         for p in live) for saved in processes):
+                raise HerdrError("controller harness process changed; confirm the controller again")
+            pane = herdr_path(herdr("pane", "get", viewer["pane_id"], env=env), "result", "pane")
+            tab = herdr_path(herdr("tab", "get", pane["tab_id"], env=env), "result", "tab")
+            if (pane["workspace_id"] != caller["workspace_id"]
+                    or tab["workspace_id"] != caller["workspace_id"]
+                    or pane["tab_id"] == caller["tab_id"] or tab.get("label") != "hcOrch"):
+                raise HerdrError("viewer is outside the live controller workspace or its separate hcOrch tab")
+            binding = task["backend"]
+            info = pane_process_info(pane["pane_id"], env=env)
+            argv = [binding["executable"], "attach", binding["terminal"]]
+            attach = next((p for p in info.get("foreground_processes") or [] if p.get("argv") == argv), None)
+            if attach is None:
+                raise HerdrError("viewer foreground is not the pinned core terminal's attach")
+            terminal = core.get(binding)
+            if terminal is None or terminal["state"] != "live":
+                raise HerdrError("core terminal is no longer live")
+            native = core.call(binding, "terminal.read", terminal=binding["terminal"], lines=0)["text"]
+            screen = visible_text(pane["pane_id"], env=env)
+            rendered = " ".join(screen.split())
+            lines = [" ".join(line.split()) for line in native.splitlines()]
+            if not any(len(line) >= 8 and line in rendered for line in lines):
+                raise HerdrError("viewer has not rendered recognizable output from the pinned terminal")
+            task["viewer_verified"] = True
+            task["viewer_verification_error"] = None
+            task["viewer_verification"] = {
+                "verified_at": iso_now(), "pane_id": pane["pane_id"], "tab_id": pane["tab_id"],
+                "workspace_id": caller["workspace_id"], "attach_pid": attach["pid"],
+                "terminal_id": binding["terminal"], "core_id": binding["core_id"],
+                "screen_sha256": hashlib.sha256(screen.encode()).hexdigest(),
+            }
+            task.pop("viewer_warning", None)
+            return
+        except (HerdrError, core.CoreError) as exc:
+            task["viewer_verification_error"] = str(exc)
+            if time.monotonic() >= deadline:
+                task["viewer_warning"] = "worker retained; viewer visibility unconfirmed: " + str(exc)
+                return
+            time.sleep(0.2)
+
+
+def progress_fields(state):
+    return {"startup_ready": state["startup_ready"], "submission": state["submission"],
+            "execution_observed": state["saw_working"], "native_status": state["native_status"]}
+
+
+def viewer_fields(task):
+    return {"viewer": task.get("viewer"), "viewer_verified": bool(task.get("viewer_verified")),
+            "viewer_verification_error": task.get("viewer_verification_error"),
+            "warning": task.get("viewer_warning")}
+
+
+def cmd_verify_viewer(args):
+    with task_store_lock():
+        directory = task_dir(args.task_id)
+        task = load_task(directory, args.task_id)
+        if not is_core(task):
+            fail("invalid_arguments", "verify-viewer requires a core task")
+        verify_viewer(task)
+        write_json(directory / "task.json", task)
+        emit({"task_id": args.task_id, **viewer_fields(task)})
+
+
+def submit_core_task(directory, task, state):
+    binding = task["backend"]
+    try:
+        terminal = core.ready(binding, START_TIMEOUT_MS / 1000)
+        baseline = terminal.get("turn")
+        if isinstance(baseline, bool) or not isinstance(baseline, int) or baseline < 0:
+            raise core.CoreError("native turn baseline missing; no task was sent")
+        state.update(startup_ready=True, native_status=core.status(terminal), baseline_seq=baseline,
+                     state="not_started", problem=None, submission="unknown")
+        save_state(directory, state)
+        if state["closed"] or state["state"] == "done":
+            return
+        pointer = f"New task {task['task_id']}. Read {directory / 'brief.md'} in full and follow it exactly."
+        sent = core.call(binding, "terminal.send", terminal=binding["terminal"], text=pointer, **{"if": "idle"})
+        state["submission"] = "sent"
+        state["state"] = "running" if sent.get("started") is True else "not_started"
+        state["saw_working"] = sent.get("started") is True
+        state["problem"] = None if state["saw_working"] else "task submitted; execution acknowledgement not observed; inspect and use wait --recheck, never resend"
+        save_state(directory, state)
+        terminal = core.get(binding)
+        state["native_status"] = core.status(terminal) if terminal else None
+        if state["native_status"] == "working":
+            state.update(state="running", saw_working=True, problem=None)
+        elif state["native_status"] in ("blocked", "error"):
+            state["state"] = state["native_status"]
+            state["problem"] = "worker reported " + state["native_status"]
+    except core.CoreError as exc:
+        if state["submission"] == "not_sent":
+            state["state"] = "start_failed"
+            state["problem"] = str(exc) + f"; after inspection and resolving readiness, use horch submit {task['task_id']}"
+        elif state["submission"] == "unknown":
+            state["state"] = "not_started"
+            state["problem"] = f"send outcome unresolved: {exc}; inspect, then wait --recheck; do not resend"
+        else:
+            state["problem"] = f"task submitted; observation failed: {exc}; use wait --recheck; do not resend"
+        try:
+            terminal = core.get(binding)
+            state["native_status"] = core.status(terminal) if terminal else None
+        except core.CoreError:
+            pass
+    save_state(directory, state)
+
+
+def cmd_submit(args):
+    with task_store_lock():
+        directory = task_dir(args.task_id)
+        task = load_task(directory, args.task_id)
+        state = load_state(directory)
+        if not is_core(task):
+            fail("invalid_arguments", "submit recovery currently requires a core task; inspect and close the legacy task before a fresh run")
+        if state["closed"] or state["state"] == "done" or state["submission"] != "not_sent":
+            fail("submission_unsafe", "Only an unclosed task recorded as not_sent can be submitted; sent, unknown and historical outcomes must never be resent")
+        submit_core_task(directory, task, state)
+        emit({"task_id": args.task_id, "state": state["state"], "message": state["problem"],
+              "terminal_id": task["backend"]["terminal"],
+              **progress_fields(state), **viewer_fields(task)})
+
+
+def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, caller_text, binding):
     worker = config["workers"].get(worker_name)
     if worker is None:
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
-    caller = core_caller_context(caller_pane)
+    caller = core_caller_context(caller_pane, caller_text)
     active, invalid = task_capacity(caller["workspace_id"] if caller else None, binding)
     if active >= config["max_active_workers"]:
         if skip_if_full:
@@ -832,12 +1033,13 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
             "backend": binding, "viewer": None}
     if caller:
         task["workspace_id"] = caller["workspace_id"]
+        task["controller_verification"] = caller["controller_verification"]
     directory.mkdir(parents=True)
     write_brief(directory, brief_text, task_id, nonce)
     write_json(directory / "task.json", task)
     state = default_state()
+    state["submission"] = "not_sent"
     save_state(directory, state)
-    warning = None
     try:
         try:
             terminal = core.launch(binding, worker["harness"], argv, cwd)
@@ -871,50 +1073,21 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
                 warning += "inspect for an empty viewer pane after ambiguous placement"
                 task["viewer_warning"] = warning
                 write_json(directory / "task.json", task)
-        terminal = core.ready(binding, START_TIMEOUT_MS / 1000)
-        baseline = terminal.get("turn")
-        if isinstance(baseline, bool) or not isinstance(baseline, int) or baseline < 0:
-            raise core.CoreError("native turn baseline missing; no task was sent")
-        state["baseline_seq"] = baseline
-        save_state(directory, state)
+        if caller:
+            verify_viewer(task)
+            write_json(directory / "task.json", task)
     except core.CoreError as exc:
         state["state"] = "start_failed"
         state["problem"] = str(exc)
         save_state(directory, state)
     if state["state"] == "running" and not state["closed"]:
-        pointer = f"New task {task_id}. Read {directory / 'brief.md'} in full and follow it exactly."
-        try:
-            sent = core.call(binding, "terminal.send", terminal=binding["terminal"], text=pointer, **{"if": "idle"})
-            terminal = core.get(binding)
-            observed = core_agent(terminal)
-            acknowledged = sent.get("started") is True or (observed and (
-                observed["agent_status"] in ("working", "blocked", "error") or
-                observed.get("completion_seq", baseline) > baseline))
-            if not acknowledged:
-                raise core.CoreError("prompt acknowledgement not observed; never resend automatically")
-            if observed and observed["agent_status"] in ("blocked", "error"):
-                state["state"] = observed["agent_status"]
-                state["problem"] = "worker reported " + observed["agent_status"]
-            else:
-                state["saw_working"] = True
-        except core.CoreError as exc:
-            state["state"] = "not_started"
-            state["problem"] = f"send outcome unresolved: {exc}; inspect native state, then use wait --recheck; do not resend"
-            try:
-                observed = core_agent(core.get(binding))
-                if observed and (observed["agent_status"] in ("working", "blocked", "error")
-                                 or observed["completion_seq"] > baseline):
-                    state["state"] = observed["agent_status"] if observed["agent_status"] in ("blocked", "error") else "running"
-                    state["saw_working"] = True
-                    state["problem"] = ("worker reported " + state["state"]
-                                        if state["state"] in ("blocked", "error") else None)
-            except core.CoreError as reconcile_error:
-                state["problem"] += f"; endpoint reconciliation failed: {reconcile_error}"
-        save_state(directory, state)
+        submit_core_task(directory, task, state)
     return {"task_id": task_id, "worker": worker_name, "agent": task["agent"],
             "pane_id": task["pane_id"], "terminal_id": binding["terminal"], "backend": "core",
-            "viewer": task["viewer"], "state": state["state"], "message": state["problem"],
-            "warning": warning, "brief_path": task["brief_path"], "task_dir": str(directory)}
+            "state": state["state"], "message": state["problem"],
+            **progress_fields(state), **viewer_fields(task),
+            "controller_verification": task.get("controller_verification"),
+            "brief_path": task["brief_path"], "task_dir": str(directory)}
 
 
 def wait_for_pi_session(agent, deadline):
@@ -938,9 +1111,9 @@ def wait_for_pi_session(agent, deadline):
                      "integration is installed with herdr integration install pi")
 
 
-def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, caller_pane):
+def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, caller_text):
     """Start one worker on one task and return the run object; fail() on contract errors."""
-    caller = require_caller_context(caller_pane)
+    caller = require_caller_context(caller_pane, caller_text)
     worker = config["workers"].get(worker_name)
     if worker is None:
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
@@ -996,11 +1169,13 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         "pane_id": pane_id,
         "tab_id": tab_id,
         "workspace_id": caller["workspace_id"],
+        "controller_verification": caller["controller_verification"],
         "argv": launch_args(worker, directory),
         "backend": {"kind": "legacy"},
         "created_at": iso_now(),
     }
     state = default_state()
+    state["submission"] = "not_sent"
     try:
         write_json(directory / "task.json", task)
         save_state(directory, state)
@@ -1029,6 +1204,9 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
             "agent": agent,
             "pane_id": pane_id,
             "state": state_name,
+            "message": state["problem"],
+            **progress_fields(state),
+            "controller_verification": task["controller_verification"],
             "brief_path": task["brief_path"],
             "task_dir": task["task_dir"],
         }
@@ -1068,11 +1246,14 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         notify(f"horch: {task_id} start_failed", state["problem"])
         return run_object(state["state"])
     state["baseline_seq"] = baseline
+    state["startup_ready"] = True
     save_state(directory, state)
     if state["closed"] or state["state"] == "done":
         return run_object(state["state"])
 
     pointer = f"New task {task_id}. Read {directory / 'brief.md'} in full and follow it exactly."
+    state["submission"] = "unknown"
+    save_state(directory, state)
     try:
         doc = herdr(
             "agent", "prompt", agent, pointer,
@@ -1081,6 +1262,8 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
             timeout=45.0,
         )
         status = ((doc.get("result") or {}).get("agent") or {}).get("agent_status")
+        state["submission"] = "sent"
+        state["native_status"] = status
         if status == "blocked":
             state["state"] = "blocked"
             state["problem"] = "the worker is waiting at a dialog"
@@ -1093,6 +1276,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         if isinstance(exc.payload, dict) and isinstance(exc.payload.get("error"), dict):
             code = exc.payload["error"].get("code")
         if code == "agent_blocked":
+            state["submission"] = "not_sent"
             state["state"] = "blocked"
             state["problem"] = "the worker is waiting at a dialog"
             notify(f"horch: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
@@ -1159,6 +1343,22 @@ def ran_longer_than(task, minutes):
 
 def evaluate_task(info, agent, config):
     state, task = info["state"], info["task"]
+    state["native_status"] = agent.get("agent_status") if agent else None
+    if state["submission"] == "not_sent":
+        state["state"] = "start_failed"
+        state["problem"] = ("no task was sent; inspect readiness, then use horch submit " + task["task_id"]
+                            if is_core(task) else "no task was sent; inspect and close this task before a fresh run")
+        return state["state"]
+    if state["submission"] == "unknown":
+        if (agent and state["baseline_seq"] is not None
+                and result_verdict(info["dir"], task) == "valid"):
+            state["submission"] = "sent"
+        else:
+            state["state"] = "not_started"
+            state["problem"] = "submission outcome is unknown; native activity cannot prove receipt of this task; inspect and never resend"
+            if agent and agent.get("agent_status") == "working":
+                state["saw_working"] = True
+            return "not_started"
     if agent is None:
         state["state"] = "exited"
         state["problem"] = f"worker {task['worker']} ({task['agent']}) has finished or is gone from its backend"
@@ -1187,6 +1387,10 @@ def evaluate_task(info, agent, config):
         state["state"] = "result_invalid"
         state["problem"] = f"result.json does not match the result schema or task_id/nonce ({task['result_path']})"
         return "result_invalid"
+    if state["submission"] == "sent" and not state["saw_working"]:
+        state["state"] = "not_started"
+        state["problem"] = "task submitted; execution acknowledgement not observed; inspect and use wait --recheck, never resend"
+        return "not_started"
     if not state["long_notified"] and ran_longer_than(task, config["notify_after_minutes"]):
         state["long_notified"] = True
         state["state"] = "running"
@@ -1273,6 +1477,8 @@ def wait_line(info):
         "state": reported,
         "closed": bool(state["closed"]),
         "message": state["problem"],
+        **progress_fields(state),
+        **viewer_fields(info["task"]),
         "summary": parsed.get("summary") if parsed else None,
         "result_path": str(info["dir"] / "result.json"),
         "files": parsed.get("files") if parsed and isinstance(parsed.get("files"), list) else [],
@@ -1563,8 +1769,8 @@ def cmd_list(args):
                     "pane_id": task.get("pane_id"),
                     "backend": task.get("backend", {"kind": "legacy"}),
                     "terminal_id": task["backend"]["terminal"] if is_core(task) else None,
-                    "viewer": task.get("viewer"),
-                    "warning": task.get("viewer_warning"),
+                    **viewer_fields(task),
+                    **progress_fields(state),
                     "workspace_id": task.get("workspace_id"),
                     "state": state["state"],
                     "closed": bool(state.get("closed")),
@@ -1699,8 +1905,8 @@ def cmd_check(args):
     binary = core.executable()
     if binary is None:
         require_herdr_env()
-    caller = (require_caller_context(args.caller_pane) if binary is None
-              else core_caller_context(args.caller_pane))
+    caller = (require_caller_context(args.caller_pane, args.caller_text) if binary is None
+              else core_caller_context(args.caller_pane, args.caller_text))
     binding = core.new_binding(binary) if binary else None
     config = load_config()
     names = list(dict.fromkeys(args.workers or list(config["workers"])))
@@ -1721,7 +1927,7 @@ def cmd_check(args):
             name = pending[0]
             began = time.monotonic()
             run = start_task(config, name, CHECK_BRIEF, cwd, skip_if_full=True,
-                             caller_pane=args.caller_pane, binding=binding)
+                             caller_pane=args.caller_pane, caller_text=args.caller_text, binding=binding)
             if run is None:
                 _, invalid = task_capacity(caller["workspace_id"] if caller else None, binding)
                 capacity_invalid.update(invalid)
@@ -1768,8 +1974,8 @@ def cmd_check(args):
                   and result_verdict(info["dir"], info["task"]) == "valid"
                   and not info["task"].get("viewer_warning"),
             "pane_id": None if info["state"]["closed"] else info["task"]["pane_id"],
-            "viewer": info["task"].get("viewer"),
-            "warning": info["task"].get("viewer_warning"),
+            **viewer_fields(info["task"]),
+            **progress_fields(info["state"]),
             "seconds": round(settled_times.get(name, time.monotonic()) - began),
             "message": message,
         })
@@ -1791,7 +1997,8 @@ def build_parser():
     p_run.add_argument("worker", help="worker name from workers.toml")
     p_run.add_argument("--brief", required=True, help="path of the brief file for the worker")
     p_run.add_argument("--cwd", help="working directory for the worker (default: the current directory)")
-    p_run.add_argument("--caller-pane", help="controller pane confirmed by the caller when horch runs outside every pane process tree")
+    p_run.add_argument("--caller-pane", help="confirmed controller pane; required for Herdr agent controllers and tools outside all pane trees")
+    p_run.add_argument("--caller-text", help="unique visible conversation text required with --caller-pane for agent-controller tools")
     p_run.set_defaults(func=cmd_run)
 
     p_wait = sub.add_parser("wait", help="wait until at least one waited task changes state")
@@ -1812,6 +2019,14 @@ def build_parser():
     p_close.add_argument("task_id", help="task to close")
     p_close.set_defaults(func=cmd_close)
 
+    p_submit = sub.add_parser("submit", help="submit a core task once after startup recovery, only when definitely not sent")
+    p_submit.add_argument("task_id", help="unclosed core task recorded as not_sent")
+    p_submit.set_defaults(func=cmd_submit)
+
+    p_viewer = sub.add_parser("verify-viewer", help="re-read and verify a core task's viewer before user interaction")
+    p_viewer.add_argument("task_id", help="core task whose owned viewer to inspect")
+    p_viewer.set_defaults(func=cmd_verify_viewer)
+
     p_detect = sub.add_parser("detect", help="print installed harnesses, versions, and pi providers")
     p_detect.set_defaults(func=cmd_detect)
 
@@ -1819,7 +2034,8 @@ def build_parser():
     p_check.add_argument("workers", nargs="*", help="workers to check (default: all in workers.toml)")
     p_check.add_argument("--cwd", help="working directory for the check workers (default: the current directory)")
     p_check.add_argument("--max-seconds", type=int, default=300, help="stop waiting after this many seconds (default: 300)")
-    p_check.add_argument("--caller-pane", help="controller pane confirmed by the caller when horch runs outside every pane process tree")
+    p_check.add_argument("--caller-pane", help="confirmed controller pane; required for Herdr agent controllers and tools outside all pane trees")
+    p_check.add_argument("--caller-text", help="unique visible conversation text required with --caller-pane for agent-controller tools")
     p_check.set_defaults(func=cmd_check)
 
     return parser

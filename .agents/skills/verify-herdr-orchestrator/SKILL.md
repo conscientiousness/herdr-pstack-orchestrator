@@ -29,7 +29,7 @@ For model runs, first use this read-only check:
 python3 skills/herdr-orchestrator/scripts/horch.py detect
 ```
 
-Confirm required CLIs and Pi integration, `HERDR_ENV=1`, the actual controller pane/workspace, available slots, and each driver's prerequisites before launching. `horch check` makes real model calls; it is not a read-only doctor. Missing configuration, authentication, or trust is a prerequisite gap; do not change it silently.
+Confirm required CLIs, the selected backend, the actual controller pane/workspace, available slots, and each driver's prerequisites before launching. For a Herdr controller, read `pane process-info` and `pane read --source visible` to match this conversation; inherited environment and session IDs are candidates, never sufficient evidence. Agent-controller `run`/`check` calls require confirmed `--caller-pane` and `--caller-text` (at least 16 characters unique to the visible conversation). Ordinary shell automation can use actual process ancestry. Core needs no Pi integration; legacy Pi does. `horch check` makes real model calls; it is not a read-only doctor. Missing configuration, authentication, or trust is a prerequisite gap; do not change it silently.
 
 For discovery and upstream checks, use the feature's source/CLI doctor instead; Herdr and model credentials are unnecessary.
 
@@ -37,7 +37,9 @@ For discovery and upstream checks, use the feature's source/CLI doctor instead; 
 
 Follow only the selected [feature procedure](features/README.md). Keep the original long-running command/session alive while posting progress updates. All evaluation controllers and workers belong in separate Herdr tabs, never the user's controller tab. Stop other dispatchers during isolated-state model E2Es.
 
-On a problem, preserve the receipt and inspect the recorded pane before cleanup. Never answer worker dialogs or automatically retry with another model. A delivered result requires `state: done`; review success also requires the driver's outcome assertions. Follow the companion skill for manual recovery.
+Use [core lifecycle and viewers](features/core.md) for deterministic core and placement checks. Existing model drivers use legacy pane oracles; follow their backend prerequisites instead of interpreting a core terminal ID as a Herdr pane ID. Do not run model scenarios merely to broaden a deterministic caller/viewer fix.
+
+On a problem, preserve the receipt and inspect the recorded backend before cleanup. Read `startup_ready`, `submission`, `execution_observed` and `native_status` separately. `wait --recheck` never submits a task. After the user's recovery decision, `submit` can send an unclosed core task recorded as `not_sent` once; it rejects `sent`, `unknown` and historical outcomes. Before asking the user to interact with a core worker window, require a fresh `verify-viewer` result with `viewer_verified: true`; a viewer ID or task `running` state is insufficient. Never answer worker dialogs or automatically retry with another model. A delivered result requires `state: done`; review success also requires the driver's outcome assertions. Follow the companion skill for manual recovery.
 
 ## Evidence
 

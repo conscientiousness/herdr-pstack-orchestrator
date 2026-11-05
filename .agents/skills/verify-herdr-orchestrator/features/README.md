@@ -6,8 +6,8 @@ Commands run from the repository root, using `repo` and `proof` from [Launch](..
 |---|---|---|
 | [Skill installation and discovery](discovery.md) | `skill_catalogs.py` | Bundled skills, npm, Pi, Codex; no models |
 | [Practical delivery and removal](../../../../e2e/ADOPTION.md) | Existing `horch.py`, fixture generator and CLI oracle | Two configured workers, authorized private fixture/parent PR; complete project removal preserves an unrelated skill |
-| Core backend lifecycle | `core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py --output "$proof" --core-only` | Official herdr-core, private HC_SESSION and XDG paths owned by driver; deterministic interactive fixture, no models. Read receipt checks and cleanup. Does not prove live configured delivery, visible tabs, legacy fallback or mixed affinity. |
-| Core viewer placement | `core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py --output "$proof" --viewer` | Adds real Herdr attach viewers in an owned workspace; requires `HERDR_ENV=1`, `HERDR_SOCKET_PATH`, and Herdr CLI. Verifies explicit/inherited caller identity without HERDR_ENV, same-workspace `hcOrch` panes, unchanged focus, context rejection before launch, and viewer/workspace cleanup. No models or legacy runtime. |
+| [Core backend lifecycle](core.md) | `core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py --output "$proof" --core-only` | Official herdr-core, private HC_SESSION and XDG paths; deterministic interactive fixture, no models. Includes unsent startup recovery, observation-only recheck and duplicate-submit refusal. No configured delivery, visible tabs or legacy runtime. |
+| [Core viewer placement](core.md#viewer-placement) | `core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py --output "$proof" --viewer` | Adds real attach viewers in an owned workspace; requires `HERDR_ENV=1`, `HERDR_SOCKET_PATH`, and Herdr CLI. Verifies controller receipts, same-workspace `hcOrch` panes, pinned attach/rendering, fresh viewer verification failure/recovery, unchanged focus and owned cleanup. |
 | [Worker review loop](workers.md) | `review_loop.py` | Authenticated workers, two free slots; six real tasks |
 | [Worker setup checks](workers.md#worker-setup-checks) | `check_workers.py` | At least two authenticated configured workers, owned workspace, one-slot batching and injected exit |
 | [Workspace worker limits](workers.md#workspace-worker-limits) | `workspace_limits.py` | One authenticated worker, two owned workspaces, shared isolated task store |
@@ -18,8 +18,8 @@ Commands run from the repository root, using `repo` and `proof` from [Launch](..
 | [Live runtime diagnosis](playbooks.md) | `runtime_loop.py` | Fresh five-stage owned-process pass; earlier failed receipts and separate audits retained |
 | [PR-chain status](playbooks.md) | `babysit_loop.py` | Fourth Check blocked on ambiguous visible launch; supervisor witness needed before another run; explicit private chain and Bun; one Check only |
 | [Live worker replacement](workers.md#live-worker-replacement) | `check_workers.py --hot-swap-only` | Two distinct configured execution definitions; owned workspace and in-flight gates |
-| [Caller context preflight](controller.md#caller-context-preflight) | `caller_context.py` | Verified live controller pane; read-only Herdr checks, no models |
-| [Caller identity](controller.md#caller-identity) | `caller_identity.py` | Run from the controller pane; scratch tab and workspace, no models |
+| [Caller/config preflight](controller.md#caller-context-preflight) | `caller_context.py --controller-pane <id> --controller-text '<unique visible conversation text>' --output "$proof"` | Verified live controller pane and text; read-only Herdr checks, no models |
+| [Caller identity and preflight](controller.md#caller-identity) | `caller_identity.py --controller-pane <id> --controller-text '<unique visible conversation text>' --output "$proof"` | Verified live controller pane and conversation text; owned scratch tab/workspace, process-tree and shared-daemon claims, no models |
 | [Pi integration and startup](pi.md) | `pi_preflight.py`, `pi_startup.py` | Select the reproduced failure; different prerequisites |
 | [Upstream update detection](upstream.md) | `check_upstream.py` | Git and network; no models |
 

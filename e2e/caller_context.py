@@ -2,8 +2,10 @@
 """Check caller and config preflight through the real CLI and live Herdr reads.
 
 Check unavailable or missing pane IDs and canonicalization of stale inherited
-workspace/tab IDs for both run and check, plus a valid-context control. This
-driver does not move real panes or exercise a moved pane's launch-ID alias.
+workspace/tab IDs for both run and check, plus a valid-context control. Positive
+cases explicitly confirm the controller pane with unique visible conversation
+text. This driver does not move real panes or exercise a moved pane's launch-ID
+alias.
 
 Config failure modes: rejecting legacy workers without descriptions, rejecting
 string descriptions or single-worker roles, and accepting non-string metadata.
@@ -28,6 +30,8 @@ HORCH = Path(__file__).resolve().parents[1] / "skills/herdr-orchestrator/scripts
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--controller-pane", required=True, help="verified live controller pane ID")
+    parser.add_argument("--controller-text", required=True,
+                        help="unique text of at least 16 characters currently visible in the controller conversation")
     parser.add_argument("--output", type=Path, required=True, help="artifact parent outside the checkout")
     args = parser.parse_args()
     output = args.output.expanduser().resolve()
@@ -47,6 +51,7 @@ def main():
         env = dict(os.environ, HERDR_ENV="1", HERDR_WORKSPACE_ID=pane["workspace_id"],
                    HERDR_TAB_ID=pane["tab_id"], HERDR_PANE_ID=pane["pane_id"],
                    XDG_CONFIG_HOME=str(root / "empty-config"), XDG_STATE_HOME=str(root / "state"))
+        confirmed = ["--caller-pane", pane["pane_id"], "--caller-text", args.controller_text]
         cases = [
             ("stale-pane", {"HERDR_PANE_ID": "missing-controller-pane"}, "caller_context_invalid"),
             ("missing-pane", {"HERDR_PANE_ID": None}, "caller_context_invalid"),
@@ -78,7 +83,8 @@ def main():
                                       "brief_not_found" if command[0] == "run" else "unknown_worker")
                 case_env = dict(env, **overrides)
                 case_env = {key: value for key, value in case_env.items() if value is not None}
-                proc = subprocess.run([sys.executable, str(HORCH), *command],
+                caller_args = [] if expected == "caller_context_invalid" else confirmed
+                proc = subprocess.run([sys.executable, str(HORCH), *command, *caller_args],
                                       env=case_env, capture_output=True, text=True, timeout=30)
                 name = label + "-" + command[0]
                 (root / (name + ".stdout")).write_text(proc.stdout)

@@ -15,11 +15,16 @@ Ways the identity check can fail, each exercised below:
    trusted, so dispatch must stop.
 4. An explicit --caller-pane without process proof names a pane whose foreground
    is not the controller's harness (the incident's plain-shell pane).
-5. An explicit --caller-pane names a pane whose reported agent session differs
+5. An explicit --caller-pane without conversation-specific text, or with text
+   absent from the controller's visible screen, is insufficient in a daemon.
+6. An explicit --caller-pane names a pane whose reported agent session differs
    from the controller's own session ID.
-6. Over-rejection: a correct in-tree controller, a confirmed --caller-pane from
+7. Over-rejection: a correct in-tree controller, a confirmed --caller-pane from
    a detached process, and a pane moved to another workspace (launch-time ID
    kept as a Herdr alias) must still reach the configuration check.
+8. A controller session carried by a process still beneath an old pane shell
+   cannot use that ancestry to bypass conversation evidence. A confirmed real
+   conversation must be accepted even when its tools run beneath that old shell.
 
 Accepted preflight stops at an empty isolated configuration (config_invalid),
 so no worker or model starts. The driver creates one scratch tab and one
@@ -68,6 +73,8 @@ def wait_files(rc_file, out_file, seconds=60):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--controller-pane", required=True, help="verified live controller pane ID")
+    parser.add_argument("--controller-text", required=True,
+                        help="unique text of at least 16 characters currently visible in the controller conversation")
     parser.add_argument("--output", type=Path, required=True, help="artifact parent outside the checkout")
     parser.add_argument("--horch", type=Path, default=REPO_HORCH, help="horch.py under test")
     args = parser.parse_args()
@@ -78,21 +85,22 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix="caller-identity-", dir=output))
     harness = next((h for h, var in SESSION_ENV.items() if os.environ.get(var)), None)
-    checks, observations = [], []
+    checks, observations, unverified = [], [], []
     evidence = {"schema": "horch/caller-identity-e2e/v1", "verdict": "fail",
                 "scope": "live Herdr panes, real process trees, run/check preflight; no worker launch",
                 "controller_harness": harness,
                 "source_hashes": {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                                   for p in (horch, Path(__file__))},
-                "checks": checks, "observations": observations}
+                "checks": checks, "observations": observations, "unverified": unverified}
     scratch_tab = moved_workspace = None
     try:
         controller = herdr("pane", "get", args.controller_pane)["pane"]
         made = herdr("tab", "create", "--workspace", controller["workspace_id"],
-                     "--label", "horch-identity-e2e", "--no-focus")
+                     "--label", "horch-identity-e2e", "--cwd", str(Path.cwd()), "--no-focus")
         scratch_tab = made["tab"]["tab_id"]
         shell_pane = made["root_pane"]["pane_id"]
         mover = herdr("pane", "split", shell_pane, "--direction", "right", "--no-focus")["pane"]["pane_id"]
+        probe_pane = herdr("pane", "split", shell_pane, "--direction", "down", "--no-focus")["pane"]["pane_id"]
         time.sleep(1.5)  # let both shells reach their prompts
         (root / "empty-config").mkdir()
         brief = root / "unused.md"
@@ -115,12 +123,24 @@ def main():
             yield "check", ["check", "probe", *extra]
 
         def in_tree(case, overrides, extra, expected, must_name=None):
-            env = dict(base_env, **overrides)
+            env = dict(base_env, HERDR_PANE_ID=probe_pane)
+            env.update(overrides)
             for name, argv in commands(extra):
-                proc = subprocess.run([sys.executable, str(horch), *argv], env=env,
-                                      capture_output=True, text=True, timeout=120)
-                record(case, name, expected, last_json(proc.stdout) or {"error": f"exit_{proc.returncode}"},
-                       must_name)
+                stem = root / f"{case}-{name}"
+                out, rc = stem.with_suffix(".out"), stem.with_suffix(".rc")
+                runner = stem.with_suffix(".sh")
+                assignments = [f"{key}={env[key]}" for key in (
+                    "HERDR_ENV", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID", "HERDR_TAB_ID",
+                    "XDG_CONFIG_HOME", "XDG_STATE_HOME")]
+                assignments.extend(f"{key}={env[key]}" for key in SESSION_ENV.values() if key in overrides)
+                clear_sessions = [item for key in SESSION_ENV.values() for item in ("-u", key)]
+                runner.write_text(shlex.join(["env", *clear_sessions, *assignments,
+                                             sys.executable, str(horch), *argv])
+                                  + " > " + shlex.quote(str(out)) + " 2>&1\n"
+                                  + "echo $? > " + shlex.quote(str(rc)) + "\n")
+                subprocess.run(["herdr", "pane", "run", probe_pane, shlex.join(["sh", str(runner)])],
+                               capture_output=True, timeout=30, check=True)
+                record(case, name, expected, wait_files(rc, out), must_name)
 
         def detached(case, overrides, extra, expected):
             env = dict(base_env, **overrides)
@@ -134,21 +154,36 @@ def main():
 
         in_tree("valid-in-tree", {}, [], "config_invalid")
         in_tree("stale-live-shell", {"HERDR_PANE_ID": shell_pane}, [], "caller_context_invalid",
-                must_name=controller["pane_id"])
+                must_name=probe_pane)
         in_tree("claim-contradicts-tree", {}, ["--caller-pane", shell_pane], "caller_context_invalid",
-                must_name=controller["pane_id"])
+                must_name=probe_pane)
         detached("detached-env-stale", {"HERDR_PANE_ID": shell_pane}, [], "caller_context_invalid")
         detached("detached-env-correct", {}, [], "caller_context_invalid")
         detached("detached-claim-shell", {}, ["--caller-pane", shell_pane], "caller_context_invalid")
-        detached("detached-claim-controller", {}, ["--caller-pane", controller["pane_id"]], "config_invalid")
+        detached("detached-claim-without-text", {}, ["--caller-pane", controller["pane_id"]],
+                 "caller_context_invalid")
+        detached("detached-claim-short-text", {},
+                 ["--caller-pane", controller["pane_id"], "--caller-text", "too short"],
+                 "caller_context_invalid")
+        detached("detached-claim-wrong-text", {},
+                 ["--caller-pane", controller["pane_id"], "--caller-text", "absent-" + uuid.uuid4().hex],
+                 "caller_context_invalid")
+        confirmed = ["--caller-pane", controller["pane_id"], "--caller-text", args.controller_text]
+        detached("detached-claim-controller", {}, confirmed, "config_invalid")
+        session_var = SESSION_ENV[harness] if harness else SESSION_ENV["codex"]
+        session_override = {session_var: os.environ.get(session_var) or "synthetic-e2e-controller-session"}
+        in_tree("controller-session-under-old-shell-without-proof", session_override, [],
+                "caller_context_invalid")
+        if harness:
+            in_tree("controller-session-under-old-shell-confirmed", session_override, confirmed, "config_invalid")
+        else:
+            unverified.append("controller-session-under-old-shell-confirmed: no actual exported controller session")
         session = controller.get("agent_session") or {}
         if harness and session.get("agent") == harness and session.get("value"):
             detached("detached-claim-other-session", {SESSION_ENV[harness]: str(uuid.uuid4())},
-                     ["--caller-pane", controller["pane_id"]], "caller_context_invalid")
+                     confirmed, "caller_context_invalid")
         else:
-            checks.append({"name": "detached-claim-other-session-precondition", "ok": False})
-            observations.append({"case": "detached-claim-other-session",
-                                 "precondition": "controller pane has no agent session for this harness"})
+            unverified.append("detached-claim-other-session: live controller has no matching agent_session")
 
         moved = herdr("pane", "move", mover, "--new-workspace", "--no-focus")["move_result"]["pane"]
         moved_workspace = moved["workspace_id"]
