@@ -18,7 +18,13 @@ python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
 Product mode exercises core preference, an early valid result while working,
 post-prompt turn completion, missing and invalid results, blocked workers,
 cancellation, and cleanup. It also checks that an installed core rejecting its
-session does not invoke legacy Herdr. A two-core scenario verifies that a stored
+session does not invoke legacy Herdr. A startup-dialog fixture reports native
+blocked before it receives a brief. After its external readiness gate opens,
+`wait --recheck` must retain `start_failed` and `submission: not_sent`; explicit
+`submit` must use the original terminal, deliver once, and reject a second
+submission. Readiness, submission, native status, and observed execution are
+checked independently. This is a deterministic dialog simulation, not a real
+harness trust decision. A two-core scenario verifies that a stored
 problem on an offline core cannot abort a healthy task's delivery. Explicit
 `--recheck` still reports that endpoint's error. `--baseline` is only for a
 pre-core revision that rejects headless execution with `baseline-unsupported`.
@@ -51,8 +57,12 @@ workers from its controller pane with `HERDR_ENV` removed: one uses an explicit
 worker output through separate attach panes in the same `hcOrch` tab and caller
 workspace. The receipt checks unchanged user focus, incomplete-context rejection
 for `run` and `check` without worker allocation, delivery/cancellation cleanup,
-and removal of the owned workspace. It still does not verify model execution or
-legacy worker tabs.
+and removal of the owned workspace. Returned `viewer_verified` and stored
+controller evidence must agree with independent pane, tab, and rendered-output
+reads. Renaming the owned viewer tab away from `hcOrch` must make
+`verify-viewer` report an unconfirmed viewer while preserving both workers;
+restoring its label allows verification without launching a replacement. It
+still does not verify model execution or legacy worker tabs.
 
 The existing model drivers inspect legacy panes and workspaces. Use those drivers
 on the legacy lane, with both `herdr-core` and a verified `hc` alias absent from
@@ -420,10 +430,12 @@ then verifies outputs and configuration integrity. See the maintained
 After a real Codex shell snapshot supplied another workspace's old IDs, a worker was created in the wrong workspace. The [observation and before/after receipt](evidence/caller-context.json) records that failure and the focused fix. Reproduce the preflight check with a verified live controller pane:
 
 ```bash
-python3 e2e/caller_context.py --controller-pane <verified-pane-id> --output /tmp/horch-context
+python3 e2e/caller_context.py --controller-pane <verified-pane-id> \
+  --controller-text '<unique text currently visible in this conversation>' \
+  --output /tmp/horch-context
 ```
 
-The driver uses real Herdr reads and invokes both `run` and `check`. Unavailable or missing/blank caller pane IDs must fail; a verified pane with stale workspace/tab variables must resolve through Herdr and reach configuration loading. Caller cases use an empty isolated configuration; configuration cases use a missing brief or an unknown worker as a second stopping condition. No workers launch, including before the fix. It retains `evidence.json` and command output outside the checkout. The [native-context receipt](evidence/native-caller-context.json) records the context correction; the [worker-description receipt](evidence/worker-description.json) covers the current driver, legacy configurations, optional description validation, and single-worker role metadata. This checks preflight only: it does not move a pane, exercise a moved-pane alias or worker startup, or test controller role selection. Pane ownership is covered by the caller identity driver below. The earlier caller-context receipt documents the original stricter check, not the current contract.
+The driver uses real Herdr reads and invokes both `run` and `check`. Unavailable or missing/blank inherited pane IDs must fail without an explicit override. Positive stale-workspace/tab and configuration cases pass the verified `--caller-pane` plus `--caller-text`, which must match unique currently visible conversation text of at least 16 characters. These cases must resolve the pane's live workspace and tab and reach configuration loading even through a shared daemon. Caller cases use an empty isolated configuration; configuration cases use a missing brief or an unknown worker as a second stopping condition. No workers launch, including before the fix. It retains `evidence.json` and command output outside the checkout. The [native-context receipt](evidence/native-caller-context.json) records the earlier context correction; the historical [worker-description receipt](evidence/worker-description.json) covers legacy configurations, optional description validation, and single-worker role metadata, but does not establish the new conversation-text checks. This checks preflight only: it does not move a pane, exercise a moved-pane alias or worker startup, or test controller role selection. Pane ownership is covered by the caller identity driver below. The earlier caller-context receipt documents the original stricter check, not the current contract.
 
 The original caller-context receipt also records a 30-minute, read-only observation of the previous release: nine tracked tasks delivered and closed, but the controller repeatedly used short wait caps and performed bulk implementation itself before user guidance. The new routing instructions have not received a model-driven workflow run. These receipts do not establish broader pstack playbook coverage.
 
@@ -432,10 +444,12 @@ The original caller-context receipt also records a 30-minute, read-only observat
 A Codex 0.162 controller's tools ran in a shared `codex app-server` daemon (parent PID 1) that had inherited another workspace's pane ID. That pane was still live as a plain shell, so the preflight above accepted it and workers opened in the wrong workspace. The [before/after receipt](evidence/caller-identity.json) records the fix:
 
 ```bash
-python3 e2e/caller_identity.py --controller-pane <verified-pane-id> --output /tmp/horch-identity
+python3 e2e/caller_identity.py --controller-pane <verified-pane-id> \
+  --controller-text '<unique text currently visible in this conversation>' \
+  --output /tmp/horch-identity
 ```
 
-Run it from the controller pane's own process tree. It creates a scratch tab and a scratch workspace, runs `run` and `check` against real process trees, and closes both. The cases are: a stale ID naming a live shell pane; `--caller-pane` contradicting the process tree; a detached process (via `setsid`, parent PID 1, like the daemon) with a stale or a correct `HERDR_PANE_ID`; `--caller-pane` naming a plain-shell pane or a pane with another session ID; plus three that must still pass: a correct in-tree controller, a confirmed `--caller-pane` from a detached process, and a pane moved to another workspace that uses its launch-time alias. Accepted cases stop at an empty isolated configuration, so no worker starts. Pass `--horch <file>` to run the same cases against another revision. The receipt was produced by a Claude Code controller on Linux; the real Codex daemon and macOS `ps` were not exercised.
+It creates a scratch tab and a scratch workspace, runs `run` and `check` against real process trees, and closes both. In-tree cases run from an owned scratch shell, so the driver itself can run through a shared daemon. The cases are: a stale ID naming a live shell pane; `--caller-pane` contradicting the process tree; a detached process (via `setsid`, parent PID 1, like the daemon) with a stale or a correct `HERDR_PANE_ID`; `--caller-pane` naming a plain-shell pane; and detached claims with missing, short, or absent conversation text. A controller session under an old pane's shell must also require conversation evidence; claiming the verified real controller with its visible text must pass despite that old process host. A reported session mismatch is checked when the live controller publishes that session; otherwise the receipt records it as unverified. Plain-shell callers, a confirmed detached controller, and a moved pane using its launch-time alias remain accepted. Supply at least 16 characters of distinctive, currently visible text with `--controller-text`; the driver never sends input to the actual controller. Accepted cases stop at an empty isolated configuration, so no worker starts. Pass `--horch <file>` to run the same cases against another revision. The historical receipt was produced by a Claude Code controller on Linux; it does not establish the new conversation-text checks or macOS behavior.
 
 ## Worker setup checks
 

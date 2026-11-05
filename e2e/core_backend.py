@@ -36,6 +36,12 @@ if "--version" in sys.argv:
 def report(state):
     os.write(1, ("\x1b]7501;state=" + state + ":app=pi\x07").encode())
 tty.setraw(0)
+if (root / "startup-blocked").exists():
+    os.write(1, b"CORE_E2E_TRUST_DIALOG\r\n")
+    report("blocked")
+    while not (root / "startup-cleared").exists():
+        time.sleep(0.05)
+os.write(1, b"CORE_E2E_READY\r\n")
 report("idle")
 buf = ""
 while True:
@@ -59,8 +65,8 @@ while True:
     row = {"brief": str(brief), "task_id": task_id, "nonce": nonce,
            "result_path": result, "pid": os.getpid(), "mode": mode}
     (root / (mode + ".prompt.json")).write_text(json.dumps(row))
-    if mode in ("valid", "invalid"):
-        payload = {"task_id": task_id, "nonce": nonce if mode == "valid" else "wrong-nonce",
+    if mode in ("valid", "invalid", "recovery"):
+        payload = {"task_id": task_id, "nonce": "wrong-nonce" if mode == "invalid" else nonce,
                    "status": "completed", "summary": "Deterministic interactive fixture result.",
                    "files": [], "question": None}
         path = pathlib.Path(result)
@@ -224,6 +230,9 @@ class Run:
         launched = self.launch(mode)
         self.check(mode + " public run succeeds headless", launched.returncode == 0)
         task = rows(launched.stdout)[0]
+        self.check(mode + " distinguishes startup, submission and execution",
+                   task["startup_ready"] and task["submission"] == "sent"
+                   and task["execution_observed"])
         task_id = task["task_id"]
         prompt_path = self.root / (mode + ".prompt.json")
         self.until(mode + " fixture receives brief pointer", prompt_path.exists)
@@ -280,6 +289,62 @@ class Run:
         self.until(mode + " independent terminal is no longer live", lambda: (
             not (t := self.get(address)) or t.get("state") != "live"))
         self.no_guard()
+
+    def startup_recovery(self):
+        (self.root / "startup-blocked").write_text("hold native readiness\n")
+        try:
+            launched = self.launch("recovery")
+            self.check("startup dialog leaves launch inspectable", launched.returncode == 0)
+            task = rows(launched.stdout)[0]
+            self.check("startup dialog confirms no task was sent",
+                       task["state"] == "start_failed" and not task["startup_ready"]
+                       and task["submission"] == "not_sent" and not task["execution_observed"])
+            address = task["terminal_id"]
+            prompt = self.root / "recovery.prompt.json"
+            self.check("startup dialog has no prompt receipt", not prompt.exists())
+            read = self.hc("read", address, "--lines", "0")
+            self.check("startup dialog is visible on retained terminal",
+                       read.returncode == 0 and "CORE_E2E_TRUST_DIALOG" in read.stdout)
+            before = {t["address"] for t in self.terminals()}
+            (self.root / "startup-cleared").write_text("user-owned readiness gate opened\n")
+            self.until("startup dialog resolves to native idle", lambda: (
+                t if (t := self.get(address)) and (t.get("status") or {}).get("state") == "idle" else None))
+            rechecked = self.cli("wait", task["task_id"], "--recheck", "--max-seconds", "2")
+            checked = rows(rechecked.stdout)[0]
+            self.check("recheck cannot promote an unsent task to running",
+                       rechecked.returncode == 0 and checked["state"] == "start_failed"
+                       and checked["submission"] == "not_sent" and checked["native_status"] == "idle"
+                       and not checked["execution_observed"] and not prompt.exists())
+            submitted = self.cli("submit", task["task_id"])
+            self.check("explicit first submission succeeds", submitted.returncode == 0)
+            sent = rows(submitted.stdout)[0]
+            stored = json.loads((Path(task["task_dir"]) / "task.json").read_text())
+            self.check("first submission retains original task and terminal",
+                       sent["task_id"] == task["task_id"] and stored["backend"]["terminal"] == address
+                       and sent["startup_ready"] and sent["submission"] == "sent")
+            self.until("recovered fixture consumes its first task", prompt.exists)
+            receipt = json.loads(prompt.read_text())
+            self.check("recovered fixture received the original task identity",
+                       receipt["task_id"] == task["task_id"])
+            duplicate = self.cli("submit", task["task_id"])
+            self.check("a second submit refuses to resend",
+                       duplicate.returncode == 1
+                       and rows(duplicate.stdout)[0].get("error") == "submission_unsafe")
+            self.check("recovery creates no duplicate terminal",
+                       {t["address"] for t in self.terminals()} == before)
+            (self.root / "recovery.release").write_text("release recovered turn\n")
+            delivered = self.cli("wait", task["task_id"], "--max-seconds", "30")
+            done = rows(delivered.stdout)[0]
+            self.check("recovered task delivers and closes",
+                       delivered.returncode == 0 and done["state"] == "done" and done["closed"]
+                       and done["submission"] == "sent")
+            self.evidence["startup_recovery"] = {"task_id": task["task_id"],
+                                                "terminal_id": address,
+                                                "prompt_receipt": "recovery.prompt.json"}
+            self.no_guard()
+        finally:
+            (self.root / "startup-blocked").unlink(missing_ok=True)
+            (self.root / "startup-cleared").unlink(missing_ok=True)
 
     def settled_endpoint(self):
         first, second = Run(self.args, self.core), Run(self.args, self.core)
@@ -432,7 +497,15 @@ class Run:
                 self.check(mode + " viewer run succeeds without HERDR_ENV", rc.read_text() == "0")
                 task = rows(out.read_text())[0]
                 self.check(mode + " viewer run is working with no warning",
-                           task["state"] == "running" and not task["warning"] and task["viewer"])
+                           task["state"] == "running" and not task["warning"] and task["viewer"]
+                           and task["viewer_verified"] and task["viewer_verification_error"] is None)
+                stored = json.loads((Path(task["task_dir"]) / "task.json").read_text())
+                proof = stored.get("controller_verification") or {}
+                self.check(mode + " caller proof is retained before dispatch",
+                           proof.get("pane_id") == controller and proof.get("workspace_id") == workspace
+                           and proof.get("tab_id") == controller_tab and proof.get("cwd") == str(self.root)
+                           and proof.get("method") == "process_ancestry" and proof.get("shell_pid") is not None
+                           and not proof.get("controller_processes"))
                 viewer = task["viewer"]
                 pane = gui("pane", "get", viewer["pane_id"])["pane"]
                 tab = gui("tab", "get", viewer["tab_id"])["tab"]
@@ -448,6 +521,25 @@ class Run:
                        and tasks[0]["viewer"]["pane_id"] != tasks[1]["viewer"]["pane_id"])
             self.check("viewer dispatch preserves user focus", focused() == before)
             self.evidence["viewer"]["tasks"] = tasks
+            terminals_before = {t["address"] for t in self.terminals()}
+            gui("tab", "rename", tasks[0]["viewer"]["tab_id"], "invalid-viewer-e2e")
+            invalid = self.cli("verify-viewer", tasks[0]["task_id"], env=env)
+            rejected_viewer = rows(invalid.stdout)[0]
+            self.check("viewer recheck rejects an invalid live tab",
+                       not rejected_viewer["viewer_verified"]
+                       and bool(rejected_viewer["viewer_verification_error"]))
+            invalid_list = self.cli("list", env=env)
+            persisted = next(row for row in rows(invalid_list.stdout) if row["task_id"] == tasks[0]["task_id"])
+            self.check("viewer failure is retained separately from task execution",
+                       persisted["state"] == "running" and not persisted["viewer_verified"]
+                       and bool(persisted["viewer_verification_error"]))
+            self.check("viewer failure retains existing workers",
+                       {t["address"] for t in self.terminals()} == terminals_before)
+            gui("tab", "rename", tasks[0]["viewer"]["tab_id"], "hcOrch")
+            verified = self.cli("verify-viewer", tasks[0]["task_id"], env=env)
+            self.check("viewer can be confirmed after repairing its tab",
+                       verified.returncode == 0 and rows(verified.stdout)[0]["viewer_verified"]
+                       and rows(verified.stdout)[0]["viewer_verification_error"] is None)
             started = set(self.root.glob("fixture-start-*"))
             terminals = self.terminals()
             for command in ("run", "check"):
@@ -541,6 +633,7 @@ def main():
         if args.baseline:
             run.baseline()
         else:
+            run.startup_recovery()
             for mode, expected in SCENARIOS.items():
                 run.scenario(mode, expected)
             run.broken_core()
