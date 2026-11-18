@@ -664,8 +664,7 @@ observations; those do not replace a passing independent replay.
 
 ## Complete inventory
 
-Five bounded scenarios have historical core-workflow evidence. Current-source
-conformance remains unverified.
+Five bounded scenarios have historical core-workflow evidence. Trace forensics also has a fresh six-stage run at the current pstack pin.
 
 | Playbook | Scenario or remaining requirement |
 |---|---|
@@ -677,7 +676,7 @@ conformance remains unverified.
 | Perf issue | [Fourth FAIL with independent behavior audit](evidence/playbook-perf-comment-audit.json): 70.2% native / 70.0% replay reduction; original output rule and review unresolved |
 | Hillclimb | [Third FAIL/audit](evidence/playbook-hillclimb-gate-audit.json): excluded owned Git status form automatically withheld before payload reads; no optimization. Separate second-run 71.3% timing/source evidence retained; final review/PR unresolved and unattended wake unavailable |
 | Runtime forensics | [PASS: five-stage owned-process diagnosis](evidence/playbook-runtime.json); raw Inspector/profile/source independently checked; large-artifact delegation unverified |
-| Trace forensics | [PASS: bounded paired-capture core workflow](evidence/playbook-trace.json); large-capture delegation unverified |
+| Trace forensics | [0.15.43 PASS](evidence/workflow-review-0.15.43.json) for all six stages with a real Pi controller. Independent raw-profile replay confirmed 6,000 calls before and zero afterward. [Earlier receipt](evidence/playbook-trace.json). Large-capture delegation remains unverified. |
 | Visual parity | Local browser/diff tools available; UI fixture, untouched baseline, real migration, zero pixel diff and PR unrun; required `/loop` unavailable |
 | Authoring a skill | [Second FAIL with independent audit](evidence/playbook-authoring-review-audit.json); usage and correct review stop verified, deeper work and complete integrated pass unresolved |
 | Eval | Scoped Pi transcripts are accessible in principle; current global skill catalog violates strict blinding under unchanged settings |

@@ -20,7 +20,7 @@
     "verdict": "pass",
     "entries": 60,
     "installed_files": 584,
-    "installed_tree_sha256": "649f5d2547f8ec371b76df18eaf9cbe29fb94ffeac585d2a2a33c2a2cc877fcc",
+    "installed_tree_sha256": "c0d92565676d62712060995afb1520eefe31446a6724940d5063aee7f43e1a91",
     "installer": "skills@1.9.0",
     "checks": {
       "installed_catalog": true,
@@ -110,5 +110,50 @@
       "after": 0
     },
     "rerun": "See e2e/PLAYBOOKS.md for the current controller procedures, portable fixture commands and historical source_revision replay."
+  },
+  "trace_forensics": {
+    "verdict": "pass",
+    "source_revision": "4bfb5879549b7b1a7f73ac16a09bab614ca67393",
+    "harness": "pi",
+    "scope": [
+      "paired-capture Trace forensics core workflow",
+      "queryable preserved profile and call tree",
+      "source attribution"
+    ],
+    "ordered_steps": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "observations": {
+      "workload": {
+        "references": 2500,
+        "payments": 6000
+      },
+      "capture_rows": {
+        "before": 5,
+        "after": 4
+      },
+      "capture_edges": {
+        "before": 3,
+        "after": 2
+      },
+      "hot_function": "lookup_reference",
+      "source_line": 1,
+      "lookup_calls": {
+        "before": 6000,
+        "after": 0
+      },
+      "equal_reconciliation_results": true
+    },
+    "checks_passed": 23,
+    "behavior_verdict": "pass",
+    "full_inventory_verdict": "not_run",
+    "independent_replay": "Read lookup_reference call counts from both original cProfile files with pstats. The before count and absence of the function in the after capture agree with the preserved SQLite samples.",
+    "owned_panes_absent": true,
+    "rerun": "python3 e2e/playbook_loop.py --controller <configured-pi-worker> --scenario trace-forensics --repo <trusted-checkout> --caller-pane <verified-pane> --caller-text <unique-visible-text> --output <private-artifact-directory> --max-seconds 1200"
   }
 }
