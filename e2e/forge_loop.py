@@ -2121,6 +2121,7 @@ def main():
         parser.error('--forge-repo must be owner/name')
     if args.base_ref in ('main', 'master') or not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_./-]*', args.base_ref) or '..' in args.base_ref:
         parser.error('--base-ref must be an existing non-trunk baseline branch')
+    core.require_historical_fixture_source(parser)
     run = Run(args)
     try:
         run.preflight()

@@ -35,6 +35,7 @@ INVENTORY = ('investigation', 'bug-fix', 'perf-issue', 'hillclimb',
              'shipping', 'autonomous-run', 'autopilot-full',
              'autopilot-stack', 'session-pickup', 'pause-safely',
              'multi-phase-plan', 'worktree-cleanup', 'opening-a-pr')
+HISTORICAL_FIXTURE_SOURCE = 'e5136d82418d2db3165ea1050d17577cd618cc05'
 
 
 class Failure(Exception):
@@ -47,6 +48,13 @@ def sha(path):
 
 def read_json(path):
     return json.loads(path.read_text(encoding='utf-8'))
+
+
+def require_historical_fixture_source(parser):
+    manifest = read_json(ROOT / 'skills/pstack-herdr/references/upstream.json')
+    if manifest.get('revision') != HISTORICAL_FIXTURE_SOURCE:
+        parser.error('This live fixture targets pstack 0.15.25 (e5136d8) and the legacy Herdr pane protocol. '
+                     'See e2e/PLAYBOOKS.md for the recorded checkout and replay instructions.')
 
 
 def source_hashes():
@@ -1001,7 +1009,8 @@ class Run:
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             horch.require_herdr_env()
             self.config = horch.load_config()
-            self.caller = horch.require_caller_context(self.args.caller_pane)
+            self.caller = horch.require_caller_context(self.args.caller_pane,
+                                                       getattr(self.args, 'caller_text', None))
         self.spec = self.config['workers'].get(self.args.controller, {})
         if self.spec.get('harness') != 'pi':
             raise Failure('controller_harness_unsupported')
@@ -1072,6 +1081,20 @@ import result. Observe ranked and captured-edge queries, fully read the source,
 then observe the paired query. Write diagnosis and final reply only after all
 those successful results, with the exact throughput line in the final reply.''',
         }.get(workflow_type, '')
+        delegation_instructions = 'Keep this bounded trace inspection in the controller.'
+        if workflow_type != 'trace-forensics':
+            delegation_instructions = f'''Use {self.bundle / 'skills/herdr-orchestrator/scripts/horch.py'} for delegation,
+with --caller-pane {self.pane} when dispatching; never native subagents.
+For delivery use a standalone native bash call of python3 followed by the exact
+absolute horch.py path, wait, and task IDs. Read each delivered task's report or
+result with a separate native read call, after wait has reported state done.'''
+        if workflow_type == 'prototype':
+            delegation_instructions += f'''
+Verify your own controller pane with herdr pane process-info --pane {self.pane}
+and herdr pane read {self.pane} --source visible just before dispatch. Choose text
+of at least 16 characters uniquely visible in this evaluation conversation.
+Include it verbatim as --caller-text with --caller-pane on each horch run.
+If the caller cannot be verified, report the unresolved stage.'''
         prompt = f'''This is a real playbook evaluation. Read {self.bundle / 'skills/poteto-mode/SKILL.md'}
 in full first, then select and execute the applicable original playbook and its
 Herdr mapping. Follow the playbook's required stages and use configured roles.
@@ -1083,11 +1106,7 @@ writes, even when combining the data would be convenient.
 For each required source document use a separate native read call without an
 offset/limit, or a literal cat of that single file, so its full contents appear
 in the native tool result. If truncated, report the unsupported evidence stage.
-Use {self.bundle / 'skills/herdr-orchestrator/scripts/horch.py'} for delegation,
-with --caller-pane {self.pane} when dispatching; never native subagents.
-For delivery use a standalone native bash call of python3 followed by the exact
-absolute horch.py path, wait, and task IDs. Read each delivered task's report or
-result with a separate native read call, after wait has reported state done.
+{delegation_instructions}
 Write your final answer to {self.artifacts / 'reply.md'}.
 Put all checklists and control notes under {self.artifacts}; the worktree is read-only.
 {workflow_instructions}
@@ -1131,6 +1150,8 @@ authorized. Report any blocked required stage explicitly.
                     or Path(task.get('task_dir', '')).resolve() != path.parent.resolve()
                     or task.get('agent') != 'horch-' + path.parent.name[2:]):
                 raise Failure('task_identity_invalid')
+            if self.args.scenario == 'prototype' and task.get('backend', {}).get('kind') != 'legacy':
+                raise Failure('prototype_worker_backend_unsupported')
             # Only these independently discovered isolated tasks are cleanup-owned.
             self.tasks[task['task_id']] = task
             state = read_json(path.parent / 'state.json')
@@ -1173,6 +1194,12 @@ authorized. Report any blocked required stage explicitly.
             state.get('state') == 'done' and state.get('closed') is True for _, state in rows))
         for task, _ in rows:
             worker = self.config['workers'].get(task.get('worker'), {})
+            if self.args.scenario == 'prototype':
+                caller = task.get('controller_verification') or {}
+                self.check('prototype_worker_caller_verified', caller.get('method') == 'conversation_text'
+                           and caller.get('pane_id') == self.pane
+                           and caller.get('workspace_id') == self.caller['workspace_id']
+                           and caller.get('cwd') == str(self.worktree))
             self.check('task_configuration_and_scope',
                        task.get('cwd') == str(self.worktree)
                        and task.get('model') == worker.get('model')
@@ -1251,6 +1278,7 @@ authorized. Report any blocked required stage explicitly.
         try:
             self.scan()
         except Exception:
+            cleanup_ok = False
             self.categories.append('task_snapshot_failed')
         task_facts = []
         for task in self.tasks.values():
@@ -1340,12 +1368,22 @@ def main():
     parser.add_argument('--repo', type=Path, default=Path('.'), help='existing trusted repository root')
     parser.add_argument('--output', type=Path, required=True, help='private artifact parent outside repository')
     parser.add_argument('--caller-pane', required=True, help='explicit actual caller pane; independently verified')
+    parser.add_argument('--caller-text', help='unique visible conversation text (at least 16 characters) for agent controllers')
     parser.add_argument('--max-seconds', type=int, default=1800, help='overall run deadline')
     args = parser.parse_args()
     args.repo = args.repo.expanduser().resolve()
     args.output = args.output.expanduser().resolve()
     if args.output == args.repo or args.repo in args.output.parents:
         parser.error('--output must be outside repository')
+    if args.scenario == 'prototype':
+        try:
+            core_executable = horch.core.executable()
+        except horch.core.CoreError:
+            parser.error('Prototype requires a verified legacy Herdr backend. Core detection failed.')
+        if core_executable is not None:
+            parser.error('Prototype uses the legacy Herdr pane oracle. This environment selects herdr-core.')
+    elif args.scenario != 'trace-forensics':
+        require_historical_fixture_source(parser)
     run = Run(args)
     try:
         run.preflight()

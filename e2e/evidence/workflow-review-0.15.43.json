@@ -1,0 +1,114 @@
+{
+  "pstack": {
+    "version": "0.15.43",
+    "revision": "2f87c854fe3e2fcda44ca86b46ede35aad3c46b7",
+    "upstream_freshness": "current"
+  },
+  "scope": "Source review of every bundled playbook and skill entry, with separate observed outcomes for installation, runtime and a single PR status check.",
+  "review": {
+    "playbooks": 22,
+    "upstream_skill_bodies": 58,
+    "entries_with_herdr_preamble": 19,
+    "byte_identical_entries": 39,
+    "principle_skills": 24,
+    "upstream_support_files_verified_by_content_and_mode": 453,
+    "named_agent_instructions": 2,
+    "regenerated_skill_tree_matches": true,
+    "guide": "e2e/PLAYBOOKS.md#workflow-review-for-pstack-01543"
+  },
+  "installation": {
+    "verdict": "pass",
+    "entries": 60,
+    "installed_files": 584,
+    "installed_tree_sha256": "649f5d2547f8ec371b76df18eaf9cbe29fb94ffeac585d2a2a33c2a2cc877fcc",
+    "installer": "skills@1.9.0",
+    "checks": {
+      "installed_catalog": true,
+      "all_files_preserved": true,
+      "claude_entries": true,
+      "pi_catalog": true,
+      "codex_catalog": true,
+      "codex_no_errors": true
+    },
+    "native_catalog_entries": {
+      "pi": 60,
+      "codex": 60
+    },
+    "rerun": ".agents/skills/verify-herdr-orchestrator/features/discovery.md"
+  },
+  "core_viewer_e2e": {
+    "verdict": "pass",
+    "core_version": "0.1.17",
+    "herdr_version": "0.9.5",
+    "checks_passed": 116,
+    "owned_cleanup": true,
+    "scope": "Deterministic interactive worker on real core, native completion and error gates, recovered submission, fresh same-workspace viewer checks and cleanup. No model calls in this fixture.",
+    "rerun": "python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py --output <private-artifact-directory> --viewer"
+  },
+  "babysit_check": {
+    "verdict": "pass",
+    "scope": "One read-only GitHub watcher invocation from a temporary copy of the installed scripts.",
+    "pull_request": "https://github.com/conscientiousness/herdr-pstack-orchestrator/pull/48",
+    "observed_head": "0e26d7b751075cbdb7501561cd061d8570df09ef",
+    "terminal_verdict": "STATUS",
+    "exit_code": 0,
+    "observed_pull_requests": 1,
+    "installed_scripts_unchanged": true,
+    "rerun": "Copy the installed poteto-mode/scripts directory to a private temporary directory. From the target repository run <copy>/watch-pr/watch-pr --owner <owner> --repo <repo> --pr <number> --status-only."
+  },
+  "how": {
+    "verdict": "blocked",
+    "scope": "Direct 0.15.43 How dispatch for a read-only source explanation.",
+    "role": "how explainer",
+    "tasks_dispatched": 1,
+    "harness": "pi",
+    "backend": "core",
+    "submission": "sent",
+    "execution_observed": true,
+    "viewer_verified": true,
+    "task_state": "error",
+    "delivered_report": false,
+    "cause": "The configured provider reported its subscription-sharing usage limit. The worker was retained for user-directed recovery.",
+    "rerun": "Invoke How on the two files in skills/herdr-orchestrator/scripts. Ask how a valid early result, an invalid result at turn end and a delivered blocked answer are handled. Use the configured how explainer, verify its result after done, and check its claims against the source."
+  },
+  "limits": [
+    "Historical playbook receipts describe their recorded source revisions.",
+    "Claude Code installation was checked. Native Claude Code discovery and live model delivery remain unverified in this review.",
+    "Drive, threads-only, cloud verification, durable unattended wake, destructive cleanup and live merge were outside the runtime checks."
+  ],
+  "driver_checks": {
+    "current_inventory": 22,
+    "previous_false_rejections": [
+      "babysit_loop",
+      "runtime_loop",
+      "perf_loop",
+      "hillclimb_loop"
+    ],
+    "current_controller_only_preflight": [
+      "trace-forensics",
+      "runtime-forensics"
+    ],
+    "prototype_preflight": "Verified the installed core is rejected before allocation and an executable-absence environment reaches caller verification. The historical six-stage playbook is byte-identical and all required files exist.",
+    "historical_fixture_source": "e5136d82418d2db3165ea1050d17577cd618cc05",
+    "historical_live_routes": [
+      "investigation",
+      "babysit",
+      "continuity",
+      "feature",
+      "refactoring",
+      "bug-fix",
+      "perf-issue",
+      "hillclimb",
+      "authoring-a-skill"
+    ],
+    "portable_fixture_cli_oracles": [
+      "invoice",
+      "reconciliation"
+    ],
+    "paired_trace_lookup_calls": {
+      "before": 6000,
+      "after": 0
+    },
+    "rerun": "See e2e/PLAYBOOKS.md for the current controller procedures, portable fixture commands and historical source_revision replay."
+  }
+}

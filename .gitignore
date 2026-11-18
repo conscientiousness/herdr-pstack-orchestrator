@@ -18,6 +18,7 @@ e2e/*
 e2e/evidence/*
 !e2e/evidence/verification.json
 !e2e/evidence/core-backend.json
+!e2e/evidence/workflow-review-0.15.43.json
 !e2e/evidence/review-e2e.json
 !e2e/evidence/lifecycle.json
 !e2e/evidence/recovery.json

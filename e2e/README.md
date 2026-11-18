@@ -80,7 +80,8 @@ remain published, and missing cloud/scheduling capabilities stay **blocked**.
 The [playbook inventory](PLAYBOOKS.md) separates native stage evidence,
 independent behavior checks, complete workflow eligibility and unavailable
 capabilities. `playbook_loop.py` drives a fresh Pi controller through the original
-skills; its initial scenarios are Investigation, Prototype and Trace forensics.
+skills. See the [driver and replay procedure](PLAYBOOKS.md#run-a-live-controller)
+for current scenarios and the matching checkout for each historical fixture.
 Partial stage evidence must not be described as a completed playbook.
 The [fixed-direction Prototype receipt](evidence/playbook-prototype.json) and
 [paired-capture Trace receipt](evidence/playbook-trace.json) record ordered
@@ -91,9 +92,9 @@ The [owned-process Runtime receipt](evidence/playbook-runtime.json) passes all
 five stages, including raw Inspector bindings, natural later observations and
 independently verified source/reduction. The earlier Opening a PR judgment is
 [withdrawn](evidence/playbook-opening-pr-correction.json) because the mandatory
-Comment Sicko review was omitted; ready-PR facts remain verified. The other 18
-playbooks remain unresolved. Investigation preserves both an earlier explanation
-rewrite and a later erroneous synthesis that the controller correctly withheld.
+Comment Sicko review was omitted; ready-PR facts remain verified.
+Investigation preserves both an earlier explanation rewrite and a later
+erroneous synthesis that the controller correctly withheld.
 Separate artifact checks do not promote either failed workflow.
 
 The inventory also documents the reviewed continuity, private-PR, design,

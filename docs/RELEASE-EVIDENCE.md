@@ -1,7 +1,7 @@
 # Adoption evidence
 
 The current release bar is a useful, reversible delegation workflow. Full
-conformance with all 23 original pstack playbooks is a later milestone.
+conformance with the [current playbook inventory](../e2e/PLAYBOOKS.md#complete-inventory) is a later milestone.
 
 | User capability | Evidence | Boundary |
 | --- | --- | --- |

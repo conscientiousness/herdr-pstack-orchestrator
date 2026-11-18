@@ -134,7 +134,8 @@ class Run(core.Run):
 
     def preflight(self):
         self.check('positive_deadline', self.args.max_seconds > 0)
-        self.check('exact_23_inventory', len(self.inventory_names) == 23 and set(self.inventory_names) == set(core.INVENTORY))
+        self.check('inventory_matches_declared_playbooks',
+                   set(self.inventory_names) == set(core.INVENTORY))
         self.check('source_root', Path(self.git('rev-parse', '--show-toplevel')).resolve() == ROOT)
         self.revision = self.git('rev-parse', 'HEAD')
         self.source_status = self.git('status', '--porcelain=v1', '--untracked-files=all')
@@ -797,6 +798,7 @@ def main():
     args.stack_prs = [int(number) for number in args.stack_prs.split(',')]
     if len(args.stack_prs) != len(set(args.stack_prs)):
         parser.error('--stack-prs must not repeat a PR')
+    core.require_historical_fixture_source(parser)
     run = Run(args)
     try:
         run.preflight()

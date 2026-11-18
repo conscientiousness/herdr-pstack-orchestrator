@@ -12,7 +12,7 @@ Keep the main context small: retain the goal, constraints, task IDs, accepted fi
 ## Required rules
 
 - **Deliver repository changes as a PR by default.** Work on a feature branch, integrate verified worker commits there, then push and open or update the PR. Merge into `main` (or the default/shared target branch), push changes directly there, or enable auto-merge only when the user explicitly asks to merge that work. Task completion, passing checks, and autonomous playbooks do not grant merge authorization. Include this limit in worker briefs.
-- Delegate only through `horch`; never use your harness's native subagents while acting as this controller. Workers may use their own subagents.
+- Delegate only through `horch`; never use your harness's native subagents while acting as this controller. A worker may use its own subagents unless its assignment restricts delegation.
 - **Show core workers in the controller's Herdr workspace.** When this conversation runs in Herdr, verify its caller pane and create or reuse `hcOrch` tabs in that pane's live workspace. Each worker needs an owned pane running its pinned core's `attach`. Keep focus unchanged and keep the controller tab separate. Headless execution is for controllers outside Herdr; missing or stale tool environment is not permission to silently dispatch headless. Never clear Herdr variables or bypass `horch` to avoid caller verification or viewer placement.
 - Never answer worker dialogs, send keys/text to worker panes, or send `/model`. A new task uses a fresh process with its configured model.
 - **Wait for task `state: "done"` before consuming any result.** An early report or `result.json` does not finish a running task. Closing an unfinished worker cancels it and cannot pass a review gate.
@@ -31,7 +31,7 @@ Requires Python 3.11+ with POSIX file locks. Installed `herdr-core` is preferred
 
 | Command | Purpose |
 |---|---|
-| `run <worker> --brief <file> [--cwd <dir>] [--caller-pane <id> --caller-text <text>]` | Start a fresh worker and submit its brief; returns after startup and prompt acknowledgement, before task completion. |
+| `run <worker> --brief <file> [--cwd <dir>] [--caller-pane <id> --caller-text <text>]` | Start a fresh worker. Inspect its returned state, submission and any viewer warning before waiting for delivery. |
 | `wait [<task-id> ...] [--max-seconds <n>] [--recheck]` | Wait for a state change. No IDs selects all unsettled tasks. See waiting below. |
 | `list` | List task, worker, pane, and state. |
 | `stats [--workspace <id>] [--days <n>]` | Review configured workers from stored facts, without Herdr calls or writes. |
@@ -53,7 +53,7 @@ On `caller_context_invalid`, follow [caller context recovery](references/setup.m
 
 ## Delegate and verify
 
-1. Choose a configured worker based on the assignment and its optional `description`. With `pstack-herdr` active, follow its role-first routing rules. One worker/model can serve multiple roles in fresh processes. Create a separate git worktree for a writer and pass it as `--cwd`. A read-only worker may share a checkout; explicitly forbid file and external-state changes in its brief.
+1. Choose a configured worker based on the assignment and its optional `description`. With `pstack-herdr` active, follow its role-first routing rules. One worker/model can serve multiple roles in fresh processes. Create a separate git worktree for a writer and pass it as `--cwd`. A read-only worker may share a checkout. Limit its writes to the declared reports and result file in its own task directory. Keep the checkout and external state read-only.
 2. Write a complete brief: goal and acceptance criteria, absolute paths to read, file ownership and constraints, verification commands, output files, and whether to commit. Name the summary and evidence needed for your next decision. Workers have none of your conversation. Reports go beside `result.json`; `horch` appends its worker rules and exact result schema automatically.
 3. Confirm whether this controller is in Herdr before dispatch; if it is, recover missing context using [caller context recovery](references/setup.md#caller-context). Run `horch run <worker> --brief <file> --cwd <dir>`, adding the confirmed `--caller-pane` and `--caller-text` for agent-controller tools. Record `task_id`, `pane_id`, `startup_ready`, `submission` and `execution_observed`; any state other than `running` needs problem handling. In Herdr, inspect `viewer_verified`, `viewer_verification_error` and `warning`. Report any warning, missing viewer, or failed attachment immediately; `running` alone does not confirm visibility. Do not launch a duplicate worker to repair visibility. For parallel tasks, submit all allowed by `max_active_workers` before waiting.
 4. Wait until every required task is `done`, using the method below. Read `result_path`, inspect its `status`, and read all listed files (paths are relative to the result directory). Relay a blocked result's `question` to the user. A follow-up is a new task with a complete brief and the prior report.

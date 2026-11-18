@@ -109,10 +109,11 @@ Or ask for `poteto-mode` when you want a broader workflow. The controller can
 help configure the worker roles that a workflow needs. For the included skills,
 role mapping, and compatibility details, see the [pstack guide](skills/pstack-herdr/references/compatibility.md).
 
-Some original workflows require tools this adapter does not provide, including
-Cursor hooks or cloud execution. A workflow cannot complete a required step when
-its tools are unavailable. Full pstack playbook coverage has not been verified;
-see the [playbook inventory](e2e/PLAYBOOKS.md) for current results.
+The playbook defines what to prove and when to stop. Herdr dispatches through
+the roles, models and effort in your `workers.toml`. The controller checks
+worker results and handles PR delivery under the project's rules. See the
+[workflow review](e2e/PLAYBOOKS.md#workflow-review-for-pstack-01543) for all 22
+playbooks, their evidence and any required cloud, scheduling or workspace capabilities.
 
 ## Update
 

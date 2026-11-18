@@ -14,12 +14,15 @@ Use the shared Doctor. Stop other isolated dispatchers in that workspace.
 
 ```bash
 python3 e2e/playbook_loop.py --controller <configured-pi-worker> \
-  --scenario prototype --repo "$repo" --caller-pane <verified-pane> \
+  --scenario trace-forensics --repo "$repo" --caller-pane <verified-pane> \
+  --caller-text '<unique visible conversation text>' \
   --output "$proof" --max-seconds 1200
 ```
 
-Available initial scenarios are `investigation`, `prototype`, and
-`trace-forensics`. Read the fresh receipt's separate behavior, stage, workflow,
+Bounded Trace and Runtime run in the controller. Prototype's worker checks
+require a genuine legacy backend. For scenarios that depend on a
+prior skill or worker contract, use the [historical replay procedure](../../../../e2e/PLAYBOOKS.md#rerun-a-historical-scenario)
+and the receipt's recorded checkout. Read the fresh receipt's separate behavior, stage, workflow,
 inventory and cleanup outcomes. Missing native evidence fails closed. A partial
 stage pass does not complete a playbook. Do not promote a previous failed run
 after fixing the evaluator.
@@ -34,7 +37,7 @@ The later Investigation run correctly withheld an erroneous synthesis; that
 unresolved result remains failed. Shell/Python task-artifact composition is
 outside this grammar. Every full brief must use native `write`.
 
-For the maintained two-session driver:
+For the historical two-session driver, from the continuity receipt's checkout:
 
 ```bash
 python3 e2e/pause_pickup.py --controller <configured-pi-worker> \

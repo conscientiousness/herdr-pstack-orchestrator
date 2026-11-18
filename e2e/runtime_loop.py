@@ -267,7 +267,8 @@ class Run(core.Run):
 
     def preflight(self):
         self.check('positive_deadline', self.args.max_seconds > 0)
-        self.check('exact_23_inventory', len(self.inventory_names) == 23 and set(self.inventory_names) == set(core.INVENTORY))
+        self.check('inventory_matches_declared_playbooks',
+                   set(self.inventory_names) == set(core.INVENTORY))
         self.check('source_root', Path(self.git('rev-parse', '--show-toplevel')).resolve() == ROOT)
         self.revision = self.git('rev-parse', 'HEAD')
         self.source_status = self.git('status', '--porcelain=v1', '--untracked-files=all')
@@ -277,7 +278,7 @@ class Run(core.Run):
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             horch.require_herdr_env()
             self.config = horch.load_config()
-            self.caller = horch.require_caller_context(self.args.caller_pane)
+            self.caller = horch.require_caller_context(self.args.caller_pane, self.args.caller_text)
         self.spec = self.config['workers'].get(self.args.controller, {})
         self.check('existing_configured_pi', self.spec.get('harness') == 'pi')
         self.node = shutil.which('node')
@@ -423,6 +424,7 @@ To repeat the full E2E with a new owned process and new artifact directory:
 
     {shlex.join([sys.executable, '-B', str(Path(__file__).resolve()), '--controller', self.args.controller, '--repo', str(ROOT), '--output', str(self.args.output), '--caller-pane', self.args.caller_pane, '--max-seconds', str(self.args.max_seconds)])}
 
+For an agent controller, include --caller-text with fresh unique text from its visible conversation.
 Keep this directory private; do not commit native sessions or raw captures.
 ''')
 
@@ -771,7 +773,7 @@ Keep this directory private; do not commit native sessions or raw captures.
                                            'instrument.json', 'observe.json', 'source.json'}},
                    'limitations': ['Only the owned synthetic 2,500-reference / 6,000-payment timer workload is covered.',
                        'No application fix, PR, production performance claim, cloud, or wake/sleep scenario is covered.',
-                       'Other 22 playbooks and full inventory are not run.',
+                       'Playbook coverage is limited to Runtime forensics.',
                        'Only literal supported native tools and bounded controller-local reduction are audited.',
                        'Private retained protocol and sources permit reduction replay; a fresh live run requires Herdr and the configured Pi controller.']}
         (self.directory / 'evidence.json').write_text(json.dumps(receipt, indent=2) + '\n')
@@ -785,6 +787,7 @@ def main():
     parser.add_argument('--repo', type=Path, default=ROOT, help='existing trusted source checkout')
     parser.add_argument('--output', type=Path, required=True, help='private artifact parent outside source checkout')
     parser.add_argument('--caller-pane', required=True, help='independently verified actual caller pane')
+    parser.add_argument('--caller-text', help='unique visible conversation text (at least 16 characters) for agent controllers')
     parser.add_argument('--max-seconds', type=int, default=1200, help='overall deadline; no retries')
     args = parser.parse_args()
     args.repo, args.output = args.repo.expanduser().resolve(), args.output.expanduser().resolve()
