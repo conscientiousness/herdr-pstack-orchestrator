@@ -83,7 +83,7 @@
     "driver_sha256": "32b9b7eabe38429a421ec0de0d92bdef8ac1e37c374db4a2acb3c5c8562e469f",
     "file_differences": [],
     "installed_files": 584,
-    "installed_tree_sha256": "5cd650e973674050209adcfd7dbdfebed366ebe8dacb8fed7f390650adf10000",
+    "installed_tree_sha256": "5c64c3ede22b3cd172f5369feccb83fd06ff0457c5f976b6fd87addf7b78e582",
     "installed_entry_sha256": {
       "architect": "53655f39cd33358b0c1fd7375351a3775df2bc8fd9defd5bdbf60f1639c13808",
       "arena": "d24a7f01f17e7631061b93185c8496245330aca579329df729c5810a30955393",
@@ -283,9 +283,9 @@
       "setup-pstack"
     ],
     "mapping_updates": [
-      "Poteto-mode worker briefs begin with the installed worker.md read instruction.",
+      "The upstream worker.md ships as a reference. Poteto-mode worker briefs follow the Herdr dispatch procedure and project rules.",
       "Architect sketches and Reflect transcript review run in the controller. Architect routes large or contested designs to Arena.",
-      "Configured worker roles, models, and effort continue to govern dispatch."
+      "Herdr dispatch uses configured worker roles, models, effort, and speed from workers.toml."
     ],
     "direct_sync": [
       "Worker instructions, Poteto agent metadata, revised playbooks, prompt and guidance edits",
