@@ -1,6 +1,6 @@
 # Original playbook scenarios
 
-Full 23-playbook conformance is a later milestone. Use the
+Full playbook conformance is a later milestone. Use the
 [practical adoption procedure](../../../../e2e/ADOPTION.md) for the current
 release scope; do not restart full original scenarios solely to clear exact
 greeting, shell spelling or prose-preservation differences.

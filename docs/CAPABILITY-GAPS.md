@@ -15,8 +15,8 @@ original receipts and current workflow verdicts.
 
 | Status | Missing capability in the current adapter or captured runtime | Affected work | What would unlock verification |
 | --- | --- | --- | --- |
-| **blocked** | An authorized remote/cloud execution lane | Shipping verifiers, Multi-phase plan, Orchestrate, Autopilot owners and verifiers | A specified provider or remote Herdr environment with an explicit execution interface, credentials already configured, an owned test destination and any required configured swarm role |
-| **blocked** | Durable scheduled wake and resume | Autonomous run, Orchestrate, Autopilot, unattended Hillclimb and Babysit | An explicit scheduler/runtime that can persist the run identity and wake the correct controller after it exits; an attended local wait does not provide this |
+| **blocked** | An authorized remote/cloud execution lane | Shipping verifiers, Autopilot owners and verifiers | A specified provider or remote Herdr environment with an explicit execution interface, credentials already configured, an owned test destination and any required configured swarm role |
+| **blocked** | Durable scheduled wake and resume | Autonomous run, Autopilot, unattended Hillclimb and Babysit | An explicit scheduler/runtime that can persist the run identity and wake the correct controller after it exits; an attended local wait does not provide this |
 | **blocked** | The original per-component `/loop` execution surface | Visual parity | An explicit controller loop for repeated comparison until zero pixel difference, together with the real UI baseline and migration scenario |
 | **blocked** | A supervisor witness binding a visible shell job to its actual invocation | Babysit's overlapping-dispatcher preparation check | A displayed-job to PID/start-time/run-nonce link; caller-pane equality cannot identify which of several jobs launched the work |
 | **blocked** | Strictly blinded evaluation under the current Pi startup configuration | Original Eval | An explicitly chosen evaluation environment whose model-visible catalog cannot reveal the target skills; current global discovery is not blinded |

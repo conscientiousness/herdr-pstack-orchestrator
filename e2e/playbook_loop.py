@@ -32,7 +32,7 @@ import playbook_cases as cases  # noqa: E402
 INVENTORY = ('investigation', 'bug-fix', 'perf-issue', 'hillclimb',
              'runtime-forensics', 'trace-forensics', 'feature', 'refactoring',
              'prototype', 'visual-parity', 'authoring-a-skill', 'eval', 'babysit',
-             'shipping', 'autonomous-run', 'orchestrate', 'autopilot-full',
+             'shipping', 'autonomous-run', 'autopilot-full',
              'autopilot-stack', 'session-pickup', 'pause-safely',
              'multi-phase-plan', 'worktree-cleanup', 'opening-a-pr')
 
@@ -987,8 +987,8 @@ class Run:
             raise Failure('assertion_failed')
 
     def preflight(self):
-        self.check('inventory_matches_23_declared_playbooks',
-                   len(self.inventory_names) == 23 and set(self.inventory_names) == set(INVENTORY))
+        self.check('inventory_matches_declared_playbooks',
+                   set(self.inventory_names) == set(INVENTORY))
         if self.args.max_seconds <= 0 or not self.case:
             raise Failure('scenario_or_duration_invalid')
         repo = Path(self.call(['git', '-C', self.args.repo, 'rev-parse', '--show-toplevel']).strip()).resolve()

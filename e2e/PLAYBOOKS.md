@@ -1,14 +1,15 @@
 # Original playbook verification
 
-Full 23-playbook conformance is a later milestone. The current release scope
+Full playbook conformance is a later milestone. The current release scope
 is [reversible setup and a practical delivery workflow](../docs/RELEASE-EVIDENCE.md).
 This inventory preserves original outcomes; those failures do not become passes
 when a distinct practical workflow succeeds. Missing runtime prerequisites are
 marked **blocked** below.
 
 Skill discovery, a correct application result, and execution of an original
-playbook are separate claims. This inventory covers all 23 files in
-[`poteto-mode/playbooks`](../skills/poteto-mode/playbooks/). Unavailable stages
+playbook are separate claims. This inventory covers the 22 files in
+[`poteto-mode/playbooks`](../skills/poteto-mode/playbooks/). pstack 0.15.43
+removed Orchestrate. Historical receipts retain their source attribution. Unavailable stages
 stay unresolved. A local scenario does not establish another controller
 harness's compatibility.
 
@@ -617,8 +618,8 @@ observations; those do not replace a passing independent replay.
 
 ## Complete inventory
 
-Five bounded scenarios have complete core-workflow evidence. The remaining 18
-playbooks are unresolved, as are untested branches of the passing scenarios.
+Five bounded scenarios have historical core-workflow evidence. Current-source
+conformance remains unverified.
 
 | Playbook | Scenario or remaining requirement |
 |---|---|
@@ -634,12 +635,11 @@ playbooks are unresolved, as are untested branches of the passing scenarios.
 | Visual parity | Local browser/diff tools available; UI fixture, untouched baseline, real migration, zero pixel diff and PR unrun; required `/loop` unavailable |
 | Authoring a skill | [Second FAIL with independent audit](evidence/playbook-authoring-review-audit.json); usage and correct review stop verified, deeper work and complete integrated pass unresolved |
 | Eval | Scoped Pi transcripts are accessible in principle; current global skill catalog violates strict blinding under unchanged settings |
-| Multi-phase plan | **blocked**: executable cloud lanes and configured swarm role are unavailable; a validator alone does not execute the plan |
+| Multi-phase plan | Updated checklist workflow unverified. Upstream removed the validator and stops after delivering the plan. |
 | Opening a PR | [Earlier eligibility withdrawn](evidence/playbook-opening-pr-correction.json): ready PR facts verified, mandatory Comment Sicko review omitted |
 | Babysit | [Fourth FAIL/blocked](evidence/playbook-babysit-overlap-audit.json): ambiguous visible launch needs a supervisor witness; earlier status-flow evidence remains partial; durable wake unavailable |
 | Shipping | **blocked**: cloud verifier unavailable; no authorization to merge test PRs |
 | Autonomous run | **blocked**: required wake mechanism unavailable |
-| Orchestrate | **blocked**: cloud execution and durable wake mechanism unavailable |
 | Autopilot-full | **blocked**: cloud owners/verifiers and wake mechanism unavailable; no merge authorization |
 | Autopilot-stack | **blocked**: cloud owners and wake mechanism unavailable; no STACK-READY evidence |
 | Pause safely | [PASS: bounded local four-stage stop](evidence/playbook-continuity.json); original checkpoint, WIP and off-context note |
