@@ -61,7 +61,7 @@ WORKER_RULES = """\
 - Write your output files first. Write `result.json` last.
 - Do not ask the user questions. If something is unclear, write `result.json` with status `blocked` and the question, then stop.
 - Do not run `herdr` or `horch`.
-- You may use your own subagents.
+- You may use your own subagents unless the assignment restricts delegation. Complete a no-delegation assignment yourself.
 
 Write `result.json` at exactly this path:
 

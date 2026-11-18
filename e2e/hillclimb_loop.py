@@ -573,7 +573,8 @@ class Run(core.Run):
 
     def preflight(self):
         self.check('positive_deadline', self.args.max_seconds > 0)
-        self.check('inventory_23_unchanged', set(self.inventory_names) == set(core.INVENTORY) and len(self.inventory_names) == 23)
+        self.check('inventory_matches_declared_playbooks',
+                   set(self.inventory_names) == set(core.INVENTORY))
         self.check('source_root', Path(self.git('rev-parse', '--show-toplevel', repo=self.args.repo)).resolve() == ROOT)
         self.revision = self.git('rev-parse', 'HEAD', repo=ROOT)
         self.source_status = self.git('status', '--porcelain=v1', '--untracked-files=all', repo=ROOT)
@@ -2431,7 +2432,7 @@ Final native-write {a / 'reply.md'}: metric+target, exact primary_number, attemp
                 'A simplification keep requires strict AST reduction, overlapping ranges and at most 2% median loss.',
                 'Semantic mechanism/order/plateau quality additionally depends on the mandatory different-family bounded trail audit.',
                 'CommentSicko is a readonly final-scope report/disposition lane; actionable changes, reruns, encoding and open work remain unresolved.',
-                'Only Hillclimb and Opening a PR are full-workflow eligible; the other 21 playbooks remain not run.',
+                'Playbook coverage is limited to attended Hillclimb and Opening a PR.',
                 'Owned branches, worktrees, rejected/accepted snapshots, private evidence and a ready PR remain for inspection.',
             ],
         }
@@ -2482,6 +2483,7 @@ def main():
         parser.error('--base-ref must be an existing non-trunk baseline branch')
     if args.parent_pr <= 0:
         parser.error('--parent-pr must be positive')
+    core.require_historical_fixture_source(parser)
     run = Run(args)
     try:
         run.preflight()

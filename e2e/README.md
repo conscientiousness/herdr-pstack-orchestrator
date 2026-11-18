@@ -77,10 +77,11 @@ remain published, and missing cloud/scheduling capabilities stay **blocked**.
 
 ## Original playbooks and worker replacement
 
-The [23-playbook inventory](PLAYBOOKS.md) separates native stage evidence,
+The [playbook inventory](PLAYBOOKS.md) separates native stage evidence,
 independent behavior checks, complete workflow eligibility and unavailable
 capabilities. `playbook_loop.py` drives a fresh Pi controller through the original
-skills; its initial scenarios are Investigation, Prototype and Trace forensics.
+skills. See the [driver and replay procedure](PLAYBOOKS.md#run-a-live-controller)
+for current scenarios and the matching checkout for each historical fixture.
 Partial stage evidence must not be described as a completed playbook.
 The [fixed-direction Prototype receipt](evidence/playbook-prototype.json) and
 [paired-capture Trace receipt](evidence/playbook-trace.json) record ordered
@@ -91,9 +92,9 @@ The [owned-process Runtime receipt](evidence/playbook-runtime.json) passes all
 five stages, including raw Inspector bindings, natural later observations and
 independently verified source/reduction. The earlier Opening a PR judgment is
 [withdrawn](evidence/playbook-opening-pr-correction.json) because the mandatory
-Comment Sicko review was omitted; ready-PR facts remain verified. The other 18
-playbooks remain unresolved. Investigation preserves both an earlier explanation
-rewrite and a later erroneous synthesis that the controller correctly withheld.
+Comment Sicko review was omitted; ready-PR facts remain verified.
+Investigation preserves both an earlier explanation rewrite and a later
+erroneous synthesis that the controller correctly withheld.
 Separate artifact checks do not promote either failed workflow.
 
 The inventory also documents the reviewed continuity, private-PR, design,
@@ -530,7 +531,8 @@ The driver uses Herdr's supported `PI_CODING_AGENT_DIR` override with an empty d
 - [pi-controller.json](evidence/pi-controller.json): the original historical Pi-controller 10/10 receipt, with original artifact hashes and explicit source attribution. It predates the updated wait guidance and is not a v0.1.1 test.
 - [verification.json](evidence/verification.json): development runs, including the historical Codex and Claude Code controller records, tested versions, source hashes, and limits.
 - [review-e2e.json](evidence/review-e2e.json): the release-era public six-task driver pass and its observed outputs.
-- [upstream-sync-0.15.42.json](evidence/upstream-sync-0.15.42.json): the current 60-entry 0.15.42 bundle at `bf0c7cd`, all 593 files preserved after removing its local installation source, and native Pi/Codex discovery. Model workflows and statechart execution remain unverified.
+- [upstream-sync-0.15.43.json](evidence/upstream-sync-0.15.43.json) records the 60-entry pstack 0.15.43 bundle at `2f87c85`. All 584 files were preserved after deleting the temporary installation source. Native Pi and Codex discovery, regeneration, and upstream freshness passed. The changed workflows remain runtime unverified.
+- [upstream-sync-0.15.42.json](evidence/upstream-sync-0.15.42.json) records the earlier 60-entry bundle at `bf0c7cd`, with 593 files preserved after removing its local installation source and native Pi and Codex discovery.
 - [upstream-sync-0.15.36.json](evidence/upstream-sync-0.15.36.json): the historical 60-entry 0.15.36 bundle at `c742dd6`, all 605 files preserved after removing its local installation source, and native Pi/Codex discovery.
 - [upstream-sync-0.15.32.json](evidence/upstream-sync-0.15.32.json): the earlier 60-entry 0.15.32 bundle at `99b609a`, all 232 files preserved after removing its local installation source, and native Pi/Codex discovery, including `ketchup-video`.
 - [upstream-sync-0.15.30.json](evidence/upstream-sync-0.15.30.json): the earlier 59-entry 0.15.30 bundle at `8b3326d`, all 215 files preserved after removing its local installation source, and native Pi/Codex discovery, including `statechart`.

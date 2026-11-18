@@ -1,7 +1,7 @@
 # Adoption evidence
 
 The current release bar is a useful, reversible delegation workflow. Full
-conformance with all 23 original pstack playbooks is a later milestone.
+conformance with the [current playbook inventory](../e2e/PLAYBOOKS.md#complete-inventory) is a later milestone.
 
 | User capability | Evidence | Boundary |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ the command returned success but left shared canonical copies. Complete project
 removal uses explicit bundle names and the default all-agent behavior, omitting
 `-a`; unrelated skills are not selected.
 
-Original failures remain in the [23-playbook inventory](../e2e/PLAYBOOKS.md).
+Original failures remain in the [playbook inventory](../e2e/PLAYBOOKS.md).
 No full-conformance rerun is a prerequisite for this release scope. Cloud
 execution, durable wake and other missing runtime prerequisites are explicitly
 **blocked** in [capability gaps](CAPABILITY-GAPS.md). No cloud provider or merge

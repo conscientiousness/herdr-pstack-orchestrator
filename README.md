@@ -8,7 +8,7 @@
 
 [![Package validation](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml)
 [![Pstack upstream](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml)
-[![Pstack source: 0.15.42](https://img.shields.io/badge/pstack_source-0.15.42-blue)](https://github.com/cursor/plugins/tree/bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7/pstack)
+[![Pstack source: 0.15.43](https://img.shields.io/badge/pstack_source-0.15.43-blue)](https://github.com/cursor/plugins/tree/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7/pstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Give your coding agent a team of workers in [Herdr](https://herdr.dev). Ask one
@@ -98,7 +98,7 @@ for the available options and permission behavior.
 
 ## Optional: original pstack through Herdr
 
-The full bundle includes selected original [pstack](https://github.com/cursor/plugins/tree/bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7/pstack)
+The full bundle includes selected original [pstack](https://github.com/cursor/plugins/tree/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7/pstack)
 skills and a Herdr adapter. After installing it and configuring workers, try:
 
 ```text
@@ -109,10 +109,11 @@ Or ask for `poteto-mode` when you want a broader workflow. The controller can
 help configure the worker roles that a workflow needs. For the included skills,
 role mapping, and compatibility details, see the [pstack guide](skills/pstack-herdr/references/compatibility.md).
 
-Some original workflows require tools this adapter does not provide, including
-Cursor hooks or cloud execution. A workflow cannot complete a required step when
-its tools are unavailable. Full pstack playbook coverage has not been verified;
-see the [playbook inventory](e2e/PLAYBOOKS.md) for current results.
+The playbook defines what to prove and when to stop. Herdr dispatches through
+the roles, models and effort in your `workers.toml`. The controller checks
+worker results and handles PR delivery under the project's rules. See the
+[workflow review](e2e/PLAYBOOKS.md#workflow-review-for-pstack-01543) for all 22
+playbooks, their evidence and any required cloud, scheduling or workspace capabilities.
 
 ## Update
 

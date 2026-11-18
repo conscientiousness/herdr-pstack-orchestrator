@@ -6,7 +6,8 @@ practical implementation/review/private-PR workflow. Full original-playbook
 conformance is a later milestone, not a release prerequisite. No further full
 conformance reruns are scheduled to clear formatting-only differences.
 
-The adapter has five bounded core-playbook passes out of the original 23.
+Five bounded scenarios passed against an earlier 23-playbook source. The current
+bundle has 22 playbooks. See the [workflow review](../e2e/PLAYBOOKS.md#workflow-review-for-pstack-01543) for their Herdr execution requirements.
 A passing worker, installation, delivery gate or CLI replay is a separate claim.
 The [complete inventory](../e2e/PLAYBOOKS.md#complete-inventory) retains the
 original receipts and current workflow verdicts.
@@ -15,10 +16,10 @@ original receipts and current workflow verdicts.
 
 | Status | Missing capability in the current adapter or captured runtime | Affected work | What would unlock verification |
 | --- | --- | --- | --- |
-| **blocked** | An authorized remote/cloud execution lane | Shipping verifiers, Multi-phase plan, Orchestrate, Autopilot owners and verifiers | A specified provider or remote Herdr environment with an explicit execution interface, credentials already configured, an owned test destination and any required configured swarm role |
-| **blocked** | Durable scheduled wake and resume | Autonomous run, Orchestrate, Autopilot, unattended Hillclimb and Babysit | An explicit scheduler/runtime that can persist the run identity and wake the correct controller after it exits; an attended local wait does not provide this |
+| **blocked** | An authorized remote/cloud execution lane | Shipping verifiers, Autopilot owners and verifiers | A specified provider or remote Herdr environment with an explicit execution interface, credentials already configured, an owned test destination and any required configured swarm role |
+| **blocked** | Durable scheduled wake and resume | Autonomous run, Autopilot and unattended Hillclimb | An explicit scheduler/runtime that can persist the run identity and wake the correct controller after it exits |
 | **blocked** | The original per-component `/loop` execution surface | Visual parity | An explicit controller loop for repeated comparison until zero pixel difference, together with the real UI baseline and migration scenario |
-| **blocked** | A supervisor witness binding a visible shell job to its actual invocation | Babysit's overlapping-dispatcher preparation check | A displayed-job to PID/start-time/run-nonce link; caller-pane equality cannot identify which of several jobs launched the work |
+| **blocked** | A supervisor witness binding a visible shell job to its actual invocation | The historical Babysit Check fixture's overlapping-dispatcher preparation check | A displayed-job to PID/start-time/run-nonce link. The 0.15.43 playbook defines check, drive and threads-only modes. |
 | **blocked** | Strictly blinded evaluation under the current Pi startup configuration | Original Eval | An explicitly chosen evaluation environment whose model-visible catalog cannot reveal the target skills; current global discovery is not blinded |
 | **blocked** | Pinned-worktree and active-chat ownership metadata | Original Worktree cleanup | Authoritative pin and active-chat facts before selecting a deletion target; owned E2E teardown verifies only its own cleanup |
 

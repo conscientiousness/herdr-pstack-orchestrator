@@ -1,7 +1,7 @@
 # Rerun the adoption evidence
 
 This procedure uses the existing `horch` CLI, fixture generator and application
-oracle. It adds no test runner. Original 23-playbook conformance is separate.
+oracle. It adds no test runner. The [playbook inventory](PLAYBOOKS.md#complete-inventory) tracks original workflow conformance.
 Existing [worker replacement](evidence/hot-swap.json) and controller receipts
 are reused; rerun those only when changing their behavior.
 
@@ -63,7 +63,7 @@ describes preparation. Keep the parent and child PR unmerged.
    with actual absolute paths and the selected worker. Dispatch with:
 
    ```bash
-   python3 skills/herdr-orchestrator/scripts/horch.py run <implementation-worker> --brief <absolute-brief> --cwd <fixture-worktree> --caller-pane <verified-pane>
+   python3 skills/herdr-orchestrator/scripts/horch.py run <implementation-worker> --brief <absolute-brief> --cwd <fixture-worktree> --caller-pane <verified-pane> --caller-text '<unique visible conversation text>'
    python3 skills/herdr-orchestrator/scripts/horch.py wait <implementation-task>
    ```
 

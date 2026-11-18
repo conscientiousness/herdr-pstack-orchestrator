@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/cursor/plugins.git",
-  "revision": "bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7",
-  "version": "0.15.42",
+  "revision": "2f87c854fe3e2fcda44ca86b46ede35aad3c46b7",
+  "version": "0.15.43",
   "excluded_skills": {
     "make-bot-ui": "Requires unavailable Cursor Routines and secret-request tools; no coding workflow depends on it.",
     "poteto-help": "Cursor-specific setup and navigation duplicate the adapter docs and require unbundled guide pages; no workflow depends on it.",
@@ -12,25 +12,25 @@
       "name": "architect",
       "adapted": true,
       "source": "pstack/skills/architect/SKILL.md",
-      "source_sha256": "42be68c2883bd10d867c46930fa11c44a25910b62b85e0c9a40326b4f25d7b6e"
+      "source_sha256": "aea83d7aa109eb73402182701b14c289844663ad9c8f959fedbef2df66787ce0"
     },
     {
       "name": "arena",
       "adapted": true,
       "source": "pstack/skills/arena/SKILL.md",
-      "source_sha256": "2e418753dfc64239e4d6412e7b739196d268e22ef1a4ecfbb8c0498bd3c82636"
+      "source_sha256": "04f79ee8239251bc0c8a9e92f895ebe7bff42e785a5f6ef8ed2dc34dae18e85d"
     },
     {
       "name": "automate-me",
       "adapted": true,
       "source": "pstack/skills/automate-me/SKILL.md",
-      "source_sha256": "30b35f3628c4fd8c11af0ada06d14cdc3b28901810caca2480f627d4d21acfbe"
+      "source_sha256": "ffdb2db6d56b29518f50837d4e5d9194034bb3a767d77eb76efe82351ab1489c"
     },
     {
       "name": "benchmark-checklist",
       "adapted": false,
       "source": "pstack/skills/benchmark-checklist/SKILL.md",
-      "source_sha256": "ba109e96c8f6c1c391baccf19e5d11e14370df7b3f2605e1572cd565a6c0fca0"
+      "source_sha256": "5efd79495e3eebf3b53814861330fe812458212958f8f009492e866c329161f6"
     },
     {
       "name": "blast-radius",
@@ -66,7 +66,7 @@
       "name": "figure-it-out",
       "adapted": true,
       "source": "pstack/skills/figure-it-out/SKILL.md",
-      "source_sha256": "bdb23cdbd82a1e6af094b495691c832a6f7f3ab9706ba9edbeb664ef51a726e1"
+      "source_sha256": "30693f2510b111128a6bae0d0ac35f97d972a30c0b84364dc87290b9fdc3b699"
     },
     {
       "name": "how",
@@ -114,31 +114,31 @@
       "name": "no-comments",
       "adapted": true,
       "source": "pstack/skills/no-comments/SKILL.md",
-      "source_sha256": "9cc934e7541c4db609deeb5fd4e5882c1a4d3956975b5ae1ee693ed340527b9b"
+      "source_sha256": "054a46f2662c725add02d9e0440d8dcb4351f3bd0afcf797acc22a501b527b54"
     },
     {
       "name": "poteto-mode",
       "adapted": true,
       "source": "pstack/skills/poteto-mode/SKILL.md",
-      "source_sha256": "c1816b328fa174361dfb719f31ecc264991c8f020b0ba971ea79ca223c79c047"
+      "source_sha256": "67fd2c54fd25ebfae1e46db62c4b2e54f806a7ea9dfb6c83922de37e9b9635ea"
     },
     {
       "name": "principle-attack-the-premise",
       "adapted": false,
       "source": "pstack/skills/principle-attack-the-premise/SKILL.md",
-      "source_sha256": "6a932884daad4aa189e9b5d1665226bbc75621d4d2a398fd4003bebd382f4599"
+      "source_sha256": "831e916c540f4b6b720b7472aeea6e6ef93996655e36cc2517221f6f2081b480"
     },
     {
       "name": "principle-boundary-discipline",
       "adapted": false,
       "source": "pstack/skills/principle-boundary-discipline/SKILL.md",
-      "source_sha256": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28"
+      "source_sha256": "c02c26cca3906bfd57829535f8fa7ee9e00df037b4dbb24e5f85ec9e12710b48"
     },
     {
       "name": "principle-build-the-lever",
       "adapted": false,
       "source": "pstack/skills/principle-build-the-lever/SKILL.md",
-      "source_sha256": "3434b0ad0c640c6f1d7960be7a8986c3bcdc14e26060360dec29903df60074ff"
+      "source_sha256": "753d81cf9ca2a4e9d1f057429f0c63c9c622e6022dd877ec97ec15f442076aac"
     },
     {
       "name": "principle-encode-lessons-in-structure",
@@ -162,19 +162,19 @@
       "name": "principle-explain-the-number",
       "adapted": false,
       "source": "pstack/skills/principle-explain-the-number/SKILL.md",
-      "source_sha256": "3c84fbf9a7d9842abcfcd134010782b32092ac3d3fb4aaf9ed5732dca83aa58c"
+      "source_sha256": "e6a3f00991f4949cf18a0b5c77dd3126ca4402b8553f88c9c7905e577512676e"
     },
     {
       "name": "principle-fix-root-causes",
       "adapted": false,
       "source": "pstack/skills/principle-fix-root-causes/SKILL.md",
-      "source_sha256": "8df3c8c3fe57eb0055a5c8efab8ab144557fdf301da70b1cdc77a3a3ef3f3052"
+      "source_sha256": "79afd7e67d8951203231f6f1ccfc7b4a1f30d8d6cdb68e92755c80012414dbeb"
     },
     {
       "name": "principle-foundational-thinking",
       "adapted": false,
       "source": "pstack/skills/principle-foundational-thinking/SKILL.md",
-      "source_sha256": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2"
+      "source_sha256": "5c63eecf4b83ea5a99eda7a95a96cac0929d2dce7393d7089c83917bc12cf820"
     },
     {
       "name": "principle-guard-the-context-window",
@@ -192,7 +192,7 @@
       "name": "principle-make-operations-idempotent",
       "adapted": false,
       "source": "pstack/skills/principle-make-operations-idempotent/SKILL.md",
-      "source_sha256": "7aa9327cf1f1aa057e95d47a0a78bd88a8f9d556b608866fee939d455a53a019"
+      "source_sha256": "76ad0a99b6ff2a05a159accfeee48412d62f62774eb8d05bbff26a1f3aa3eab5"
     },
     {
       "name": "principle-migrate-callers-then-delete-legacy-apis",
@@ -204,13 +204,13 @@
       "name": "principle-minimize-reader-load",
       "adapted": false,
       "source": "pstack/skills/principle-minimize-reader-load/SKILL.md",
-      "source_sha256": "1ea2b7fef2391cae5844c4efdbd59031f775e8a52d06b7495d707229a200dcca"
+      "source_sha256": "22d27deffb0a3726858d0d4b02d71acd4a3eb4d44e218bc89b66e49dc9823937"
     },
     {
       "name": "principle-model-the-domain",
       "adapted": false,
       "source": "pstack/skills/principle-model-the-domain/SKILL.md",
-      "source_sha256": "52c0d85e0c3827c41c18299b642657d7b47eaf77b7b31609e42e0df42b84c75f"
+      "source_sha256": "97c6214dc6a18b93177dda6429185a8640878b36ddee6ec9400c23a0eb9be2d8"
     },
     {
       "name": "principle-never-block-on-the-human",
@@ -228,7 +228,7 @@
       "name": "principle-prove-it-works",
       "adapted": false,
       "source": "pstack/skills/principle-prove-it-works/SKILL.md",
-      "source_sha256": "ec79a15025bac8d33d62011c54f3b612733fd2a024e623b531b3637aa75070e2"
+      "source_sha256": "3d6c482e341974cfcb8d19ebf66fb1d4274d8673af35e36d3c231a6aa9e03f25"
     },
     {
       "name": "principle-redesign-from-first-principles",
@@ -240,13 +240,13 @@
       "name": "principle-separate-before-serializing-shared-state",
       "adapted": false,
       "source": "pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md",
-      "source_sha256": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb"
+      "source_sha256": "2e5625d686b657e0b607c329fd8043bf50261b808239308fe4c6776e2817e95a"
     },
     {
       "name": "principle-sequence-verifiable-units",
       "adapted": false,
       "source": "pstack/skills/principle-sequence-verifiable-units/SKILL.md",
-      "source_sha256": "2ccbbacc56ace5afdfb8670cef19d7bd009fb2a0033b9a741cbdf2b6baf72187"
+      "source_sha256": "ab0cc331cf317c07bb0ed6dd13ee9f618338b36e4e851521977bc5c4a8d429e1"
     },
     {
       "name": "principle-subtract-before-you-add",
@@ -258,25 +258,25 @@
       "name": "principle-test-behavior-not-implementation",
       "adapted": false,
       "source": "pstack/skills/principle-test-behavior-not-implementation/SKILL.md",
-      "source_sha256": "f7223698623b6a26fea49c751e466b38e6691b1f32ce841d3983e7ffbe2b74a6"
+      "source_sha256": "42afc1a2c7176363b6410cfde06a9fd3e96f5022ba86bdb8de4838ad65c2442d"
     },
     {
       "name": "principle-type-system-discipline",
       "adapted": false,
       "source": "pstack/skills/principle-type-system-discipline/SKILL.md",
-      "source_sha256": "5cdaf79785e3c12b2592b9469ee8c272143eb86ab7a18d8382197cea5fd30106"
+      "source_sha256": "9cd1ce345bc9d666c73c64c89c89164217b659aa4c4dde5600cbbe6f6e775461"
     },
     {
       "name": "recall",
       "adapted": true,
       "source": "pstack/skills/recall/SKILL.md",
-      "source_sha256": "44673475f0523b83db7ea09388562b844ad7f2026f54e7d980f537e33109b1c8"
+      "source_sha256": "1f4eda450650a7bd3948f44489a94f6c692f6a14ab9ce56ab9ed6f60c50e2258"
     },
     {
       "name": "reflect",
       "adapted": true,
       "source": "pstack/skills/reflect/SKILL.md",
-      "source_sha256": "3b78774e9659a516d8ed48616cab34bd3ec771904c63929aa74270da66b99cf0"
+      "source_sha256": "6f6952f91514dc86257830da93a446c732a1af906f6acd5e5783dc587a29031e"
     },
     {
       "name": "sharpen",
@@ -288,7 +288,7 @@
       "name": "show-me-your-work",
       "adapted": true,
       "source": "pstack/skills/show-me-your-work/SKILL.md",
-      "source_sha256": "920a8217cbb62f92a2222fb81fc9eab17ecd554a0277e444a95a927195139bd1"
+      "source_sha256": "ec29326ac20515f2941198205bec615320a55b21659692e19650530dbf217bde"
     },
     {
       "name": "statechart",
@@ -300,7 +300,7 @@
       "name": "swarm",
       "adapted": true,
       "source": "pstack/skills/swarm/SKILL.md",
-      "source_sha256": "411f9d1a29a8a6f59b7bfcd4726330ddb62c4c1298ebf53d5773d82703701038"
+      "source_sha256": "8558089df5320e4ddf61126ca3d638404341584c8307dd6d20f8984e5ae3bbd1"
     },
     {
       "name": "tdd",
@@ -318,7 +318,7 @@
       "name": "technical-writing",
       "adapted": false,
       "source": "pstack/skills/technical-writing/SKILL.md",
-      "source_sha256": "61fe9c424a798ebf36ad94941f87be049cb8827bdf86d21474a0dde37b513c43"
+      "source_sha256": "0a620885599cdde5a0a31fa39878144c10f61c894b56bf4a9ff779496e718b14"
     },
     {
       "name": "typescript-best-practices",
@@ -330,7 +330,7 @@
       "name": "unslop",
       "adapted": false,
       "source": "pstack/skills/unslop/SKILL.md",
-      "source_sha256": "ccab208e315ce05e2fab8eeee2f7879f1289b5c6844840b2d307adf31c79144f"
+      "source_sha256": "2b823fd069e031c1420180be8e0d4f5e2fd25bf2c428049e5c835c59a489b5e0"
     },
     {
       "name": "why",
@@ -359,6 +359,6 @@
   ],
   "agents": {
     "comment-sicko.md": "0fb37221ab2a9159714d38f1528898e82b9758b5750f244bbe2e575bb593a1de",
-    "poteto-agent.md": "979f18abd000d185a0b4c41a2a4111c0910596a7f5c81cbb571885bc721b2bf7"
+    "poteto-agent.md": "369065b46c217a5898cb1a400652c3399449252f4d5dbf8937eb8d4922d3cf6b"
   }
 }

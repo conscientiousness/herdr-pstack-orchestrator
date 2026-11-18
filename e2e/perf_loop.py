@@ -677,7 +677,8 @@ class Run(core.Run):
 
     def preflight(self):
         self.check('positive_deadline', self.args.max_seconds > 0)
-        self.check('inventory_23_unchanged', set(self.inventory_names) == set(core.INVENTORY) and len(self.inventory_names) == 23)
+        self.check('inventory_matches_declared_playbooks',
+                   set(self.inventory_names) == set(core.INVENTORY))
         self.check('source_root', Path(self.git('rev-parse', '--show-toplevel', repo=self.args.repo)).resolve() == ROOT)
         self.revision = self.git('rev-parse', 'HEAD', repo=ROOT)
         self.source_status = self.git('status', '--porcelain=v1', '--untracked-files=all', repo=ROOT)
@@ -1578,7 +1579,7 @@ Write {a / 'reply.md'} with baseline, post-fix, delta, unit, actual PR link, and
                 'Worker scope checks include failed tool attempts and source-edit replay; they are post-execution audits, not network or credential containment.',
                 'How-only FFF supports the declared own-cwd subset on symlink-free before/after trees and assumes no concurrent external tree mutation.',
                 'Opening a PR requires a fresh scoped read-only CommentSicko task; accepted source/report changes, reruns, encodings or open work leave this bounded route unresolved.',
-                'Other 21 playbooks and the full inventory are not run.',
+                'Playbook coverage is limited to Perf issue and Opening a PR.',
                 'Owned branch, detached reader, private snapshots and ready child PR are retained for inspection.',
             ],
         }
@@ -1621,6 +1622,7 @@ def main():
         parser.error('--base-ref must be an existing non-trunk baseline branch')
     if args.parent_pr <= 0:
         parser.error('--parent-pr must be positive')
+    core.require_historical_fixture_source(parser)
     run = Run(args)
     try:
         run.preflight()

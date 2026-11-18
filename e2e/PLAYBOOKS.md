@@ -1,16 +1,37 @@
 # Original playbook verification
 
-Full 23-playbook conformance is a later milestone. The current release scope
+Full playbook conformance is a later milestone. The current release scope
 is [reversible setup and a practical delivery workflow](../docs/RELEASE-EVIDENCE.md).
 This inventory preserves original outcomes; those failures do not become passes
 when a distinct practical workflow succeeds. Missing runtime prerequisites are
 marked **blocked** below.
 
 Skill discovery, a correct application result, and execution of an original
-playbook are separate claims. This inventory covers all 23 files in
-[`poteto-mode/playbooks`](../skills/poteto-mode/playbooks/). Unavailable stages
+playbook are separate claims. This inventory covers the 22 files in
+[`poteto-mode/playbooks`](../skills/poteto-mode/playbooks/). pstack 0.15.43
+removed Orchestrate. Historical receipts retain their source attribution. Unavailable stages
 stay unresolved. A local scenario does not establish another controller
 harness's compatibility.
+
+## Workflow review for pstack 0.15.43
+
+This source review covers every bundled playbook. Follow the selected playbook for its method and the [Herdr adapter](../skills/pstack-herdr/SKILL.md) for execution. The [0.15.43 receipt](evidence/workflow-review-0.15.43.json) records the fresh checks. The [scenario inventory](#complete-inventory) includes the earlier live runs.
+
+| Playbook | What the controller must preserve when using Herdr |
+|---|---|
+| Investigation | Trace the source and give a cited answer. Use Why for motivation. A recommendation ends with the decision and tradeoffs. |
+| Bug fix | Reproduce the failure, trace its cause, dispatch a scoped fix, and rerun the original repro on the changed surface. |
+| Feature · Refactoring | Trace the subsystem and sketch the design. Feature verifies the new behavior. Refactoring pins the existing behavior before dispatch and compares it afterward. The controller manages shared writes and any Arena or review panel. |
+| Prototype · Multi-phase plan | Prototype competing approaches in scratch space and compare observed results. Hand back the decision or the verifiable plan. The operator starts implementation separately. |
+| Perf issue · Hillclimb | Establish a repeatable baseline and measure on the same surface. Hillclimb also records each keep or revert against its metric and correctness gates. Unattended continuation needs a durable wake facility. |
+| Runtime forensics · Trace forensics | Runtime instruments a live process to prove a mechanism. Trace works from an existing capture and attributes the signal to source. Both deliver a diagnosis. |
+| Visual parity | Keep the original visual baseline, isolate component ownership, and verify pixel differences on the actual UI. The original per-component loop requires a supported execution facility. |
+| Authoring a skill · Eval | Author in the chosen harness, validate the installed artifact and follow its delivery scope. Eval isolates candidates, hides the rubric and model labels as required, and checks the observed skill reads and outputs. Disclose unavailable blinding or judging. |
+| Opening a PR · Babysit | Apply the shared pre-commit and review triggers, then open the scoped PR. Start Babysit when requested. Check takes one snapshot, threads-only handles review threads, and drive follows the lowest unmerged PR to the operator's gate. |
+| Shipping | Require an independent verifier on the real surface for each PR, identify the contiguous verified run, and check the landing heads. Cloud verification and actual merge authority are separate prerequisites. |
+| Autonomous run · Autopilot-full · Autopilot-stack | Record the goal, stop condition and durable wake mechanism. Autopilot additionally requires cloud ownership and independent verification. Keep one live writer per PR. Stack hands verified PRs to the operator. Full requires explicit merge authority. |
+| Pause safely · Session pickup | At an explicit pause, preserve owned work at a safe boundary and leave a durable resume note. Pickup reads the authorized trail and rechecks the actual branch and outstanding work. |
+| Worktree cleanup | Identify the exact worktree, its changes, reachable commits, active worker and pinned chat ownership before pruning. Retain any candidate whose ownership or data loss is unresolved. |
 
 ## Run a live controller
 
@@ -26,12 +47,15 @@ Use a private artifact directory outside the checkout:
 
 ```bash
 python3 e2e/playbook_loop.py --controller <configured-pi-worker> \
-  --scenario prototype --repo "$PWD" --caller-pane <verified-pane> \
+  --scenario trace-forensics --repo "$PWD" --caller-pane <verified-pane> \
+  --caller-text '<unique visible conversation text>' \
   --output /tmp/horch-playbook-proof --max-seconds 1200
 ```
 
-Other initial scenario IDs are `investigation` and `trace-forensics`. These make
-authenticated model calls. Stop other isolated dispatchers in that workspace.
+Trace and Runtime use small, controller-local captures. Prototype can also run
+on the legacy Herdr backend, where its worker pane checks apply. All three
+require an authenticated Pi controller and the verified caller. Stop other
+isolated dispatchers in that workspace.
 The runner copies worker definitions unchanged, preserves existing permission
 flags, and does not answer trust dialogs. It preserves the shell's original
 Mise config and state roots when isolating horch's XDG directories. Git retains
@@ -83,10 +107,33 @@ must use native `write`; shell/Python task-artifact composition is outside the
 auditor's grammar. A later attempt correctly stopped on an erroneous synthesis,
 so successful unchanged presentation still has no positive receipt.
 
+### Rerun a historical scenario
+
+The historical model fixtures were authored for pstack 0.15.25 at `e5136d8`.
+Investigation requires the old How prompts, the design fixtures require the old
+Architect panel, and the Babysit fixture extracts nine numbered stages. The current
+playbooks use different instructions. To reproduce a recorded run, select its
+machine receipt from the [inventory](#complete-inventory) and check out its
+**repository** `source_revision`, which includes the matching driver, bundle and
+worker protocol. For example, to inspect the historical Investigation driver:
+
+```bash
+receipt=e2e/evidence/playbook-investigation-concat.json
+revision=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_revision"])' "$receipt")
+replay=$(mktemp -d)
+git worktree add --detach "$replay/source" "$revision"
+cd "$replay/source"
+python3 e2e/playbook_loop.py --help
+```
+
+Follow that checkout's prerequisites and run command. Preserve any recorded
+failure. Portable fixture preparation and local CLI replay can also run from
+the current checkout.
+
 ## Continuity and writable workflows
 
-The maintained drivers below add distinct workflow surfaces. Their existence,
-syntax checks and independent code review do not establish a live workflow pass.
+Runtime forensics can use the current checkout. For the other live fixtures
+in this table, use the [recorded checkout](#rerun-a-historical-scenario).
 Read the measured results and each fresh receipt before reporting coverage.
 
 | Driver | Scope and prerequisites |
@@ -100,7 +147,7 @@ Read the measured results and each fresh receipt before reporting coverage.
 | `hillclimb_loop.py` | Attended measured attempts, both original decision-log formats, different-family trail review, fresh Comment Sicko delivery and a ready private child PR |
 | `babysit_loop.py` | One read-only Check pass over an explicit real private PR chain; no drive, background wake or merge |
 
-For continuity:
+For continuity, from the recorded checkout:
 
 ```bash
 python3 e2e/pause_pickup.py --controller <configured-pi-worker> \
@@ -108,7 +155,7 @@ python3 e2e/pause_pickup.py --controller <configured-pi-worker> \
   --output /tmp/horch-continuity-proof --max-seconds 2400
 ```
 
-The current continuity fixture establishes its originating Feature workstream
+The recorded continuity fixture establishes its originating Feature workstream
 in session A. Session B recovers that context from the actual prior trail, uses
 neutral verdict choices and names the numbered original resume step. Earlier
 Feature grounding/design and later PR/review are outside this fixture's coverage.
@@ -617,8 +664,7 @@ observations; those do not replace a passing independent replay.
 
 ## Complete inventory
 
-Five bounded scenarios have complete core-workflow evidence. The remaining 18
-playbooks are unresolved, as are untested branches of the passing scenarios.
+Five bounded scenarios have historical core-workflow evidence. Trace forensics also has a fresh six-stage run at the current pstack pin.
 
 | Playbook | Scenario or remaining requirement |
 |---|---|
@@ -630,18 +676,17 @@ playbooks are unresolved, as are untested branches of the passing scenarios.
 | Perf issue | [Fourth FAIL with independent behavior audit](evidence/playbook-perf-comment-audit.json): 70.2% native / 70.0% replay reduction; original output rule and review unresolved |
 | Hillclimb | [Third FAIL/audit](evidence/playbook-hillclimb-gate-audit.json): excluded owned Git status form automatically withheld before payload reads; no optimization. Separate second-run 71.3% timing/source evidence retained; final review/PR unresolved and unattended wake unavailable |
 | Runtime forensics | [PASS: five-stage owned-process diagnosis](evidence/playbook-runtime.json); raw Inspector/profile/source independently checked; large-artifact delegation unverified |
-| Trace forensics | [PASS: bounded paired-capture core workflow](evidence/playbook-trace.json); large-capture delegation unverified |
+| Trace forensics | [0.15.43 PASS](evidence/workflow-review-0.15.43.json) for all six stages with a real Pi controller. Independent raw-profile replay confirmed 6,000 calls before and zero afterward. [Earlier receipt](evidence/playbook-trace.json). Large-capture delegation remains unverified. |
 | Visual parity | Local browser/diff tools available; UI fixture, untouched baseline, real migration, zero pixel diff and PR unrun; required `/loop` unavailable |
 | Authoring a skill | [Second FAIL with independent audit](evidence/playbook-authoring-review-audit.json); usage and correct review stop verified, deeper work and complete integrated pass unresolved |
 | Eval | Scoped Pi transcripts are accessible in principle; current global skill catalog violates strict blinding under unchanged settings |
-| Multi-phase plan | **blocked**: executable cloud lanes and configured swarm role are unavailable; a validator alone does not execute the plan |
+| Multi-phase plan | Updated checklist workflow unverified. Upstream removed the validator and stops after delivering the plan. |
 | Opening a PR | [Earlier eligibility withdrawn](evidence/playbook-opening-pr-correction.json): ready PR facts verified, mandatory Comment Sicko review omitted |
-| Babysit | [Fourth FAIL/blocked](evidence/playbook-babysit-overlap-audit.json): ambiguous visible launch needs a supervisor witness; earlier status-flow evidence remains partial; durable wake unavailable |
+| Babysit | A 0.15.43 single-PR, read-only watcher check returned a terminal status. Drive and threads-only remain unverified. The [earlier Check fixture](evidence/playbook-babysit-overlap-audit.json) stopped on an ambiguous visible launch. |
 | Shipping | **blocked**: cloud verifier unavailable; no authorization to merge test PRs |
 | Autonomous run | **blocked**: required wake mechanism unavailable |
-| Orchestrate | **blocked**: cloud execution and durable wake mechanism unavailable |
 | Autopilot-full | **blocked**: cloud owners/verifiers and wake mechanism unavailable; no merge authorization |
-| Autopilot-stack | **blocked**: cloud owners and wake mechanism unavailable; no STACK-READY evidence |
+| Autopilot-stack | **blocked**: cloud owners and wake mechanism unavailable. The verified, green-at-current-head handoff remains unverified. |
 | Pause safely | [PASS: bounded local four-stage stop](evidence/playbook-continuity.json); original checkpoint, WIP and off-context note |
 | Session pickup | [PASS: five-stage local continuation](evidence/playbook-continuity.json); distinct session, recovered route and real pending CLI verification |
 | Worktree cleanup | Pinned and active-chat metadata unavailable; owned E2E teardown does not verify this playbook's deletion gates |

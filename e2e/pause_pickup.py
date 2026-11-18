@@ -897,6 +897,7 @@ def main():
     args.output = args.output.expanduser().resolve()
     if args.output == args.repo or args.repo in args.output.parents:
         parser.error('--output must be outside repository')
+    base.require_historical_fixture_source(parser)
     run = ContinuityRun(args)
     try:
         run.preflight()
