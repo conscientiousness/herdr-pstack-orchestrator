@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parents[1]
 Failure = core.Failure
 horch = core.horch
 READS = ('poteto-mode/SKILL.md', 'pstack-herdr/SKILL.md',
-         'pstack-herdr/references/herdr-tools.md', 'herdr-orchestrator/SKILL.md',
+         'pstack-herdr/references/herdr-tools.md', 'agent-workers/SKILL.md',
          'poteto-mode/playbooks/runtime-forensics.md', 'control-cli/SKILL.md',
          'benchmark-checklist/SKILL.md', 'principle-guard-the-context-window/SKILL.md',
          'principle-explain-the-number/SKILL.md', 'unslop/SKILL.md')
@@ -691,7 +691,7 @@ Keep this directory private; do not commit native sessions or raw captures.
                     entry = self.herdr('agent', 'get', task['agent'], cleanup=True)['agent']
                     if entry.get('pane_id') != task.get('pane_id'):
                         raise Failure('cleanup_ownership_unproven')
-                    self.call([sys.executable, self.bundle / 'skills/herdr-orchestrator/scripts/horch.py',
+                    self.call([sys.executable, self.bundle / 'skills/agent-workers/scripts/agent-workers.py',
                                'close', task['task_id']], cleanup=True)
                 proc = subprocess.run(['herdr', 'pane', 'get', task['pane_id']], env=self.env,
                                       text=True, capture_output=True, timeout=15)

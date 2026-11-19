@@ -42,7 +42,7 @@ Native startup probes reported idle for installed Pi, Codex with `--no-daemon`,
 and Claude Code. These probes and deterministic fixtures do not prove configured
 model delivery for every harness. A configured Pi worker completed a decimal-ledger
 CLI task through core and through genuine executable-absence fallback. Independent
-CLI oracles verified both results. The controller observed `hcOrch` and `horch`
+CLI oracles verified both results. The controller observed `Workers` and `agent-workers`
 tabs without focus changes and confirmed worker/viewer cleanup. Waiting still used
 the stored core endpoint after session and PATH changes; the legacy task still used
 legacy execution after core became visible on PATH. A repeated core run confirmed

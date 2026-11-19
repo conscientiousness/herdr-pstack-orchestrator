@@ -37,12 +37,12 @@ This source review covers every bundled playbook. Follow the selected playbook f
 
 `playbook_loop.py` starts a real evaluation controller directly in its own
 Herdr tab. The controller reads the bundled `poteto-mode`, selects a playbook,
-and uses configured workers through `horch`. It is not a bounded `horch` worker.
+and uses configured workers through `agent-workers`. It is not a bounded `agent-workers` worker.
 The initial implementation supports Pi controllers; Codex and Claude Code
 controller coverage remains separate work.
 
 Run from a trusted checkout inside Herdr. Confirm the actual caller pane using
-the [caller identity procedure](../skills/herdr-orchestrator/references/setup.md#caller-context).
+the [caller identity procedure](../skills/agent-workers/references/setup.md#caller-context).
 Use a private artifact directory outside the checkout:
 
 ```bash
@@ -58,7 +58,7 @@ require an authenticated Pi controller and the verified caller. Stop other
 isolated dispatchers in that workspace.
 The runner copies worker definitions unchanged, preserves existing permission
 flags, and does not answer trust dialogs. It preserves the shell's original
-Mise config and state roots when isolating horch's XDG directories. Git retains
+Mise config and state roots when isolating agent-workers's XDG directories. Git retains
 its original global configuration files and precedence through a private include
 wrapper, including relative include origins; user Git settings stay unchanged.
 Forge drivers and their controller tabs also retain the original GitHub CLI
@@ -327,7 +327,7 @@ labels and PR1 discussion, then exposes an offline list/search/read gateway.
 Its two investigators still examine the available issue and Git categories,
 including empty results, before separate configured synthesis.
 
-The delivery wrapper runs real `horch wait` privately, retaining its exact argv
+The delivery wrapper runs real `agent-workers wait` privately, retaining its exact argv
 and raw receipt. It emits only fixed metadata until the closed worker's complete
 native transcript passes a scope audit, including failed calls. The final driver
 independently binds that audit, the original assignment and native delivery to
@@ -547,7 +547,7 @@ inspects the complete authored prefix, with no shell-grammar relaxation or
 new live pass.
 
 The Design driver now uses a private same-file wait/audit entry point for
-all slots. It keeps raw horch waits private and releases only metadata and
+all slots. It keeps raw agent-workers waits private and releases only metadata and
 declared output paths after done/closed delivery and native scope validation.
 Its reviewed contract binds a captured working Pi UUID, role/model/cwd, exact
 authored brief plus nonce-bound Horch suffix, declared inputs, hidden rubric

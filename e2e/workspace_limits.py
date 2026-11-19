@@ -18,7 +18,7 @@ import tempfile
 import time
 import tomllib
 
-HORCH = Path(__file__).resolve().parents[1] / 'skills/herdr-orchestrator/scripts/horch.py'
+HORCH = Path(__file__).resolve().parents[1] / 'skills/agent-workers/scripts/agent-workers.py'
 
 
 def read(path):
@@ -243,7 +243,7 @@ Use at most three shell calls, finish promptly, and write result.json last.
                         and row.get('ok') is False and row.get('task_id') is None)
             self.check('invalid ' + command + ' reports ' + ('worker_limit' if command == 'run' else 'not_checked'),
                        expected and planted.name in row.get('message', '')
-                       and 'horch list' in row.get('message', ''))
+                       and 'agent-workers list' in row.get('message', ''))
             self.check('invalid ' + command + ' allocates nothing', before == self.allocation())
         b = self.start('B', 3)
         self.check('B has exactly one real unclosed reservation beside corruption', sum(
@@ -255,7 +255,7 @@ Use at most three shell calls, finish promptly, and write result.json last.
         row = rows[0] if len(rows) == 1 else {}
         self.check('invalid B run reports worker_limit', proc.returncode != 0
                    and row.get('error') == 'worker_limit' and planted.name in row.get('message', '')
-                   and 'horch list' in row.get('message', ''))
+                   and 'agent-workers list' in row.get('message', ''))
         self.check('invalid B run allocates nothing', before == self.allocation())
         self.deliver_phase_task(b, targeted=True)
         before = self.allocation()
@@ -264,7 +264,7 @@ Use at most three shell calls, finish promptly, and write result.json last.
         self.check('invalid close gives manual recovery guidance', proc.returncode != 0
                    and row.get('error') == 'task_invalid'
                    and all(s in row.get('message', '') for s in (
-                       'pane is unknown', 'herdr pane list', 'horch pane', str(planted), 'by hand')))
+                       'terminal is unknown', 'original backend', str(planted), 'by hand')))
         self.check('invalid close leaves all allocations intact', before == self.allocation())
         self.check('planted record stays unchanged and unclosed', original == {
             p.name: p.read_bytes() for p in planted.iterdir()} and not read(planted / 'state.json')['closed'])
@@ -304,7 +304,7 @@ Use at most three shell calls, finish promptly, and write result.json last.
                    (second.get('ok') is True and second.get('state') == 'done' and second.get('pane_id') is None)
                    or (second.get('state') == 'not_checked' and second.get('ok') is False
                        and second.get('task_id') is None and second.get('pane_id') is None
-                       and invalid_id in second.get('message', '') and 'horch list' in second.get('message', '')))
+                       and invalid_id in second.get('message', '') and 'agent-workers list' in second.get('message', '')))
         created = [t for t in self.records() if t['task_id'] not in before]
         self.check('invalid batch accounts for every started task', {t['task_id'] for t in created}
                    == {r['task_id'] for r in rows if r.get('task_id')} and len(created) in (1, 2))

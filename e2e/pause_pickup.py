@@ -343,7 +343,7 @@ class ContinuityRun(base.Run):
     def common(self):
         return [self.bundle / path for path in ('skills/poteto-mode/SKILL.md',
                 'skills/pstack-herdr/SKILL.md', 'skills/pstack-herdr/references/herdr-tools.md',
-                'skills/herdr-orchestrator/SKILL.md')]
+                'skills/agent-workers/SKILL.md')]
 
     def audit_controller(self, controller, tasks, reads):
         path = self.transcript(controller)
@@ -726,10 +726,10 @@ do not claim that they were completed or invent prior work.
 Read these bundled documents in full with separate native reads: {', '.join(map(str, self.common()))}.
 Read the originating workstream at {self.bundle / 'skills/poteto-mode/playbooks/feature.md'} in full too.
 Read {self.fixture / 'contract.md'}. Delegate exactly one bounded implementation of ONLY {self.fixture / 'money.py'}
-through {self.bundle / 'skills/herdr-orchestrator/scripts/horch.py'}, role feature, refactoring, configured worker {self.writer}.
+through {self.bundle / 'skills/agent-workers/scripts/agent-workers.py'}, role feature, refactoring, configured worker {self.writer}.
 Every brief names role, selected worker and reason, includes the absolute paths {self.bundle / 'skills/pstack-herdr/references/agents/poteto-agent.md'}
 and {self.bundle / 'skills/poteto-mode/SKILL.md'}, forbids delegation/native subagents and any commit, and permits only money.py edits.
-Use your actual pane {self.pane} as --caller-pane. Use separate literal python3 <absolute horch.py> run/wait commands.
+Use your actual pane {self.pane} as --caller-pane. Use separate literal python3 <absolute agent-workers.py> run/wait commands.
 Wait for actual state done, then read the worker's complete report.md, listed in result.json files. Do not accept an early result as delivery.
 Observe only the money surface yourself using one direct command python3 {self.fixture / 'line_cli.py'} with quoted JSON heredoc stdin:
 {money_inputs}
@@ -836,7 +836,7 @@ All notes stay outside the checkout.
                     if entry.get('pane_id') != task['pane_id']:
                         raise base.Failure('cleanup_ownership_unproven')
                     self.call(['herdr', 'pane', 'read', task['pane_id'], '--source', 'recent', '--lines', '80'], cleanup=True)
-                    self.call([sys.executable, self.bundle / 'skills/herdr-orchestrator/scripts/horch.py', 'close', task['task_id']], cleanup=True)
+                    self.call([sys.executable, self.bundle / 'skills/agent-workers/scripts/agent-workers.py', 'close', task['task_id']], cleanup=True)
                 cleanup_ok = cleanup_ok and self.pane_absent(task['pane_id'])
             except Exception:
                 cleanup_ok = False

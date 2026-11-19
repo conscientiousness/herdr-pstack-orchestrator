@@ -30,7 +30,7 @@ Fresh implementation, two independent failing reviews, a fresh fix, and two pass
 
 ## How to get to it (user POV)
 
-Use configured workers through `horch`. Select `writer`, `reviewer_a`, and `reviewer_b` from workers.toml; reviewers must have distinct model definitions. Require two free slots, authenticated harnesses, a trusted repository, and Pi integration for Pi workers. Use the shared Doctor first.
+Use configured workers through `agent-workers`. Select `writer`, `reviewer_a`, and `reviewer_b` from workers.toml; reviewers must have distinct model definitions. Require two free slots, authenticated harnesses, a trusted repository, and Pi integration for Pi workers. Use the shared Doctor first.
 
 ## Driving it with existing scripts
 
@@ -44,7 +44,7 @@ Read the printed `evidence.json`: require a passing verdict, expected initial FA
 
 ## Gotchas
 
-This makes real model calls and tests `horch` directly, not an AI controller or pstack rubric. A newly created worktree can need its own Pi trust decision; report a blocked startup without submitting input to the dialog. A historical passing receipt does not prove a new run passed.
+This makes real model calls and tests `agent-workers` directly, not an AI controller or pstack rubric. A newly created worktree can need its own Pi trust decision; report a blocked startup without submitting input to the dialog. A historical passing receipt does not prove a new run passed.
 
 ## Worker setup checks
 
@@ -55,7 +55,7 @@ python3 e2e/check_workers.py --worker "$worker_a" --worker "$worker_b" \
   --cwd "$repo" --output "$proof"
 ```
 
-The driver creates a dedicated workspace and isolated state, repeats the first worker selection, and forces batching with one slot. Require all 44 behavioral receipt assertions (20 existing checks plus 24 stats checks): deduplication bound to the sent selection, strictly ordered task-publication/previous-closure filesystem timestamps, valid nonce-bound results, no leaked panes before teardown, zero-slot skips, the deliberately injected acknowledged-worker exit, exhausted-budget skips, source/configuration integrity and owned cleanup. Inspect the printed sanitized `evidence.json`; preserve failures without retrying another model or clearing dialogs. No pane transcripts are captured. The verdict also requires full scenario completion. Herdr CLI and running-server versions are recorded separately. Known paths, including cwd/output and rerun arguments, are replaced; free-form message/error diagnostics are omitted. Retained config/task state and command/failure diagnostics outside the checkout are private, not publication artifacts; only their placeholder location is in the receipt. Coarse/equal lifecycle timestamps fail closed. The final phase also checks read-only `horch stats` on the isolated store, globally and scoped to the owned workspace: known counts/states/statuses, invalid exclusion, removed and unused workers, timestamp/duration bounds, no args, and unchanged files, then closes one real running worker and verifies cancellation counts without extra problems. Fixed fixtures additionally verify recovered first-done durations, multi-sample percentiles, strict/deduplicated threshold estimates, day scope, dangling roles, provider/configuration facts, in-flight separation, and stored reminder firings per worker and in total across scopes. This directly exercises `horch check` and `stats`, not an AI controller.
+The driver creates a dedicated workspace and isolated state, repeats the first worker selection, and forces batching with one slot. Require all 44 behavioral receipt assertions (20 existing checks plus 24 stats checks): deduplication bound to the sent selection, strictly ordered task-publication/previous-closure filesystem timestamps, valid nonce-bound results, no leaked panes before teardown, zero-slot skips, the deliberately injected acknowledged-worker exit, exhausted-budget skips, source/configuration integrity and owned cleanup. Inspect the printed sanitized `evidence.json`; preserve failures without retrying another model or clearing dialogs. No pane transcripts are captured. The verdict also requires full scenario completion. Herdr CLI and running-server versions are recorded separately. Known paths, including cwd/output and rerun arguments, are replaced; free-form message/error diagnostics are omitted. Retained config/task state and command/failure diagnostics outside the checkout are private, not publication artifacts; only their placeholder location is in the receipt. Coarse/equal lifecycle timestamps fail closed. The final phase also checks read-only `agent-workers stats` on the isolated store, globally and scoped to the owned workspace: known counts/states/statuses, invalid exclusion, removed and unused workers, timestamp/duration bounds, no args, and unchanged files, then closes one real running worker and verifies cancellation counts without extra problems. Fixed fixtures additionally verify recovered first-done durations, multi-sample percentiles, strict/deduplicated threshold estimates, day scope, dangling roles, provider/configuration facts, in-flight separation, and stored reminder firings per worker and in total across scopes. This directly exercises `agent-workers check` and `stats`, not an AI controller.
 
 ## Workspace worker limits
 

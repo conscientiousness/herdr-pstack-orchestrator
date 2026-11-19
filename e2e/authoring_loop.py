@@ -36,7 +36,7 @@ SKILL = Path('.agents/skills/ledger-operations')
 AUTHORED = (str(SKILL / 'SKILL.md'), str(SKILL / 'references/cli-contract.md'))
 APP = ('money.py', 'storage.py', 'cli.py', 'e2e_import.py')
 READS = ('poteto-mode/SKILL.md', 'pstack-herdr/SKILL.md',
-         'pstack-herdr/references/herdr-tools.md', 'herdr-orchestrator/SKILL.md',
+         'pstack-herdr/references/herdr-tools.md', 'agent-workers/SKILL.md',
          'poteto-mode/playbooks/authoring-a-skill.md',
          'poteto-mode/playbooks/opening-a-pr.md', 'deslop/SKILL.md',
          'no-comments/SKILL.md', 'technical-writing/SKILL.md', 'unslop/SKILL.md',
@@ -315,7 +315,7 @@ and pass --body-file; do not embed newlines in a bash command.
 Accepted controller command grammar (all other commands fail proof):
 - python or python3, optional -B, then exactly
   {self.guidance / 'scripts/quick_validate.py'} {self.worktree / SKILL};
-  or the bundled horch.py with run/wait/list/close/stats/detect and literal args.
+  or the bundled agent-workers.py with run/wait/list/close/stats/detect and literal args.
 - git in the lead cwd, optionally -C {self.worktree}, with status/diff/show/log/
   blame/rev-parse/rev-list/diff-tree/ls-files/ls-remote (no --output option);
   add with only the one or two authored relative paths (optional --);
@@ -373,7 +373,7 @@ beyond the skill under evaluation. Do not weaken its error semantics in the brie
 Each worker's source checkout is pristine and read-only. Inputs already exist,
 and the existing ledger was seeded through the real CLI. Worker mutation is
 limited to invoking that checkout's real cli.py on its owned external ledger
-and writing report.md/result.json in its own horch task directory. Never write
+and writing report.md/result.json in its own agent-workers task directory. Never write
 or edit a ledger or input JSON directly; no fabrication or evaluator/probe helper.
 Use standalone literal python3 [-B] ABSOLUTE_CLI_PATH import|export arguments.
 Workers full-read authored SKILL.md and references/cli-contract.md before CLI use;
@@ -385,9 +385,9 @@ Worker bash is limited to direct cli.py or literal cat inspection. The worker
 brief contains no success/rollback label in its request body; Case header is an
 identity label, not an expected answer. Each worker lists report.md in result.json.
 
-Dispatch only through {self.bundle / 'skills/herdr-orchestrator/scripts/horch.py'},
+Dispatch only through {self.bundle / 'skills/agent-workers/scripts/agent-workers.py'},
 with --caller-pane {self.pane} and the case's exact cwd/worker. Use fresh tasks,
-no native subagents. Use standalone literal horch wait, wait for state done,
+no native subagents. Use standalone literal agent-workers wait, wait for state done,
 then read result.json and ALL listed artifacts in separate full reads before
 reviewing. Wait closes successful tasks. No new role or worker config changes.
 The evaluator captures each working Pi session and audits its exact default
@@ -398,7 +398,7 @@ are fully read, perform no-comments' mandatory fresh CommentSicko review BEFORE
 commit or PR. This is the third and final task, using the unchanged single
 configured judgment and prose worker {self.comment_worker}, cwd {self.worktree}.
 Write the exact following brief body to {self.artifacts / 'comment-brief.md'} and
-pass that file to horch run (no extra hints or restated agent rules). The supplied
+pass that file to agent-workers run (no extra hints or restated agent rules). The supplied
 bootstrap is required execution-boundary disclosure, not copied agent content:
 --- BEGIN EXACT COMMENT BRIEF ---
 {self.comment_brief()}--- END EXACT COMMENT BRIEF ---
@@ -645,7 +645,7 @@ or input JSON, use a probe/helper, repair inputs or run shell wrappers. Use lite
 standalone python3 [-B] {case['cwd'] / 'cli.py'} invocations, not redirects or pipelines.
 Native bash is limited to that real CLI and literal cat of one file. Inspect the
 actual ledger with native read after the operation. Write report.md and result.json
-only in your actual horch task directory and list report.md in the result files.
+only in your actual agent-workers task directory and list report.md in the result files.
 No Git, forge, configuration or other external writes. Do not infer permission
 from a successful check. Complete this request yourself without further delegation.
 '''
@@ -681,7 +681,7 @@ CLI execution, nested delegation, wrappers or retries. Bash is limited to that
 exact diff command and literal cat of one declared guide or scoped file.
 Native reads/grep/find/ls are limited to the declared guides, scoped skill
 directory and your own task directory. Write only report.md, review.json and
-result.json in your own actual horch task directory; list report.md and
+result.json in your own actual agent-workers task directory; list report.md and
 review.json in result.files, question null, normal actual task nonce.
 Apply the original report-only agent to this Markdown skill scope. Report real
 findings, including no applicable comments when supported; never invent flags.
@@ -843,7 +843,7 @@ approval: report those needs as open_work. Complete this review yourself.
             script = (self.worktree / words[0]).resolve()
             if script == self.guidance / 'scripts/quick_validate.py':
                 return words[1:] == [str(self.worktree / SKILL)]
-            return script == self.bundle / 'skills/herdr-orchestrator/scripts/horch.py' and words[1] in ('run', 'wait', 'list', 'close', 'stats', 'detect')
+            return script == self.bundle / 'skills/agent-workers/scripts/agent-workers.py' and words[1] in ('run', 'wait', 'list', 'close', 'stats', 'detect')
         if binary == 'git':
             words = argv[1:]
             if words[:1] == ['-C'] and len(words) > 2:
@@ -1119,7 +1119,7 @@ approval: report those needs as open_work. Complete this review yourself.
                         raise Failure('cleanup_ownership_unproven')
                     screen = self.call(['herdr', 'pane', 'read', task['pane_id'], '--source', 'recent', '--lines', '80'], cleanup=True)
                     (self.directory / (task['task_id'] + '-pane.json')).write_text(screen)
-                    self.call([sys.executable, self.bundle / 'skills/herdr-orchestrator/scripts/horch.py', 'close', task['task_id']], cleanup=True)
+                    self.call([sys.executable, self.bundle / 'skills/agent-workers/scripts/agent-workers.py', 'close', task['task_id']], cleanup=True)
             except Exception:
                 cleanup_ok = False
         for pane in ([self.pane] if self.pane else []) + [task['pane_id'] for task in self.tasks.values()]:

@@ -44,7 +44,7 @@ import time
 import uuid
 
 
-REPO_HORCH = Path(__file__).resolve().parents[1] / "skills/herdr-orchestrator/scripts/horch.py"
+REPO_HORCH = Path(__file__).resolve().parents[1] / "skills/agent-workers/scripts/agent-workers.py"
 SESSION_ENV = {"claude": "CLAUDE_CODE_SESSION_ID", "codex": "CODEX_THREAD_ID"}
 
 
@@ -76,7 +76,7 @@ def main():
     parser.add_argument("--controller-text", required=True,
                         help="unique text of at least 16 characters currently visible in the controller conversation")
     parser.add_argument("--output", type=Path, required=True, help="artifact parent outside the checkout")
-    parser.add_argument("--horch", type=Path, default=REPO_HORCH, help="horch.py under test")
+    parser.add_argument("--horch", type=Path, default=REPO_HORCH, help="agent-workers.py under test")
     args = parser.parse_args()
     horch = args.horch.expanduser().resolve()
     output = args.output.expanduser().resolve()

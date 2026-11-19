@@ -25,7 +25,7 @@ import time
 import traceback
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'skills/herdr-orchestrator/scripts'))
+sys.path.insert(0, str(ROOT / 'skills/agent-workers/scripts'))
 import horch  # noqa: E402
 import playbook_cases as cases  # noqa: E402
 
@@ -178,7 +178,7 @@ def literal_horch_command(name, args, cwd, bundle):
     except ValueError:
         return None
     if (len(words) >= 3 and Path(words[0]).name in {'python', 'python3'}
-            and (cwd / words[1]).resolve() == (bundle / 'skills/herdr-orchestrator/scripts/horch.py').resolve()):
+            and (cwd / words[1]).resolve() == (bundle / 'skills/agent-workers/scripts/agent-workers.py').resolve()):
         return words[2:]
     return None
 
@@ -703,7 +703,7 @@ def audit_pi(path, session, cwd, started, spec, required_reads, required_command
     calls, events = [], []
     delivered, artifact_reads = set(), set()
     known_tasks = {task['task_id']: task for task in tasks}
-    horch_script = (bundle / 'skills/herdr-orchestrator/scripts/horch.py').resolve()
+    horch_script = (bundle / 'skills/agent-workers/scripts/agent-workers.py').resolve()
     copy_pairs = {(str(source), str(destination)) for source, destination in allowed_artifact_copies}
     hash_sources = {}
     delivered_closed = set()
@@ -829,7 +829,7 @@ def audit_pi(path, session, cwd, started, spec, required_reads, required_command
                         words = shlex.split(command)
                     except ValueError:
                         pass
-                # Delivery must come from the actual literal horch wait command,
+                # Delivery must come from the actual literal agent-workers wait command,
                 # not echo, prose or reading a fabricated status file.
                 if (len(words) >= 3 and Path(words[0]).name in ('python', 'python3')
                         and (cwd / words[1]).resolve() == horch_script and words[2] == 'wait'):
@@ -873,7 +873,7 @@ def audit_pi(path, session, cwd, started, spec, required_reads, required_command
         raise Failure('native_effort_changed_or_unproven')
     checks = [{'name': 'read ' + str(p.relative_to(bundle)), 'ok': p in read_paths}
               for p in required_reads]
-    checks.extend([{'name': 'tasks observed delivered through horch wait',
+    checks.extend([{'name': 'tasks observed delivered through agent-workers wait',
                     'ok': delivered == set(known_tasks)},
                    {'name': 'task artifacts read after delivery',
                     'ok': artifact_reads == set(known_tasks)}])
@@ -1083,17 +1083,17 @@ those successful results, with the exact throughput line in the final reply.''',
         }.get(workflow_type, '')
         delegation_instructions = 'Keep this bounded trace inspection in the controller.'
         if workflow_type != 'trace-forensics':
-            delegation_instructions = f'''Use {self.bundle / 'skills/herdr-orchestrator/scripts/horch.py'} for delegation,
+            delegation_instructions = f'''Use {self.bundle / 'skills/agent-workers/scripts/agent-workers.py'} for delegation,
 with --caller-pane {self.pane} when dispatching; never native subagents.
 For delivery use a standalone native bash call of python3 followed by the exact
-absolute horch.py path, wait, and task IDs. Read each delivered task's report or
+absolute agent-workers.py path, wait, and task IDs. Read each delivered task's report or
 result with a separate native read call, after wait has reported state done.'''
         if workflow_type == 'prototype':
             delegation_instructions += f'''
 Verify your own controller pane with herdr pane process-info --pane {self.pane}
 and herdr pane read {self.pane} --source visible just before dispatch. Choose text
 of at least 16 characters uniquely visible in this evaluation conversation.
-Include it verbatim as --caller-text with --caller-pane on each horch run.
+Include it verbatim as --caller-text with --caller-pane on each agent-workers run.
 If the caller cannot be verified, report the unresolved stage.'''
         prompt = f'''This is a real playbook evaluation. Read {self.bundle / 'skills/poteto-mode/SKILL.md'}
 in full first, then select and execute the applicable original playbook and its
@@ -1295,7 +1295,7 @@ authorized. Report any blocked required stage explicitly.
                         raise Failure('cleanup_ownership_unproven')
                     screen = self.call(['herdr', 'pane', 'read', task['pane_id'], '--source', 'recent', '--lines', '80'], cleanup=True)
                     (self.directory / (task['task_id'] + '-pane.json')).write_text(screen)
-                    self.call([sys.executable, self.bundle / 'skills/herdr-orchestrator/scripts/horch.py',
+                    self.call([sys.executable, self.bundle / 'skills/agent-workers/scripts/agent-workers.py',
                                'close', task['task_id']], cleanup=True)
             except Exception:
                 cleanup_ok = False

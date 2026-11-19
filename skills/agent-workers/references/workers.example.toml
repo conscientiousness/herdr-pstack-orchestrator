@@ -1,6 +1,6 @@
-# workers.toml — configuration for the herdr-orchestrator skill.
+# workers.toml — configuration for the agent-workers skill.
 #
-# horch reads this file from:
+# agent-workers reads this file from:
 #
 #     $XDG_CONFIG_HOME/herdr-orchestrator/workers.toml
 #     (~/.config/herdr-orchestrator/workers.toml when XDG_CONFIG_HOME is unset)
@@ -11,17 +11,17 @@
 #
 # After writing the file, verify every worker once:
 #
-#     python3 <skill-dir>/scripts/horch.py check --cwd /some/work/dir
+#     python3 <skill-dir>/scripts/agent-workers.py check --cwd /some/work/dir
 #
 # A worker name must match [a-z][a-z0-9-]{0,15}.
 # Descriptions are optional controller guidance, not model capability rankings.
 # Keep just one worker if desired; roles can share it. Upgrade older installed
-# horch scripts before adding description to a shared configuration.
+# agent-workers scripts before adding description to a shared configuration.
 
 # Most tasks with an open pane at one time. Default 4.
 max_active_workers = 4
 
-# When a task runs longer than this many minutes, horch wait notifies once.
+# When a task runs longer than this many minutes, agent-workers wait notifies once.
 # Default 180.
 notify_after_minutes = 180
 
@@ -49,7 +49,7 @@ model = "haiku"
 effort = "max" # passed as claude --effort
 args = ["--permission-mode", "auto"]
 
-# Optional. pstack-herdr uses roles for routing; horch stats reports missing workers.
+# Optional. pstack-herdr uses roles for routing; agent-workers stats reports missing workers.
 # A single role names one worker from [workers]; a panel role lists one
 # worker per review task. Repeated names start separate fresh processes.
 [roles]

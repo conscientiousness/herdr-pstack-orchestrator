@@ -13,9 +13,9 @@ python3 e2e/rex_backend.py --output /tmp/horch-rex-proof
 ```
 
 The driver starts its own Rex server and a shell controller in an owned session.
-It checks that two workers share a background `rexOrch` tab while the controller
+It checks that two workers share a background `Workers` tab while the controller
 tab keeps focus. The workers produce separate ledger outputs while still working.
-`horch` withholds both results until Rex reports the end of the turn, verifies
+`agent-workers` withholds both results until Rex reports the end of the turn, verifies
 delivery, and removes the owned blocks. The driver also checks that mixed
 controller hints are rejected, stale Rex environment has no effect on task IDs
 pinned at dispatch, and the unrelated session stays intact.
@@ -31,7 +31,7 @@ It creates a private `HC_SESSION` and scratch XDG directories. It does not call
 models or mutate real Herdr panes.
 
 ```bash
-python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
+python3 e2e/core_backend.py --horch skills/agent-workers/scripts/agent-workers.py \
   --output /tmp/horch-core-proof --core-only
 ```
 
@@ -60,13 +60,13 @@ They do not simulate legacy lifecycle. Core launches must resolve the official
 The printed `evidence.json` path is the receipt. It retains source and binary
 hashes, versions, command output, checks, and cleanup results outside the
 checkout. Cleanup stops only the owned core and CLI wait processes. The default
-headless mode does not verify `hcOrch` tabs, legacy `horch` tabs, or live
-absence-only legacy fallback.
+headless mode does not verify visible worker tabs or live absence-only legacy
+fallback.
 
 To verify core viewers from inside Herdr, add `--viewer` instead of `--core-only`:
 
 ```bash
-python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
+python3 e2e/core_backend.py --horch skills/agent-workers/scripts/agent-workers.py \
   --output /tmp/horch-core-viewer-proof --viewer
 ```
 
@@ -74,12 +74,12 @@ This requires `HERDR_ENV=1`, `HERDR_SOCKET_PATH`, and the real `herdr` CLI. It a
 creates an owned workspace without focusing it, then launches two deterministic
 workers from its controller pane with `HERDR_ENV` removed: one uses an explicit
 `--caller-pane`, the other inherits the pane ID. Both must display their actual
-worker output through separate attach panes in the same `hcOrch` tab and caller
+worker output through separate attach panes in the same `Workers` tab and caller
 workspace. The receipt checks unchanged user focus, incomplete-context rejection
 for `run` and `check` without worker allocation, delivery/cancellation cleanup,
 and removal of the owned workspace. Returned `viewer_verified` and stored
 controller evidence must agree with independent pane, tab, and rendered-output
-reads. Renaming the owned viewer tab away from `hcOrch` must make
+reads. Renaming the owned viewer tab away from `Workers` must make
 `verify-viewer` report an unconfirmed viewer while preserving both workers;
 restoring its label allows verification without launching a replacement. It
 still does not verify model execution or legacy worker tabs.
@@ -576,7 +576,7 @@ The driver uses Herdr's supported `PI_CODING_AGENT_DIR` override with an empty d
 
 Historical evidence keeps its original source attribution. Moving the driver changes its hash; it does not retroactively change which code an earlier run exercised. The CLI itself is unchanged by the relocation.
 
-`review_loop.py` controls `horch` directly; `controller_loop.py` tests an AI controller following `herdr-orchestrator`. Neither exercises the pstack rubric. Earlier controller/pstack development runs remain attributed to their original sources. GitHub Actions checks Python compatibility, configuration parsing, and installation into Claude Code, Codex, and Pi. Earlier package CI runs recorded Python 3.11/3.14, installed-file comparisons, and regeneration from the then-pinned upstream source. Authenticated model E2Es run locally.
+`review_loop.py` controls `agent-workers` directly; `controller_loop.py` tests an AI controller following `agent-workers`. Neither exercises the pstack rubric. Earlier controller/pstack development runs remain attributed to their original sources. GitHub Actions checks Python compatibility, configuration parsing, and installation into Claude Code, Codex, and Pi. Earlier package CI runs recorded Python 3.11/3.14, installed-file comparisons, and regeneration from the then-pinned upstream source. Authenticated model E2Es run locally.
 
 ## Reproduce original skill discovery
 
@@ -629,7 +629,7 @@ The current bundle is installed in one command. For an isolated installation, us
 consumer=$(mktemp -d)
 cd "$consumer"
 npx --yes skills@latest add \
-  https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills \
+  https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/tree/main/skills \
   -s '*' -a codex -a claude-code -a pi -y
 ```
 

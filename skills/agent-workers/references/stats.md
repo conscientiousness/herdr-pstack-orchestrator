@@ -1,11 +1,11 @@
 # Worker statistics
 
-Use `horch stats` when the user asks whether workers are worth keeping, slow,
+Use `agent-workers stats` when the user asks whether workers are worth keeping, slow,
 failing, or efficient, whether reminder timing fits, or before changing
 `workers.toml`. It reports facts; the controller interprets them.
 
 ```bash
-python3 <skill-dir>/scripts/horch.py stats [--workspace <id>] [--days <n>]
+python3 <skill-dir>/scripts/agent-workers.py stats [--workspace <id>] [--days <n>]
 ```
 
 This reads only workers.toml and the task store: no Herdr calls, environment

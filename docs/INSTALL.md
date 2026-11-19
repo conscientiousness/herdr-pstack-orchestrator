@@ -10,8 +10,8 @@ conflicts before replacing anything.
 If you prefer not to use Node.js and npm, clone the repository:
 
 ```bash
-git clone https://github.com/conscientiousness/herdr-pstack-orchestrator.git
-cd herdr-pstack-orchestrator
+git clone https://github.com/conscientiousness/herdr-rex-pstack-orchestrator.git
+cd herdr-rex-pstack-orchestrator
 ```
 
 Link the skills you want into your harness's skills directory. For example,
@@ -19,7 +19,7 @@ this installs the core skill for Claude Code:
 
 ```bash
 mkdir -p ~/.claude/skills
-ln -s "$PWD/skills/herdr-orchestrator" ~/.claude/skills/
+ln -s "$PWD/skills/agent-workers" ~/.claude/skills/
 ```
 
 For pstack workflows, install all sibling directories under `skills/` so the
@@ -29,27 +29,51 @@ without reviewing the conflict. Open a fresh agent session after installation.
 From the clone, you can inspect the worker CLI directly:
 
 ```bash
-python3 skills/herdr-orchestrator/scripts/horch.py detect
-python3 skills/herdr-orchestrator/scripts/horch.py --help
+python3 skills/agent-workers/scripts/agent-workers.py detect
+python3 skills/agent-workers/scripts/agent-workers.py --help
 ```
 
-The [command guide](../skills/herdr-orchestrator/SKILL.md#run-horch) describes
+The [command guide](../skills/agent-workers/SKILL.md#run-agent-workers) describes
 the available commands. Keep the entire `scripts/` directory when copying the
 skill, including `core_backend.py` and `rex_backend.py`. The skill has no
 third-party Python dependencies.
 
+To use `agent-workers` directly from your shell, link the executable into a
+directory on your `PATH`. For example, if `~/.local/bin` is on your `PATH`,
+run this from the clone:
+
+```bash
+mkdir -p ~/.local/bin
+ln -s "$PWD/skills/agent-workers/scripts/agent-workers" ~/.local/bin/agent-workers
+```
+
 Start the controller inside the multiplexer you want to use. Rex controllers
 use a local Unix-socket [Rex server and CLI](https://www.superlogical.com/rex/docs/automate/cli)
-and run workers in `rexOrch` tabs in the verified project session. Herdr
-controllers use `hcOrch` viewers in the verified workspace when core is
-installed. `herdr-core` takes priority over a verified `hc` alias, and executable
-absence selects legacy Herdr with `horch` tabs. Controllers outside both
-multiplexers can use core headless. Both Rex and core use native harness status.
+and run workers in a **Workers** tab in the verified project session. Herdr uses
+the same tab name in the verified workspace, with attached viewers when core is
+installed and native panes otherwise. `herdr-core` takes priority over a verified
+`hc` alias. Controllers outside both multiplexers can use core headless. Both
+Rex and core use native harness status.
 
-Recover missing or ambiguous [caller context](../skills/herdr-orchestrator/references/setup.md#caller-context)
+Recover missing or ambiguous [caller context](../skills/agent-workers/references/setup.md#caller-context)
 before dispatch. A connection, readiness, or viewer error stays on the selected
 backend. Stored Rex and core tasks retain their original endpoint. Keep each
 legacy task store scoped to its original Herdr server.
+
+## Upgrade from herdr-orchestrator
+
+Install `agent-workers` with the [current install command](../README.md#install)
+using your previous harnesses and scope. If you installed the pstack bundle,
+update the whole bundle together so its adapter and workflow skills agree.
+Remove the old `herdr-orchestrator` skill from that same scope with
+`npx skills@latest remove herdr-orchestrator -y` (add `-g` for a global install).
+For a manual install, replace the old skill link or copy with
+`skills/agent-workers`. Start a fresh controller session.
+
+The new CLI reads the same `herdr-orchestrator/workers.toml` and task store.
+Existing tasks keep their terminal bindings. New launches use the **Workers**
+tab name. Update scripted paths to `skills/agent-workers/scripts/agent-workers.py`.
+The new skill also includes `scripts/horch.py` as a compatibility entry point.
 
 ## Update
 
@@ -74,7 +98,7 @@ controller session in your chosen multiplexer, or use core headless.
 To remove the core skill from a project, run this in that project:
 
 ```bash
-npx skills@latest remove herdr-orchestrator -y
+npx skills@latest remove agent-workers -y
 ```
 
 To remove the full bundle, run `npx skills@latest remove` and select its entries,

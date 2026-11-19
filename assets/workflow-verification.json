@@ -7,27 +7,27 @@
     "repository": "https://github.com/tt-a1i/archify",
     "revision": "bb990b17b886e83d633e273221615eb259a92c78"
   },
-  "source_revision": "2350959bfc1ed8c08764bfebb19b40884f602edb",
+  "source_revision": "48beb80199138c824f904dbbb94b66fa5c9435a2",
   "artifacts": [
     {
       "path": "assets/workflow.json",
-      "sha256": "d785c46f4fb76d8c6fe539c0f21963f51f8eba21d1c8d25939e26778f7c5e797",
-      "bytes": 5269
+      "sha256": "14cfef84f7b02834a5e03962142639844fa3d187f89ef77bc49db027d82d1994",
+      "bytes": 5261
     },
     {
       "path": "assets/workflow.html",
-      "sha256": "b73bddd85f880573992cd40a12077df135e6c8426223e212e020218eeb494331",
-      "bytes": 752472
+      "sha256": "a043c36a0eadedfc4113a8a996f0f5559c57562f734bc51e6123210af5296e18",
+      "bytes": 752359
     },
     {
       "path": "assets/workflow-light.svg",
-      "sha256": "332fa49ce401bdc17ae3d37472fb4659482617eda29305f4236531cef6e65cdb",
-      "bytes": 144306
+      "sha256": "660dec62bdd05282d967e041010736009126d2e691dcd3922522c20a8c520ac2",
+      "bytes": 144196
     },
     {
       "path": "assets/workflow-dark.svg",
-      "sha256": "3af16dc2f244f2ae81ffa5b6f06fc13e4a50d585b394e37019995b3c83aec085",
-      "bytes": 144325
+      "sha256": "bb6edbe6672110fd3f12e749d4dbb88c571796d0df8ce09608be5160121795f9",
+      "bytes": 144215
     }
   ],
   "validation": {
@@ -85,30 +85,11 @@
   "visual_review": {
     "status": "passed",
     "scope": [
-      "1440x900 light and dark viewer captures",
-      "896px-wide README SVG embedding in both themes"
+      "1440x900 light and dark viewer captures"
     ],
     "observations": [
       "No clipped labels or crossing connectors.",
-      "Fixes return to a fresh reviewer panel.",
-      "The README picture selects the expected theme asset."
+      "Fixes return to a fresh reviewer panel."
     ]
-  },
-  "readme_preview": [
-    {
-      "theme": "light",
-      "source": "workflow-light.svg",
-      "width": 974,
-      "height": 404,
-      "overflow": false
-    },
-    {
-      "theme": "dark",
-      "source": "workflow-dark.svg",
-      "width": 974,
-      "height": 404,
-      "overflow": false
-    }
-  ],
-  "runtime_tests": "Not rerun: documentation and generated artwork only."
+  }
 }

@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""Run the Agent Workers CLI."""
+
+from importlib import import_module
+
+
+if __name__ == "__main__":
+    import_module("agent-workers").cli()
