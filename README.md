@@ -6,6 +6,8 @@
 
 # herdr-rex-pstack-orchestrator
 
+[![Package validation](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/validate.yml)
+[![Pstack upstream](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/upstream.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Give your coding agent a team of workers in [Herdr](https://herdr.dev) or
