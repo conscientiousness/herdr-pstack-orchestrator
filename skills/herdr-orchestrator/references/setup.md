@@ -3,7 +3,7 @@
 
 Run the setup when the user asks for it, or when `horch run` fails with `config_invalid` because `workers.toml` does not exist. Ask the user one question at a time.
 
-1. Run `horch detect`. Show the selected `backend`, installed core path, available harnesses and Pi providers. Core uses native status reporting. Legacy mode reports the `pi_integration` status and version. Core is preferred whenever installed; a broken core must be repaired, not silently replaced by legacy execution.
+1. Run `horch detect`. Show the selected `backend`, available harnesses, and Pi providers. Rex and core use native status reporting. Legacy mode reports the `pi_integration` status and version. Recover any missing or conflicting caller context before launching.
 2. Ask which workers to define. A worker is a name plus a harness, a model, an optional effort, optional extra arguments, and an optional `description` of its intended tasks and boundaries. One worker/model is sufficient; multiple roles may share it. Different models can provide additional review perspectives when configured.
    - Pi: run `pi --list-models <text>` to find a model. Use the `provider` key with the model ID from that list. `effort` is the Pi thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`).
    - Codex: the model name that `codex -m` accepts. `effort` is the value for Codex's `model_reasoning_effort`, such as `medium` or `high`.
@@ -20,16 +20,53 @@ Run the setup when the user asks for it, or when `horch run` fails with `config_
 
    Automatic approval can deny an action. These runs verified successful workflows; they did not deliberately trigger a denial. Inspect and report any worker problem as described below. Startup trust dialogs are separate from action approval.
 
-4. Ask for `max_active_workers` (default 4) and `notify_after_minutes` (default 180). Core counts unclosed tasks session-wide by core ID in this store, plus legacy reservations in the GUI caller's workspace. Legacy execution retains per-workspace quotas.
+4. Ask for `max_active_workers` (default 4) and `notify_after_minutes` (default 180). Rex counts unclosed tasks per server and session. Core counts unclosed tasks by core ID in this store, plus legacy reservations in the GUI caller's workspace. Legacy execution uses per-workspace quotas.
    The controller needs access to both the configuration directory (`~/.config/herdr-orchestrator/`) and the task directory (`~/.local/state/herdr-orchestrator/`, or their XDG equivalents). Claude Code's `auto` mode completed a skill E2E that read the configured `workers.toml` and task results outside the project. With other permission modes, reads outside the project can prompt; the user can add the directories to `permissions.additionalDirectories` in their Claude Code settings.
 5. Write `~/.config/herdr-orchestrator/workers.toml` (or `$XDG_CONFIG_HOME/herdr-orchestrator/workers.toml`) in the format under "Configuration" below. Show the user the file.
-6. With core, use the harness's native OSC 7501 idle readiness. Core needs no legacy integration, custom status hooks, or global settings changes. Codex runs interactively with `--no-daemon`; conflicting daemon arguments are rejected. Run `horch check --cwd <worker directory>` to verify actual configured delivery. Startup trust dialogs remain the user's decision.
+6. Rex and core use the harness's native OSC 7501 idle readiness. Codex runs interactively with `--no-daemon`. Conflicting daemon arguments are rejected. Run `horch check --cwd <worker directory>` with the caller options below to verify actual configured delivery. Startup trust dialogs remain the user's decision.
 
    For legacy Pi workers, install Herdr's Pi integration with `herdr integration install pi`. `horch` requires its ready-session signal before submitting a task. Run `horch check --cwd <a directory the workers will work in>`. If Herdr reports the Pi integration as missing, `run` and any `check` batch selecting Pi fail with `pi_integration_missing` before allocating any worker. Unknown or unavailable integration status still uses the live ready-session guard. Successful check output has one `ok` field per worker. For a line with `ok: false`, read `message`, look at the pane it names (see [problem handling](../SKILL.md#problems)), and tell the user. After the user clears a dialog, run `horch close <task-id>` and `horch check <worker>` again.
 
 ## Caller context
 
-Core controllers outside Herdr can run headless without `HERDR_ENV` or a legacy caller. Controllers in Herdr must present each core worker in an owned attach pane in `hcOrch` tabs in the verified caller's live workspace. Legacy runtime uses `horch` tabs. Keep the caller's focus and tab unchanged. Both paths validate the caller before any layout writes. A presentation error never changes runtime backends and must be reported to the user.
+`horch detect` reports the route indicated by caller context. `run` and `check`
+verify that context before creating anything. When both Rex and Herdr hints are
+inherited, supply the explicit caller option for this conversation. A shared
+daemon can retain an older conversation's environment. Use the local terminal
+that actually hosts this conversation. Controllers outside both multiplexers can
+use core headless.
+
+### Rex caller
+
+Rex ordinary shell callers can use `REX_SESSION` and `REX_BLOCK` when the block's
+process tree contains `horch`. If `REX_SERVER` is supplied, it must identify a
+local Unix-socket server. Set it to the endpoint for a nondefault local server.
+Workers start directly in `rexOrch` blocks in the verified session. `horch`
+reuses its own worker tabs up to four blocks per tab, keeps them separate
+from the controller's tab, and preserves focus.
+
+For an agent controller or tools outside the caller's process tree, find the
+full block ID with `rex ls --json` and `rex block ls -s <session> --json`. Use
+`rex block call -s <session> -b <block> process` and
+`rex capture -s <session> -b <block> --trim` to confirm the live harness, cwd,
+and text unique to this conversation's visible screen. An installed CLI,
+the first listed session, or app focus is insufficient. Rerun with the verified
+block and distinctive text of at least 16 characters:
+
+```bash
+python3 <skill-dir>/scripts/horch.py run <worker> --brief <file> --cwd <worker-dir> \
+  --caller-block <confirmed-block-id> --caller-text '<distinctive visible conversation text>'
+```
+
+Pass the same caller options to `check`. If no unique block can be confirmed,
+report the missing context and leave dispatch stopped. See the [Rex CLI guide](https://www.superlogical.com/rex/docs/automate/cli).
+
+### Herdr caller
+
+Controllers in Herdr must present each core worker in an owned attach pane in
+`hcOrch` tabs in the verified caller's live workspace. Legacy runtime uses
+`horch` tabs. Both paths verify the caller before layout writes and preserve its
+tab and focus. Report any presentation failure at the recorded backend.
 
 Legacy execution requires `HERDR_ENV=1`. Core requires caller verification whenever `--caller-pane` or `--caller-text` is supplied, `HERDR_ENV=1`, or any nonempty `HERDR_PANE_ID`, `HERDR_TAB_ID`, `HERDR_WORKSPACE_ID`, or `HERDR_SOCKET_PATH` is inherited. This preserves viewer placement when tools lose `HERDR_ENV`. Core also requires `HERDR_SOCKET_PATH` before launch to pin viewer cleanup. A nonblank caller pane ID comes from `--caller-pane` when given, otherwise `HERDR_PANE_ID`. Herdr's `--current` only reads `HERDR_PANE_ID`; it does not check that the pane hosts the caller. `horch` therefore proves the caller before task allocation:
 
@@ -61,7 +98,14 @@ Moving a pane is different from a stale ID. Herdr preserves the moved terminal's
 
 ## Dialogs that stop a worker before it starts
 
-Core requires actual native idle before task submission and leaves missing reporting or startup dialogs unresolved. Check `startup_ready`, `submission` and `execution_observed` separately. After a startup failure with `submission: "not_sent"`, `wait --recheck` may observe native idle but leaves the task unsent. Once the user resolves readiness and chooses recovery, `horch submit <task-id>` sends the original brief once on that retained core terminal. It rejects `sent`, `unknown`, historical, closed or completed tasks. A send timeout is `unknown`, never proof that nothing was sent. The integration-specific Pi details below apply only to legacy Herdr; legacy recovery still requires inspection, closure and a fresh task.
+Rex and core require native idle before task submission. Check `startup_ready`,
+`submission`, and `execution_observed` separately. After a startup failure with
+`submission: "not_sent"`, `wait --recheck` may observe native idle while leaving
+the task unsent. Once the user resolves readiness and chooses recovery, `horch
+submit <task-id>` sends the original brief once on that retained block or
+terminal. It rejects `sent`, `unknown`, historical, closed, or completed tasks.
+A send timeout leaves the outcome `unknown`. Legacy recovery requires
+inspection, closure, and a fresh task.
 
 These appear before the worker reads its task. `horch` reports `start_failed` and leaves the pane open. The user must clear each one once, in the pane or by starting the harness there themselves.
 
@@ -72,7 +116,7 @@ These appear before the worker reads its task. `horch` reports `start_failed` an
 
 ## Reviewing configured workers
 
-Use `horch stats [--workspace <id>] [--days <n>]` before proposing changes to this file. It reads the store and configuration without Herdr calls or writes, even outside Herdr. See [worker statistics](stats.md) for fields, limitations, and interpreting the numbers with the user.
+Use `horch stats [--workspace <id>] [--days <n>]` before proposing changes to this file. It reads the store and configuration without multiplexer calls or writes. See [worker statistics](stats.md) for fields, limitations, and interpreting the numbers with the user.
 
 ## Configuration
 
@@ -82,7 +126,7 @@ Use `horch stats [--workspace <id>] [--days <n>]` before proposing changes to th
 `description` is optional controller guidance. Existing configurations remain valid without it. Role mappings take precedence over descriptions, and `horch` does not select models or pass descriptions to harness commands. Describe task scope rather than unverified capability or cost rankings. Upgrade every installed `horch` that reads a shared configuration before adding this key; older versions reject unknown keys.
 
 ```toml
-# If you are the controller (you start herdr workers with horch), delegate only
+# If you are the controller (you start workers with horch), delegate only
 # through the herdr-orchestrator skill. Never use native subagents.
 
 max_active_workers = 4
@@ -112,7 +156,7 @@ args = ["--permission-mode", "auto"]
 
 | Key | Meaning |
 |---|---|
-| `max_active_workers` | Default 4. Core reserves slots session-wide by core ID in this store and also counts legacy tasks in a GUI caller's workspace. Legacy launches keep workspace limits. |
+| `max_active_workers` | Default 4. Rex scopes reservations to a server and session. Core scopes them to the core ID and counts legacy tasks in a GUI caller's workspace. Legacy launches keep workspace limits. |
 | `notify_after_minutes` | When a task runs longer than this, `horch wait` notifies once. Default 180. |
 | `workers.<name>.harness` | `pi`, `codex`, or `claude`. |
 | `workers.<name>.model` | The model as the harness accepts it on its command line. |

@@ -35,17 +35,21 @@ python3 skills/herdr-orchestrator/scripts/horch.py --help
 
 The [command guide](../skills/herdr-orchestrator/SKILL.md#run-horch) describes
 the available commands. Keep the entire `scripts/` directory when copying the
-skill, including `core_backend.py`. It has no third-party Python dependencies.
+skill, including `core_backend.py` and `rex_backend.py`. The skill has no
+third-party Python dependencies.
 
-Installed `herdr-core` takes priority over a verified `hc` alias. Core works
-without a GUI or `HERDR_ENV`. Only executable absence selects legacy Herdr;
-connection and startup failures remain core errors. Core uses native harness
-status rather than custom hooks. Controllers running in Herdr require `hcOrch`
-viewer tabs in the verified caller's same workspace; legacy runtime keeps `horch`
-tabs. Missing caller context must be recovered before dispatch, and viewer
-failures must be reported. Controllers outside Herdr can run headless. Stored tasks retain their
-backend across installation changes. Core tasks also retain their endpoint.
-Keep each legacy task store scoped to its original Herdr server.
+Start the controller inside the multiplexer you want to use. Rex controllers
+use a local Unix-socket [Rex server and CLI](https://www.superlogical.com/rex/docs/automate/cli)
+and run workers in `rexOrch` tabs in the verified project session. Herdr
+controllers use `hcOrch` viewers in the verified workspace when core is
+installed. `herdr-core` takes priority over a verified `hc` alias, and executable
+absence selects legacy Herdr with `horch` tabs. Controllers outside both
+multiplexers can use core headless. Both Rex and core use native harness status.
+
+Recover missing or ambiguous [caller context](../skills/herdr-orchestrator/references/setup.md#caller-context)
+before dispatch. A connection, readiness, or viewer error stays on the selected
+backend. Stored Rex and core tasks retain their original endpoint. Keep each
+legacy task store scoped to its original Herdr server.
 
 ## Update
 
@@ -62,9 +66,8 @@ git pull --ff-only
 ```
 
 Symlinks use the updated files; if you copied the skills instead, copy them
-again. Keep your existing `workers.toml` rather than replacing it with the
-example. After either update, start a new controller session. Legacy execution
-still requires that session to run inside Herdr.
+again. Keep your existing `workers.toml`. After either update, start a new
+controller session in your chosen multiplexer, or use core headless.
 
 ## Remove
 
