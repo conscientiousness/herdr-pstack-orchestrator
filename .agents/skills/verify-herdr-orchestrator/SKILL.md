@@ -35,7 +35,7 @@ For discovery and upstream checks, use the feature's source/CLI doctor instead; 
 
 ## Drive
 
-Follow only the selected [feature procedure](features/README.md). Keep the original long-running command/session alive while posting progress updates. All evaluation controllers and workers belong in separate Herdr tabs, never the user's controller tab. Stop other dispatchers during isolated-state model E2Es.
+Follow only the selected [feature procedure](features/README.md). Keep the original long-running command/session alive while posting progress updates. Put Herdr evaluations in owned tabs and Rex evaluations on an isolated server. Stop other dispatchers during isolated-state model E2Es.
 
 Use [core lifecycle and viewers](features/core.md) for deterministic core and placement checks. Existing model drivers use legacy pane oracles; follow their backend prerequisites instead of interpreting a core terminal ID as a Herdr pane ID. Do not run model scenarios merely to broaden a deterministic caller/viewer fix.
 

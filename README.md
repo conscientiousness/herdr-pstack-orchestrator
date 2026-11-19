@@ -11,13 +11,16 @@
 [![Pstack source: 0.15.43](https://img.shields.io/badge/pstack_source-0.15.43-blue)](https://github.com/cursor/plugins/tree/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7/pstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Give your coding agent a team of workers in [Herdr](https://herdr.dev). Ask one
-agent to coordinate a task; it can delegate investigation or implementation to
-Pi, Codex CLI, or Claude Code workers, collect their results, and check the work.
-Installed herdr-core runs workers in persistent terminals, including headless
-sessions. Controllers running in Herdr must show workers in `hcOrch` viewer
-tabs in the same verified workspace, keeping focus and the controller tab unchanged.
-Only core's absence selects the original Herdr runtime, whose worker tabs stay `horch`.
+Give your coding agent a team of workers in [Herdr](https://herdr.dev) or
+[Rex](https://www.superlogical.com/rex/docs/automate/cli). One agent coordinates
+the task, delegates investigation or implementation to Pi, Codex CLI, or Claude
+Code workers, and verifies their results.
+
+In Rex, workers run directly in split blocks in `rexOrch` tabs in the
+controller's verified project session. In Herdr, installed herdr-core runs
+workers with `hcOrch` viewers in the verified workspace. Herdr without core
+uses `horch` worker tabs. Both keep the controller tab and focus in place.
+Herdr-core also supports headless operation.
 
 Use the core skill for delegation, or add the optional **pstack** bundle for
 workflows such as independent review and multi-step implementation. You can use
@@ -34,15 +37,15 @@ No changes to your application code are needed.
 
 ## Requirements
 
-- [herdr-core](https://github.com/herdrdev/herdr-core), with agent CLIs that report
-  native OSC 7501 status. Core 0.1.17 has Linux E2E coverage. If core is absent,
-  [Herdr](https://herdr.dev) 0.9.3 or later supplies the legacy fallback, with your
-  controller in a Herdr pane (`HERDR_ENV=1`). An unhealthy installed core does not
-  fall back.
+- In Rex, a local Unix-socket Rex server and the `rex` CLI. In Herdr or headless,
+  use [herdr-core](https://github.com/herdrdev/herdr-core). Core 0.1.17 has Linux
+  E2E coverage. If core is absent and your controller runs inside Herdr,
+  [Herdr](https://herdr.dev) 0.9.3 or later supplies the legacy runtime.
 - Python 3.11 or later with POSIX file locks. Linux has been tested; macOS is not yet verified.
 - Node.js 22.20 or later and npm for the installer.
 - The agent CLIs you want to use—`pi`, `codex`, or `claude`—installed and authenticated.
-- For legacy Pi workers only, install Herdr's integration with `herdr integration install pi`. Core uses native status and needs no custom hooks or extensions.
+- For Rex and core, use harness versions that report native OSC 7501 status.
+  For legacy Pi workers, install Herdr's integration with `herdr integration install pi`.
 
 ## Install
 
@@ -62,8 +65,8 @@ npx skills@latest add https://github.com/conscientiousness/herdr-pstack-orchestr
 
 Choose your agent harnesses and project or global scope in the installer, and
 review any same-name skill conflicts. Then start a **new agent session** so it
-can load the skills. Core can run headless; legacy execution requires Herdr. See the [installation guide](docs/INSTALL.md)
-for manual installation, updates, and removal.
+can load the skills. See the [installation guide](docs/INSTALL.md) for manual
+installation, updates, and removal.
 
 ## Quickstart
 
@@ -96,10 +99,10 @@ Workers run with the permissions you choose. `horch` does not enforce a sandbox,
 and separate worktrees only keep edits apart. See [setup and configuration](skills/herdr-orchestrator/references/setup.md)
 for the available options and permission behavior.
 
-## Optional: original pstack through Herdr
+## Optional: original pstack through horch
 
 The full bundle includes selected original [pstack](https://github.com/cursor/plugins/tree/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7/pstack)
-skills and a Herdr adapter. After installing it and configuring workers, try:
+skills and a `horch` adapter. After installing it and configuring workers, try:
 
 ```text
 Use interrogate to review this branch.
@@ -109,7 +112,7 @@ Or ask for `poteto-mode` when you want a broader workflow. The controller can
 help configure the worker roles that a workflow needs. For the included skills,
 role mapping, and compatibility details, see the [pstack guide](skills/pstack-herdr/references/compatibility.md).
 
-The playbook defines what to prove and when to stop. Herdr dispatches through
+The playbook defines what to prove and when to stop. `horch` dispatches through
 the roles, models and effort in your `workers.toml`. The controller checks
 worker results and handles PR delivery under the project's rules. See the
 [workflow review](e2e/PLAYBOOKS.md#workflow-review-for-pstack-01543) for all 22
@@ -124,12 +127,12 @@ explains how to update a manual clone or remove the skills.
 
 ## Troubleshooting
 
-Ask your agent to run `horch detect` to check available harnesses and Pi
-integration. Tasks keep their launch backend. Core tasks also pin the endpoint,
-so later installation or environment changes do not reroute their cleanup. If a worker stops or fails, inspect its
-recorded backend terminal before closing it. The [setup guide](skills/herdr-orchestrator/references/setup.md) and [task
-recovery guide](skills/herdr-orchestrator/references/lifecycle.md#problem-recovery)
-cover common problems.
+Ask your agent to run `horch detect` to see the selected route, available
+harnesses, and Pi integration status. Tasks keep their launch backend. Rex and
+core tasks also pin their server endpoint for later observation and cleanup.
+If a worker stops or fails, inspect its recorded terminal before closing it.
+See the [setup guide](skills/herdr-orchestrator/references/setup.md) and [task
+recovery guide](skills/herdr-orchestrator/references/lifecycle.md#problem-recovery).
 
 ## More information
 
@@ -137,7 +140,7 @@ cover common problems.
 - [Verification evidence](docs/RELEASE-EVIDENCE.md) and [known gaps](docs/CAPABILITY-GAPS.md)
 - [Contributing](CONTRIBUTING.md)
 
-Built for [Herdr](https://herdr.dev), with an independent adapter for Lauren
-Tan's [pstack](https://github.com/cursor/plugins/tree/main/pstack). The banner
+Includes an independent adapter for Lauren Tan's
+[pstack](https://github.com/cursor/plugins/tree/main/pstack). The banner
 and workflow diagram have their own [asset notes](assets/banner-prompt.md) and
 [diagram notices](assets/workflow.md). Licensed under the [MIT License](LICENSE).

@@ -4,6 +4,26 @@ For agent-driven verification, use the project-local [verify-herdr-orchestrator 
 
 These files are repository tooling, outside the installed skills.
 
+## Verify the Rex backend
+
+With a Rex CLI that supports `program_status`, run the isolated Rex driver:
+
+```bash
+python3 e2e/rex_backend.py --output /tmp/horch-rex-proof
+```
+
+The driver starts its own Rex server and a shell controller in an owned session.
+It checks that two workers share a background `rexOrch` tab while the controller
+tab keeps focus. The workers produce separate ledger outputs while still working.
+`horch` withholds both results until Rex reports the end of the turn, verifies
+delivery, and removes the owned blocks. The driver also checks that mixed
+controller hints are rejected, stale Rex environment has no effect on task IDs
+pinned at dispatch, and the unrelated session stays intact.
+
+The printed `evidence.json` contains a rerun command, assertions and server
+cleanup. The workers are deterministic fixtures. This driver uses a real Rex
+server without model calls or changes to user settings and sessions.
+
 ## Verify the preferred core backend
 
 Run the black-box headless driver with the official `herdr-core` binary installed.

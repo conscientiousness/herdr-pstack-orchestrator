@@ -1,11 +1,11 @@
 ---
 name: pstack-herdr
-description: "Run original pstack workflows through configured Herdr workers. Loaded by installed pstack workflow skills to map their tools and roles to Herdr; also usable as an explicit entry point."
+description: "Run original pstack workflows through configured workers in Rex, Herdr, or headless herdr-core. Loaded by installed pstack workflow skills to map their tools and roles to horch."
 ---
 
 # pstack-herdr
 
-Installed workflow skills load this mapping before their original instructions. You can invoke `poteto-mode`, `how`, or `interrogate` directly. The bundle contains selected skills from Lauren Tan's original `cursor/plugins`, their resources, and both Herdr adapters. Read [herdr-tools.md](references/herdr-tools.md) and the companion [herdr-orchestrator skill](../herdr-orchestrator/SKILL.md) before starting. Installed herdr-core is the preferred backend and works headless. Only its absence selects legacy Herdr, which requires a controller pane. Controllers running in Herdr must show core workers in `hcOrch` viewer tabs in the verified caller's same workspace, preserving focus and the controller tab. Recover missing caller context before dispatch and immediately report viewer failures; legacy worker tabs remain `horch`. Tasks keep their recorded backend. Core tasks also pin their endpoint; legacy tasks retain the one-server-per-store requirement. Native core status supplies readiness and ended-turn evidence; result files alone do not complete tasks.
+Installed workflow skills load this mapping before their original instructions. You can invoke `poteto-mode`, `how`, or `interrogate` directly. The bundle contains selected skills from Lauren Tan's original `cursor/plugins`, their resources, and both adapters. Read [herdr-tools.md](references/herdr-tools.md) and the companion [herdr-orchestrator skill](../herdr-orchestrator/SKILL.md) before starting. Verify the controller's location before dispatch. Rex workers use `rexOrch` tabs in the verified session. Herdr core workers use `hcOrch` viewers in the verified workspace, and legacy Herdr workers use `horch` tabs there. Follow the companion skill for headless core, caller context, and viewer failures. Tasks keep their recorded backend. Read results after `horch wait` confirms delivery.
 
 This mapping takes precedence over upstream tool names, model defaults, configuration paths, and delegation instructions. User and project instructions retain precedence over both skills. Preserve bundled upstream instructions; report required compatibility changes separately.
 

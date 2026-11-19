@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""horch - start, watch, and close herdr worker agents.
+"""horch - start, watch, and close worker agents in Herdr or Rex.
 
 Core of the herdr-orchestrator skill. Subcommands: run, wait, list, close, detect, check, stats.
 Python 3.11+, standard library only. Every command prints JSON on stdout;
@@ -16,6 +16,7 @@ import json
 import math
 import os
 import re
+import rex_backend as rex
 import secrets
 import shlex
 import shutil
@@ -37,6 +38,8 @@ TASK_ID_RE = re.compile(r"t-[0-9a-f]{6}")
 MISSING_PANE_CODES = {"pane_not_found", "tab_not_found", "workspace_not_found"}
 # Session IDs a controller harness exports to its tool commands.
 CONTROLLER_SESSION_ENV = {"codex": "CODEX_THREAD_ID", "claude": "CLAUDE_CODE_SESSION_ID"}
+HERDR_CONTEXT_ENV = ("HERDR_PANE_ID", "HERDR_TAB_ID", "HERDR_WORKSPACE_ID", "HERDR_SOCKET_PATH")
+REX_CONTEXT_ENV = ("REX_SESSION", "REX_BLOCK")
 
 SETTLED_STATES = {
     "done",
@@ -60,7 +63,7 @@ WORKER_RULES = """\
 
 - Write your output files first. Write `result.json` last.
 - Do not ask the user questions. If something is unclear, write `result.json` with status `blocked` and the question, then stop.
-- Do not run `herdr` or `horch`.
+- Do not run `herdr`, `rex`, or `horch`.
 - You may use your own subagents unless the assignment restricts delegation. Complete a no-delegation assignment yourself.
 
 Write `result.json` at exactly this path:
@@ -261,6 +264,9 @@ def default_state():
     return {
         "state": "running",
         "baseline_seq": None,
+        "baseline_status_at": None,
+        "baseline_status_owner": None,
+        "completion_status_at": None,
         "saw_working": False,
         "long_notified": False,
         "closed": False,
@@ -344,7 +350,7 @@ def load_task(directory, task_id):
     except ValueError as exc:
         raise TaskInvalidError(f"task {task_id} has an invalid created_at in task.json") from exc
     binding = task.get("backend", {"kind": "legacy"})
-    if not isinstance(binding, dict) or binding.get("kind") not in ("legacy", "core"):
+    if not isinstance(binding, dict) or binding.get("kind") not in ("legacy", "core", "rex"):
         raise TaskInvalidError(f"task {task_id} has an unknown backend")
     if binding["kind"] == "core":
         try:
@@ -356,11 +362,26 @@ def load_task(directory, task_id):
                 raise ValueError("invalid core viewer binding")
         except ValueError as exc:
             raise TaskInvalidError(f"task {task_id}: {exc}") from exc
+    elif binding["kind"] == "rex":
+        try:
+            rex.validate(binding)
+            agent = "horch-" + task_id[2:]
+            if (task["pane_id"] != (binding["block"] or binding["label"])
+                    or task.get("workspace_id") != binding["session"]
+                    or task.get("harness") != binding["harness"] or task["agent"] != agent
+                    or binding["label"] != f"{agent}-{task['nonce']}"):
+                raise ValueError("inconsistent Rex task binding")
+        except ValueError as exc:
+            raise TaskInvalidError(f"task {task_id}: {exc}") from exc
     return task
 
 
 def is_core(task):
     return task.get("backend", {}).get("kind") == "core"
+
+
+def is_rex(task):
+    return task.get("backend", {}).get("kind") == "rex"
 
 
 def all_task_ids():
@@ -379,10 +400,12 @@ def active_task_count(workspace_id):
 
 
 def task_capacity(workspace_id, binding=None):
-    """Return the reservation count and invalid IDs from the same bulk scan."""
+    """Count reservations and collect reusable Rex windows in one store scan."""
     active = 0
     legacy_panes = []
     invalid = []
+    rex_windows = {}
+    rex_scope = binding is not None and binding["kind"] == "rex"
     for task_id in all_task_ids():
         directory = task_dir(task_id)
         if load_state(directory)["closed"]:
@@ -395,7 +418,17 @@ def task_capacity(workspace_id, binding=None):
             active += 1  # unknown owner and pane; reserve a slot in every workspace
             invalid.append(task_id)
             continue
-        if binding is not None and is_core(task):
+        if rex_scope:
+            if not is_rex(task):
+                continue
+            other = task["backend"]
+            if all(other[key] == binding[key] for key in ("host_id", "instance_id", "session")):
+                active += 1
+                if other["window"] and other["block"]:
+                    rex_windows.setdefault(other["window"], set()).add(other["block"])
+        elif is_rex(task):
+            continue
+        elif binding is not None and is_core(task):
             if task["backend"]["core_id"] == binding["core_id"]:
                 active += 1
         elif binding is not None and workspace_id is None:
@@ -410,7 +443,7 @@ def task_capacity(workspace_id, binding=None):
     if legacy_panes:
         panes = {pane_id for pane_id, _ in workspace_panes(workspace_id)}
         active += sum(pane_id in panes for pane_id in legacy_panes)
-    return active, invalid
+    return active, invalid, rex_windows
 
 
 # ---------------------------------------------------------------------------
@@ -623,6 +656,16 @@ def launch_args(worker, directory):
     return args + list(worker["args"])
 
 
+def native_launch_args(worker, directory, backend):
+    args = launch_args(worker, directory)
+    if worker["harness"] == "codex":
+        if any(arg == "--daemon" or arg.startswith(("--daemon=", "--no-daemon=")) for arg in args):
+            fail("config_invalid", f"{backend} Codex requires --no-daemon; conflicting daemon arguments were not changed")
+        if "--no-daemon" not in args:
+            args.append("--no-daemon")
+    return args
+
+
 def write_brief(directory, controller_brief, task_id, nonce):
     text = controller_brief.rstrip("\n") + "\n\n" + WORKER_RULES.format(
         result_path=directory / "result.json", task_id=task_id, nonce=nonce
@@ -645,8 +688,8 @@ def resolve_cwd(raw):
     return cwd
 
 
-def process_ancestors():
-    """Return the pids from this process up to init, or an empty set if ps is unusable."""
+def process_ancestors(stop_at=None):
+    """Return pids up to the terminal child, when present, or init."""
     try:
         listing = subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True,
                                  text=True, timeout=10, check=True).stdout
@@ -660,6 +703,8 @@ def process_ancestors():
     chain, pid = set(), os.getpid()
     while pid > 1 and pid in parents and pid not in chain:
         chain.add(pid)
+        if pid == stop_at:
+            break
         pid = parents[pid]
     return chain
 
@@ -791,12 +836,29 @@ def require_caller_context(claimed=None, caller_text=None):
     return caller_verification(pane, info, "conversation_text", screen)
 
 
+def has_herdr_context():
+    return os.environ.get("HERDR_ENV") == "1" or any(os.environ.get(key) for key in HERDR_CONTEXT_ENV)
+
+
+def controller_family(args):
+    """Select a controller candidate. Dispatch verifies the live location separately."""
+    if getattr(args, "caller_block", None) is not None:
+        return "rex"
+    if getattr(args, "caller_pane", None) is not None:
+        return "herdr"
+    herdr_context = has_herdr_context()
+    rex_context = any(os.environ.get(key) for key in REX_CONTEXT_ENV)
+    if herdr_context and rex_context:
+        fail("caller_context_conflict", "Both Rex and Herdr context are present. Confirm the controller and "
+             "pass --caller-block or --caller-pane, with --caller-text for an agent controller.")
+    if rex_context:
+        return "rex"
+    return "herdr" if herdr_context or getattr(args, "caller_text", None) is not None else "headless"
+
+
 def core_caller_context(claimed=None, caller_text=None):
     """Require a viewer for Herdr callers, even when HERDR_ENV was dropped."""
-    has_context = claimed is not None or caller_text is not None or os.environ.get("HERDR_ENV") == "1" or any(
-        os.environ.get(key) for key in (
-            "HERDR_PANE_ID", "HERDR_TAB_ID", "HERDR_WORKSPACE_ID", "HERDR_SOCKET_PATH"))
-    if not has_context:
+    if claimed is None and caller_text is None and not has_herdr_context():
         return None
     caller = require_caller_context(claimed, caller_text)
     if not os.environ.get("HERDR_SOCKET_PATH", "").strip():
@@ -806,13 +868,87 @@ def core_caller_context(claimed=None, caller_text=None):
     return caller
 
 
-def cmd_run(args):
+def rex_foreground_harness(process, expected):
+    foreground = process.get("foreground") or {}
+    return any(Path(foreground.get(key) or "").name in expected
+               for key in ("name", "argv0", "invoked_path"))
+
+
+def require_rex_context(claimed, caller_text):
+    """Prove the caller with its local process tree or explicit conversation evidence."""
+    block_id = claimed if claimed is not None else os.environ.get("REX_BLOCK", "")
+    session_id = os.environ.get("REX_SESSION", "")
+    guidance = ("Confirm the controller's full Rex block ID. Agent-controller tools require "
+                "--caller-block <id> --caller-text <unique visible conversation text>.")
+    if not rex.full_id(block_id, "block") or (claimed is None and not rex.full_id(session_id, "session")):
+        fail("caller_context_invalid", f"Rex caller context is incomplete. {guidance}")
+
+    binding = dict(rex.new_binding(), session=session_id)
+    blocks = rex.blocks(binding, all_sessions=claimed is not None)
+    match = [block for block in blocks if block["block_id"] == block_id]
+    if len(match) != 1 or not match[0].get("window_id") or match[0].get("host_id") != binding["host_id"]:
+        fail("caller_context_invalid", f"Rex controller block {block_id!r} is not placed on the local server. {guidance}")
+    caller = match[0]
+    binding["session"] = caller["session_id"]
+    process = rex.block_process(binding, block_id)
+    child, foreground = process.get("child") or {}, process.get("foreground") or {}
+    ancestors = process_ancestors(stop_at=child.get("pid"))
+    controllers = [h for h, var in CONTROLLER_SESSION_ENV.items() if os.environ.get(var)]
+    expected = controllers or HARNESSES
+    needs_screen = bool(controllers) or controller_process_ancestor(ancestors) or caller_text is not None
+    cwd = Path.cwd().resolve()
+    screen_hash = None
+    if child.get("pid") in ancestors and not needs_screen:
+        method = "process_ancestry"
+    else:
+        if (claimed is None or not caller_text or len(caller_text.strip()) < 16
+                or not rex_foreground_harness(process, expected)
+                or not foreground.get("cwd") or Path(foreground["cwd"]).resolve() != cwd):
+            fail("caller_context_invalid", f"Rex caller proof requires an explicit block, its foreground harness "
+                 f"in the conversation cwd, and unique visible text. {guidance}")
+        needle = " ".join(caller_text.split())
+        matches = []
+        for candidate in blocks:
+            if (not candidate.get("window_id") or candidate.get("host_id") != binding["host_id"]
+                    or candidate.get("creator_name") != caller.get("creator_name")):
+                continue
+            candidate_id = candidate["block_id"]
+            candidate_binding = dict(binding, session=candidate["session_id"])
+            candidate_process = process if candidate_id == block_id else rex.block_process(candidate_binding, candidate_id)
+            candidate_cwd = (candidate_process.get("foreground") or {}).get("cwd")
+            if (not candidate_cwd or Path(candidate_cwd).resolve() != cwd
+                    or not rex_foreground_harness(candidate_process, expected)):
+                continue
+            screen = rex.capture(candidate_binding, candidate_id, visible=True)
+            if needle in " ".join(screen.split()):
+                matches.append(candidate_id)
+                if candidate_id == block_id:
+                    screen_hash = hashlib.sha256(screen.encode()).hexdigest()
+        if matches != [block_id]:
+            fail("caller_context_invalid", f"Conversation text must match only the claimed Rex block; matches: {matches}. {guidance}")
+        method = "conversation_text"
+    return {"binding": binding, "block_id": block_id, "window_id": caller["window_id"],
+            "workspace_id": binding["session"], "controller_verification": {
+                "session_id": binding["session"], "window_id": caller["window_id"], "block_id": block_id,
+                "child_pid": child.get("pid"), "foreground_pid": foreground.get("pid"),
+                "cwd": str(cwd), "method": method, "screen_sha256": screen_hash, "verified_at": iso_now(),
+            }}
+
+
+def dispatch_context(args):
+    if controller_family(args) == "rex":
+        return require_rex_context(args.caller_block, args.caller_text), None
     binary = core.executable()
     if binary is None:
         require_herdr_env()
-        require_caller_context(args.caller_pane, args.caller_text)
+        caller = require_caller_context(args.caller_pane, args.caller_text)
     else:
-        core_caller_context(args.caller_pane, args.caller_text)
+        caller = core_caller_context(args.caller_pane, args.caller_text)
+    return caller, binary
+
+
+def cmd_run(args):
+    caller, binary = dispatch_context(args)
     config = load_config()
     brief_source = Path(args.brief).expanduser()
     try:
@@ -823,16 +959,21 @@ def cmd_run(args):
         fail("brief_not_found", f"brief file not found: {args.brief}")
     brief_text = brief_source.read_text(encoding="utf-8", errors="replace")
     worker = config["workers"].get(args.worker)
-    if binary is None and worker is not None and worker["harness"] == "pi":
+    binding = caller.get("binding") if caller else None
+    if binding is None and binary is None and worker is not None and worker["harness"] == "pi":
         require_pi_integration()
-    binding = core.new_binding(binary) if binary else None
+    if binary:
+        binding = core.new_binding(binary)
     emit(start_task(config, args.worker, brief_text, resolve_cwd(args.cwd),
-                    caller_pane=args.caller_pane, caller_text=args.caller_text, binding=binding))
+                    caller_pane=args.caller_pane, caller_text=args.caller_text, binding=binding, caller=caller))
 
 
-def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False, caller_pane=None, caller_text=None, binding=None):
+def start_task(config, worker_name, brief_text, cwd, *, skip_if_full=False,
+               caller_pane=None, caller_text=None, binding=None, caller=None):
     # Startup includes placement, publication, and acknowledgement, never completion.
     with task_store_lock():
+        if binding is not None and binding["kind"] == "rex":
+            return start_rex_task(config, worker_name, brief_text, cwd, skip_if_full, caller)
         if binding is not None:
             return start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, caller_text, binding)
         return _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, caller_text)
@@ -845,6 +986,8 @@ def core_agent(terminal):
 
 
 def close_task_resources(task):
+    if is_rex(task):
+        return rex.close(task["backend"])
     if not is_core(task):
         return {"pane": close_pane(task["pane_id"])}
     outcome = core.close(task["backend"])
@@ -991,14 +1134,177 @@ def cmd_submit(args):
         directory = task_dir(args.task_id)
         task = load_task(directory, args.task_id)
         state = load_state(directory)
-        if not is_core(task):
-            fail("invalid_arguments", "submit recovery currently requires a core task; inspect and close the legacy task before a fresh run")
+        if not (is_core(task) or is_rex(task)):
+            fail("invalid_arguments", "submit recovery requires a core or Rex task; inspect and close the legacy task before a fresh run")
         if state["closed"] or state["state"] == "done" or state["submission"] != "not_sent":
             fail("submission_unsafe", "Only an unclosed task recorded as not_sent can be submitted; sent, unknown and historical outcomes must never be resent")
-        submit_core_task(directory, task, state)
+        if is_rex(task):
+            if not task["backend"]["block"]:
+                fail("submission_unsafe", "Rex block creation is unresolved; inspect and close the task before a fresh run")
+            submit_rex_task(directory, task, state)
+            target = rex_location(task["backend"])
+        else:
+            submit_core_task(directory, task, state)
+            target = {"terminal_id": task["backend"]["terminal"]}
         emit({"task_id": args.task_id, "state": state["state"], "message": state["problem"],
-              "terminal_id": task["backend"]["terminal"],
+              **target,
               **progress_fields(state), **viewer_fields(task)})
+
+
+def rex_location(binding):
+    return {"session_id": binding["session"], "window_id": binding["window"], "block_id": binding["block"]}
+
+
+def rex_status_time(value):
+    if isinstance(value, str):
+        try:
+            timestamp = datetime.fromisoformat(value)
+            if timestamp.tzinfo is not None:
+                return timestamp
+        except ValueError:
+            pass
+    return None
+
+
+def rex_status_advanced(updated_at, baseline):
+    current = rex_status_time(updated_at)
+    earlier = rex_status_time(baseline)
+    return current is not None and earlier is not None and current > earlier
+
+
+def rex_ready(binding):
+    deadline = time.monotonic() + START_TIMEOUT_MS / 1000
+    while True:
+        terminal = rex.get(binding)
+        if not terminal or terminal["state"] != "live" or terminal["status"] in ("blocked", "error"):
+            raise rex.RexError("Rex worker exited or reported a startup problem before native idle readiness")
+        if terminal["status"] == "idle" and rex_status_time(terminal["updated_at"]) is not None:
+            return terminal
+        if time.monotonic() >= deadline:
+            raise rex.RexError("native idle readiness missing in the Rex block; inspect for a startup dialog")
+        time.sleep(0.25)
+
+
+def submit_rex_task(directory, task, state):
+    binding = task["backend"]
+    try:
+        baseline = rex_ready(binding)
+        state.update(startup_ready=True, native_status="idle", baseline_status_at=baseline["updated_at"],
+                     baseline_status_owner=baseline["owner"],
+                     state="not_started", problem=None, submission="unknown")
+        save_state(directory, state)
+        if state["closed"] or state["state"] == "done":
+            return
+        pointer = f"New task {task['task_id']}. Read {directory / 'brief.md'} in full and follow it exactly."
+        rex.send(binding, pointer, baseline)
+        state.update(submission="sent", problem="task submitted; execution acknowledgement not observed; "
+                     "inspect and use wait --recheck, never resend")
+        save_state(directory, state)
+        deadline = time.monotonic() + ACK_TIMEOUT_MS / 1000
+        while time.monotonic() < deadline:
+            terminal = rex.get(binding)
+            if not terminal or terminal["state"] != "live":
+                state.update(state="exited", native_status=None,
+                             problem="Rex worker exited after submission; inspect the block and result")
+                break
+            status = terminal["status"] if terminal["owner"] == baseline["owner"] else None
+            state["native_status"] = status
+            if rex_status_advanced(terminal["updated_at"], baseline["updated_at"]):
+                if status in ("working", "done"):
+                    state.update(state="running", saw_working=status == "working", problem=None)
+                    if status == "done":
+                        state["completion_status_at"] = terminal["updated_at"]
+                    break
+                if status in ("blocked", "error"):
+                    state.update(state=status, problem=f"Rex worker reported {status}")
+                    break
+            time.sleep(0.25)
+    except rex.RexError as exc:
+        if exc.kind == "not_sent":
+            state["submission"] = "not_sent"
+        if state["submission"] == "not_sent":
+            state.update(state="start_failed", problem=f"{exc}; no task was sent. After resolving readiness, "
+                         f"use horch submit {task['task_id']}")
+        elif state["submission"] == "unknown":
+            state["problem"] = f"Rex send outcome unresolved: {exc}; inspect, then wait --recheck; do not resend"
+        else:
+            state["problem"] = f"Rex task submitted; observation failed: {exc}; use wait --recheck; do not resend"
+        try:
+            terminal = rex.get(binding)
+            if terminal and (state["baseline_status_owner"] is None
+                             or terminal["owner"] == state["baseline_status_owner"]):
+                state["native_status"] = terminal["status"]
+        except rex.RexError:
+            pass
+    save_state(directory, state)
+
+
+def start_rex_task(config, worker_name, brief_text, cwd, skip_if_full, caller):
+    worker = config["workers"].get(worker_name)
+    if worker is None:
+        fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
+    context = caller["binding"]
+    if not any(block["block_id"] == caller["block_id"] and block.get("window_id") == caller["window_id"]
+               and block.get("host_id") == context["host_id"] for block in rex.blocks(context)):
+        fail("caller_context_invalid", "The Rex controller moved or disappeared; confirm its current block before dispatch")
+    active, invalid, windows = task_capacity(context["session"], context)
+    if active >= config["max_active_workers"]:
+        if skip_if_full:
+            return None
+        fail("worker_limit", f"Rex session {context['session']} has {active} reserved tasks; "
+             f"max_active_workers = {config['max_active_workers']}; invalid tasks: {invalid}")
+    program = shutil.which(worker["harness"])
+    if not program:
+        fail("rex_error", f"configured harness {worker['harness']} is not installed")
+    task_id = "t-" + secrets.token_hex(3)
+    directory = task_dir(task_id)
+    while directory.exists():
+        task_id = "t-" + secrets.token_hex(3)
+        directory = task_dir(task_id)
+    nonce = secrets.token_hex(8)
+    agent = "horch-" + task_id[2:]
+    argv = native_launch_args(worker, directory, "Rex")
+    binding = dict(context, window=None, block=None, label=f"{agent}-{nonce}", harness=worker["harness"])
+    task = {"task_id": task_id, "nonce": nonce, "worker": worker_name,
+            "harness": worker["harness"], "model": worker["model"], "cwd": str(cwd),
+            "task_dir": str(directory), "brief_path": str(directory / "brief.md"),
+            "result_path": str(directory / "result.json"), "agent": agent,
+            "pane_id": binding["label"], "argv": argv, "created_at": iso_now(), "backend": binding,
+            "workspace_id": context["session"], "controller_verification": caller["controller_verification"]}
+    directory.mkdir(parents=True)
+    write_brief(directory, brief_text, task_id, nonce)
+    state = default_state()
+    state.update(state="starting", submission="not_sent")
+    write_json(directory / "state.json", state)
+    write_json(directory / "task.json", task)
+    command = [sys.executable, str(Path(__file__).resolve()), "--exec-rex-worker", os.path.abspath(program), *argv]
+    try:
+        try:
+            placement = rex.launch(binding, caller["window_id"], windows, command, cwd, PANES_PER_TAB)
+        except rex.RexError as exc:
+            if exc.kind == "worker_absent":
+                raise
+            placement = rex.reconcile(binding)
+            if placement is None:
+                raise rex.RexError(f"Rex creation outcome unresolved: {exc}; reservation retained. "
+                                   f"Inspect worker label {binding['label']} at the stored endpoint") from exc
+            if (placement["window"] == caller["window_id"] or not any(
+                    window["window_id"] == placement["window"] and window.get("label") == rex.WINDOW_LABEL
+                    for window in rex.windows(binding))):
+                rex.close(dict(binding, **placement))
+                raise rex.RexError("Recovered Rex worker was outside a worker tab and was removed", "worker_absent")
+        binding.update(placement)
+        task["pane_id"] = binding["block"]
+        write_json(directory / "task.json", task)
+    except rex.RexError as exc:
+        state.update(state="start_failed", problem=str(exc), closed=exc.kind == "worker_absent")
+        save_state(directory, state)
+    if state["state"] == "starting" and not state["closed"]:
+        submit_rex_task(directory, task, state)
+    return {"task_id": task_id, "worker": worker_name, "agent": agent, "pane_id": task["pane_id"],
+            "backend": "rex", **rex_location(binding), "state": state["state"], "message": state["problem"],
+            **progress_fields(state), "controller_verification": task["controller_verification"],
+            "brief_path": task["brief_path"], "task_dir": task["task_dir"]}
 
 
 def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_pane, caller_text, binding):
@@ -1006,7 +1312,7 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
     if worker is None:
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
     caller = core_caller_context(caller_pane, caller_text)
-    active, invalid = task_capacity(caller["workspace_id"] if caller else None, binding)
+    active, invalid, _ = task_capacity(caller["workspace_id"] if caller else None, binding)
     if active >= config["max_active_workers"]:
         if skip_if_full:
             return None
@@ -1018,12 +1324,7 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
         task_id = "t-" + secrets.token_hex(3)
         directory = task_dir(task_id)
     nonce = secrets.token_hex(8)
-    argv = launch_args(worker, directory)
-    if worker["harness"] == "codex":
-        if any(arg == "--daemon" or arg.startswith(("--daemon=", "--no-daemon=")) for arg in argv):
-            fail("config_invalid", "core Codex requires --no-daemon; conflicting daemon arguments were not changed")
-        if "--no-daemon" not in argv:
-            argv.append("--no-daemon")
+    argv = native_launch_args(worker, directory, "core")
     binding = dict(binding, terminal="horch-" + task_id[2:], name="horch-" + task_id[2:], nonce=nonce)
     task = {"task_id": task_id, "nonce": nonce, "worker": worker_name,
             "harness": worker["harness"], "model": worker["model"], "cwd": str(cwd),
@@ -1119,7 +1420,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
 
     max_active = config["max_active_workers"]
-    active, invalid = task_capacity(caller["workspace_id"])
+    active, invalid, _ = task_capacity(caller["workspace_id"])
     if active >= max_active:
         if skip_if_full:
             return None
@@ -1300,6 +1601,9 @@ def turn_ended(agent, state):
     status = agent.get("agent_status")
     if status not in ("idle", "done"):
         return False
+    if state["baseline_status_at"] is not None:
+        return (rex_status_advanced(agent.get("status_at"), state["baseline_status_at"])
+                and (status == "done" or state["saw_working"]))
     completion = agent.get("completion_seq")
     baseline = state.get("baseline_seq")
     if isinstance(completion, (int, float)) and isinstance(baseline, (int, float)):
@@ -1343,14 +1647,20 @@ def ran_longer_than(task, minutes):
 
 def evaluate_task(info, agent, config):
     state, task = info["state"], info["task"]
+    if is_rex(task):
+        if rex_status_advanced(state["completion_status_at"], state["baseline_status_at"]):
+            agent = {"agent_status": "done", "status_at": state["completion_status_at"]}
+        elif agent and agent["status_owner"] != state["baseline_status_owner"]:
+            agent = {"agent_status": None}
     state["native_status"] = agent.get("agent_status") if agent else None
     if state["submission"] == "not_sent":
         state["state"] = "start_failed"
+        can_submit = is_core(task) or (is_rex(task) and task["backend"]["block"])
         state["problem"] = ("no task was sent; inspect readiness, then use horch submit " + task["task_id"]
-                            if is_core(task) else "no task was sent; inspect and close this task before a fresh run")
+                            if can_submit else "no task was sent; inspect and close this task before a fresh run")
         return state["state"]
     if state["submission"] == "unknown":
-        if (agent and state["baseline_seq"] is not None
+        if (agent and (state["baseline_seq"] is not None or state["baseline_status_at"] is not None)
                 and result_verdict(info["dir"], task) == "valid"):
             state["submission"] = "sent"
         else:
@@ -1402,19 +1712,31 @@ def evaluate_task(info, agent, config):
 
 
 def poll_round(infos, previous, config):
+    for info in infos:
+        if is_rex(info["task"]) and info["state"]["state"] == "starting":
+            info["state"] = load_state(info["dir"])
+            if info["state"]["state"] != "starting":
+                info["task"] = load_task(info["dir"], info["task_id"])
     observing = {info["task_id"]: info for info in infos
-                 if not info["state"]["closed"] and info["state"]["state"] != "done"
+                 if not info["state"]["closed"] and info["state"]["state"] not in ("done", "starting")
                  and (info["state"]["state"] not in SETTLED_STATES or info.get("recheck"))}
-    legacy = any(not is_core(info["task"]) for info in observing.values())
+    legacy = any(not (is_core(info["task"]) or is_rex(info["task"])) for info in observing.values())
     index = agent_index() if legacy else {}
     if index is None:
         return False, False
     observations = {}
     for info in observing.values():
-        if is_core(info["task"]):
-            terminal = core.get(info["task"]["backend"])
+        task = info["task"]
+        if is_core(task):
+            terminal = core.get(task["backend"])
             info["terminal_observation"] = terminal
             observations[info["task_id"]] = core_agent(terminal)
+        elif is_rex(task) and not info["state"]["completion_status_at"]:
+            binding = task["backend"]
+            terminal = rex.get(binding) if binding["block"] else None
+            if terminal and terminal["state"] == "live":
+                observations[info["task_id"]] = {"agent_status": terminal["status"], "status_at": terminal["updated_at"],
+                                                "status_owner": terminal["owner"]}
     changed = False
     for info in infos:
         directory = info["dir"]
@@ -1422,13 +1744,15 @@ def poll_round(infos, previous, config):
         cleanup = False
         with task_state_lock(directory):
             state = load_state(directory)
+            if is_rex(info["task"]) and info["state"]["state"] == "starting" and state["state"] != "starting":
+                info["task"] = load_task(directory, info["task_id"])
             info["state"] = state
             old_state = state["state"]
             if info["task_id"] not in observing or state["closed"] or old_state == "done" or (
                     old_state in SETTLED_STATES and not info.pop("recheck", False)):
                 reported = old_state
             else:
-                agent = (observations.get(info["task_id"]) if is_core(info["task"])
+                agent = (observations.get(info["task_id"]) if is_core(info["task"]) or is_rex(info["task"])
                          else index.get(info["task"]["agent"]))
                 reported = evaluate_task(info, agent, config)
                 cleanup = reported == "done"
@@ -1443,7 +1767,7 @@ def poll_round(infos, previous, config):
             cleanup_error = None
             try:
                 close_task_resources(info["task"])
-            except (HerdrError, core.CoreError) as exc:
+            except (HerdrError, core.CoreError, rex.RexError) as exc:
                 cleanup_error = f"task cleanup failed: {exc}; retry with horch close {info['task_id']}"
             with task_state_lock(directory):
                 state = load_state(directory)
@@ -1456,7 +1780,7 @@ def poll_round(infos, previous, config):
                 info["state"] = state
         # Notices are claimed in the state transaction, sent outside the lock.
         # Suppress a notice if a concurrent close has already completed.
-        if (notice and not load_state(directory)["closed"]
+        if (notice and not is_rex(info["task"]) and not load_state(directory)["closed"]
                 and (not is_core(info["task"]) or info["task"].get("viewer"))):
             notify(f"horch: {info['task_id']}", notice)
         info["reported"] = reported
@@ -1488,8 +1812,8 @@ def wait_line(info):
 
 def make_info(task_id):
     directory = task_dir(task_id)
-    task = load_task(directory, task_id)
     state = load_state(directory)
+    task = load_task(directory, task_id)
     return {"task_id": task_id, "dir": directory, "task": task, "state": state, "reported": state["state"]}
 
 
@@ -1508,14 +1832,18 @@ def cmd_wait(args):
                 fail("unknown_task", f"no such task: {task_id}")
             infos.append(make_info(task_id))
     else:
+        family = controller_family(args)
         infos = []
         for task_id in all_task_ids():
             try:
                 info = make_info(task_id)
             except (TaskInvalidError, TaskMissingError):
                 continue
-            if not info["state"]["closed"] and info["state"]["state"] not in SETTLED_STATES:
+            if (not info["state"]["closed"] and info["state"]["state"] not in SETTLED_STATES
+                    and (family == "headless" or is_rex(info["task"]) == (family == "rex"))):
                 infos.append(info)
+    if len({is_rex(info["task"]) for info in infos}) > 1:
+        fail("invalid_arguments", "Wait for Rex and Herdr tasks separately by task ID")
     if not infos:
         return
 
@@ -1548,8 +1876,8 @@ def wait_until_change(infos, config, max_seconds):
         now = time.monotonic()
         if deadline is not None and now >= deadline:
             return
-        native_only = all(is_core(info["task"]) for info in infos)
-        interval = 180.0 if native_only else POLL_SECONDS
+        core_only = all(is_core(info["task"]) for info in infos)
+        interval = 180.0 if core_only else POLL_SECONDS
         gap = interval if deadline is None else min(interval, deadline - now)
         if gap > 0:
             observations = [(info["task"]["backend"], info.get("terminal_observation"))
@@ -1769,6 +2097,7 @@ def cmd_list(args):
                     "pane_id": task.get("pane_id"),
                     "backend": task.get("backend", {"kind": "legacy"}),
                     "terminal_id": task["backend"]["terminal"] if is_core(task) else None,
+                    **(rex_location(task["backend"]) if is_rex(task) else {}),
                     **viewer_fields(task),
                     **progress_fields(state),
                     "workspace_id": task.get("workspace_id"),
@@ -1788,9 +2117,10 @@ def cmd_close(args):
     try:
         task = load_task(directory, args.task_id)
     except TaskInvalidError as exc:
-        fail("task_invalid", f"{exc}; pane is unknown. Check herdr pane list for a leftover "
-             f"horch pane, then remove task directory {directory} by hand")
-    outcome = close_task_resources(task)
+        fail("task_invalid", f"{exc}; terminal is unknown. Inspect the task's original backend for a "
+             f"leftover worker, then remove task directory {directory} by hand")
+    outcome = ({"block": "already_gone"} if is_rex(task) and load_state(directory)["closed"]
+               else close_task_resources(task))
     with task_state_lock(directory):
         current = load_state(directory)
         current["closed"] = True
@@ -1813,12 +2143,12 @@ with status `completed` and summary `check ok`.
 """
 
 
-def tool_version(name):
+def tool_version(name, version_arg="--version"):
     path = shutil.which(name)
     if path is None:
         return None
     try:
-        proc = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=30)
+        proc = subprocess.run([path, version_arg], capture_output=True, text=True, timeout=30)
         version = (proc.stdout or proc.stderr).strip().splitlines()[0] if (proc.stdout or proc.stderr).strip() else None
     except (OSError, subprocess.TimeoutExpired):
         version = None
@@ -1885,35 +2215,36 @@ def herdr_server_version():
 
 
 def cmd_detect(args):
-    binary = core.executable()
+    family = controller_family(args)
+    rex_controller = family == "rex"
+    binary = None if rex_controller else core.executable()
+    legacy = not rex_controller and binary is None
     harnesses = {name: tool_version(name) for name in HARNESSES}
     emit({
-        "backend": "core" if binary else "legacy",
+        "controller": family,
+        "backend": "rex" if rex_controller else "legacy" if legacy else "core",
         "core": {"path": binary, "status_source": "native OSC 7501"} if binary else None,
+        "rex": tool_version("rex", "version") if rex_controller else None,
         "herdr_env": os.environ.get("HERDR_ENV") == "1",
-        "herdr": tool_version("herdr") if not binary else None,
-        "herdr_server_version": herdr_server_version() if not binary else None,
+        "herdr": tool_version("herdr") if legacy else None,
+        "herdr_server_version": herdr_server_version() if legacy else None,
         "python": ".".join(str(part) for part in sys.version_info[:3]),
         "harnesses": harnesses,
         "pi_providers": pi_providers() if harnesses["pi"] else [],
-        "pi_integration": ({"status": "native", "version": None} if binary else pi_integration_status()),
+        "pi_integration": pi_integration_status() if legacy else {"status": "native", "version": None},
         "config": {"path": str(config_path()), "exists": config_path().is_file()},
     })
 
 
 def cmd_check(args):
-    binary = core.executable()
-    if binary is None:
-        require_herdr_env()
-    caller = (require_caller_context(args.caller_pane, args.caller_text) if binary is None
-              else core_caller_context(args.caller_pane, args.caller_text))
-    binding = core.new_binding(binary) if binary else None
+    caller, binary = dispatch_context(args)
+    binding = core.new_binding(binary) if binary else caller.get("binding") if caller else None
     config = load_config()
     names = list(dict.fromkeys(args.workers or list(config["workers"])))
     unknown = [name for name in names if name not in config["workers"]]
     if unknown:
         fail("unknown_worker", f"no worker named {', '.join(unknown)} in {config_path()}")
-    if binary is None and any(config["workers"][name]["harness"] == "pi" for name in names):
+    if binding is None and any(config["workers"][name]["harness"] == "pi" for name in names):
         require_pi_integration()
     cwd = resolve_cwd(args.cwd)
     deadline = time.monotonic() + args.max_seconds
@@ -1927,9 +2258,9 @@ def cmd_check(args):
             name = pending[0]
             began = time.monotonic()
             run = start_task(config, name, CHECK_BRIEF, cwd, skip_if_full=True,
-                             caller_pane=args.caller_pane, caller_text=args.caller_text, binding=binding)
+                             caller_pane=args.caller_pane, caller_text=args.caller_text, binding=binding, caller=caller)
             if run is None:
-                _, invalid = task_capacity(caller["workspace_id"] if caller else None, binding)
+                _, invalid, _ = task_capacity(caller["workspace_id"] if caller else None, binding)
                 capacity_invalid.update(invalid)
                 break  # poll our started tasks before retrying pending workers
             pending.pop(0)
@@ -1986,10 +2317,17 @@ def cmd_check(args):
 # ---------------------------------------------------------------------------
 
 
+def add_caller_arguments(parser):
+    caller = parser.add_mutually_exclusive_group()
+    caller.add_argument("--caller-pane", help="confirmed Herdr controller pane ID")
+    caller.add_argument("--caller-block", help="confirmed full Rex controller block ID")
+    parser.add_argument("--caller-text", help="unique visible conversation text for an agent controller")
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="horch",
-        description="Start herdr worker agents, give each one task, wait for the result.",
+        description="Start worker agents in Rex or Herdr, give each one task, and wait for the result.",
     )
     sub = parser.add_subparsers(dest="command", required=True, metavar="command")
 
@@ -1997,12 +2335,11 @@ def build_parser():
     p_run.add_argument("worker", help="worker name from workers.toml")
     p_run.add_argument("--brief", required=True, help="path of the brief file for the worker")
     p_run.add_argument("--cwd", help="working directory for the worker (default: the current directory)")
-    p_run.add_argument("--caller-pane", help="confirmed controller pane; required for Herdr agent controllers and tools outside all pane trees")
-    p_run.add_argument("--caller-text", help="unique visible conversation text required with --caller-pane for agent-controller tools")
+    add_caller_arguments(p_run)
     p_run.set_defaults(func=cmd_run)
 
     p_wait = sub.add_parser("wait", help="wait until at least one waited task changes state")
-    p_wait.add_argument("task_ids", nargs="*", help="tasks to wait on (default: every task that is not settled)")
+    p_wait.add_argument("task_ids", nargs="*", help="tasks to wait on (default: unsettled tasks in the controller's backend family)")
     p_wait.add_argument("--recheck", action="store_true", help="re-poll named unclosed problem tasks")
     p_wait.add_argument("--max-seconds", type=int, default=None, help="return after at most this many seconds")
     p_wait.set_defaults(func=cmd_wait)
@@ -2010,8 +2347,8 @@ def build_parser():
     p_list = sub.add_parser("list", help="print every task as one JSON line, oldest first")
     p_list.set_defaults(func=cmd_list)
 
-    p_stats = sub.add_parser("stats", help="summarize stored worker performance without Herdr or writes")
-    p_stats.add_argument("--workspace", help="only tasks created in this workspace")
+    p_stats = sub.add_parser("stats", help="summarize stored worker performance without terminal commands or writes")
+    p_stats.add_argument("--workspace", help="only tasks created in this Herdr workspace or Rex session")
     p_stats.add_argument("--days", type=int, help="only tasks created in the last n days")
     p_stats.set_defaults(func=cmd_stats)
 
@@ -2019,23 +2356,23 @@ def build_parser():
     p_close.add_argument("task_id", help="task to close")
     p_close.set_defaults(func=cmd_close)
 
-    p_submit = sub.add_parser("submit", help="submit a core task once after startup recovery, only when definitely not sent")
-    p_submit.add_argument("task_id", help="unclosed core task recorded as not_sent")
+    p_submit = sub.add_parser("submit", help="submit a core or Rex task once after startup recovery, only when definitely not sent")
+    p_submit.add_argument("task_id", help="unclosed core or Rex task recorded as not_sent")
     p_submit.set_defaults(func=cmd_submit)
 
     p_viewer = sub.add_parser("verify-viewer", help="re-read and verify a core task's viewer before user interaction")
     p_viewer.add_argument("task_id", help="core task whose owned viewer to inspect")
     p_viewer.set_defaults(func=cmd_verify_viewer)
 
-    p_detect = sub.add_parser("detect", help="print installed harnesses, versions, and pi providers")
+    p_detect = sub.add_parser("detect", help="print the controller route, installed harnesses, and Pi providers")
+    add_caller_arguments(p_detect)
     p_detect.set_defaults(func=cmd_detect)
 
     p_check = sub.add_parser("check", help="start each worker on a tiny task and report whether it works")
     p_check.add_argument("workers", nargs="*", help="workers to check (default: all in workers.toml)")
     p_check.add_argument("--cwd", help="working directory for the check workers (default: the current directory)")
     p_check.add_argument("--max-seconds", type=int, default=300, help="stop waiting after this many seconds (default: 300)")
-    p_check.add_argument("--caller-pane", help="confirmed controller pane; required for Herdr agent controllers and tools outside all pane trees")
-    p_check.add_argument("--caller-text", help="unique visible conversation text required with --caller-pane for agent-controller tools")
+    add_caller_arguments(p_check)
     p_check.set_defaults(func=cmd_check)
 
     return parser
@@ -2057,6 +2394,8 @@ def main(argv=None):
         fail("herdr_error", str(exc), exc.payload)
     except core.CoreError as exc:
         fail("core_error", str(exc))
+    except rex.RexError as exc:
+        fail("rex_error", str(exc))
     except KeyboardInterrupt:
         sys.exit(130)
     except Exception as exc:  # never crash with a traceback at the controller
@@ -2064,4 +2403,10 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--exec-rex-worker"]:
+        # The Rex server can inherit another controller's multiplexer and harness environment.
+        keep = {key: value for key, value in os.environ.items()
+                if not key.startswith(("HERDR", "HC_"))
+                and key not in (*CONTROLLER_SESSION_ENV.values(), "PI_SESSION_ID", "CLAUDECODE")}
+        os.execve(sys.argv[2], sys.argv[2:], keep)
     main()

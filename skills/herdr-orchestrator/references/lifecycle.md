@@ -1,10 +1,37 @@
 # Task lifecycle and recovery
 
+`run` and `check` verify the controller's [caller context](setup.md#caller-context)
+before starting workers. Rex and Herdr use separate routes. With explicit task
+IDs, `wait` and `close` use the task's stored route. Use separate waits for Rex
+and Herdr tasks.
+
+## Rex API boundary
+
+Rex launches the configured interactive harness directly in the verified
+caller's session. `rexOrch` tabs are separate from the controller's tab, keep up
+to four worker blocks, and preserve focus. The task pins a local Unix endpoint,
+the executable, the host and server instance, the full session/window/block IDs,
+and the owned block label. A changed or unavailable endpoint leaves the task
+unresolved. The Rex route uses Rex for placement, observation, and cleanup.
+
+`horch` reads [native program status](https://www.superlogical.com/rex/docs/build/program-status)
+from the owned block. It waits for idle, saves the reporting process and status timestamp, pastes the
+brief pointer once, then waits for the terminal input to settle before pressing
+Enter. It persists the uncertain submission state before writing input. A lost
+response retains the task for inspection and `wait --recheck`. A new native
+turn completion and a valid nonce-bound result are both required for delivery.
+
+If a creation response is lost, `horch` looks for the exact owned label in the
+recorded session. Closure targets only the owned block and verifies its absence.
+The tab closes when its last block is removed.
+
 ## Core API boundary
 
-New launches prefer installed `herdr-core`, then a verified `hc` alias. Only absence selects legacy Herdr. Startup, connection, namespace, configuration and readiness failures never select another backend. Core needs no GUI or `HERDR_ENV`.
+Herdr and headless launches prefer installed `herdr-core`, then a verified `hc`
+alias. Core needs no GUI or `HERDR_ENV`. Herdr with neither executable uses
+legacy execution. Failures stay on the selected route.
 
-`task.json.backend` is a tagged object. `kind: "core"` records `executable`, `session`, `endpoint`, permanent `core_id`, `terminal`, owned `name` and `nonce`, plus only the XDG paths needed for CLI affinity. `kind: "legacy"` uses the original pane/agent path. Records without `backend` always mean legacy; unknown tags are invalid. Optional `viewer` contains separate legacy pane/tab IDs and a pinned legacy socket path, and is not runtime identity.
+`task.json.backend` is a tagged object. `kind: "core"` records `executable`, `session`, `endpoint`, permanent `core_id`, `terminal`, owned `name` and `nonce`, plus only the XDG paths needed for CLI affinity. `kind: "rex"` records the Rex binding above. `kind: "legacy"` uses the original pane/agent path. Records without `backend` use legacy. Optional `viewer` contains separate legacy pane/tab IDs and a pinned legacy socket path.
 
 The core module speaks the official JSON RPC protocol at the pinned local endpoint. Every connection checks core identity with `hello`. Full `terminal.get` facts drive lifecycle evaluation; CLI `ls --json` summaries omit fields and are not equivalent. `events.subscribe` snapshots close the get/subscribe race and wake waits on native changes. Core-only waits have bounded check-ins for reminders; mixed waits retain the legacy polling cadence. No screen text or private transcript determines lifecycle.
 
@@ -58,14 +85,15 @@ Before submitting a legacy Pi task, `horch` additionally waits for the installed
 
 | State | Meaning | What to do |
 |---|---|---|
+| `starting` | Rex worker placement or readiness is in progress. | Wait for `run` or `check` to return. If startup was interrupted, inspect the reserved task. |
 | `running` | The worker is working. | Wait again. |
 | `long_running` | The task passed `notify_after_minutes`. Reported once. | Tell the user, then wait again. |
 | `done` | The turn ended with a valid `result.json`. | Read the result and check `closed` / `message`. |
 | `start_failed` | The harness did not start, usually a dialog. | See "Problems". |
-| `not_started` | Herdr did not observe acknowledgement within the prompt wait. The task may still be running. | See "Problems". |
+| `not_started` | The prompt wait did not observe acknowledgement. The task may still be running. | See "Problems". |
 | `blocked` | The worker waits at a dialog or permission prompt. | See "Problems". |
-| `exited` | The worker process is gone or the core terminal finished without delivery. | See "Problems". |
-| `error` | The core worker reported a native error. | Inspect without resending or changing backend. |
+| `exited` | The worker process or terminal ended before delivery. | See "Problems". |
+| `error` | The worker reported a native error. | Inspect without resending or changing backend. |
 | `result_missing` | The turn ended without a valid `result.json`, often after a provider API error. | See "Problems". |
 | `result_invalid` | `result.json` does not parse or its `task_id` or `nonce` is wrong. | See "Problems". |
 
@@ -73,15 +101,28 @@ Before submitting a legacy Pi task, `horch` additionally waits for the installed
 
 Follow the [controller's problem procedure](../SKILL.md#problems) before cleanup. Ordinary waits return stored problem states without polling them again.
 
+Use `horch list` to find the binding and inspect the recorded terminal:
+
+- For Rex, use the recorded executable with `--autostart=false -S <endpoint>` and
+  `block call -s <session> -b <block> program_status`. For terminal output, use
+  `capture -s <session> -b <block> --trim` against that endpoint.
+- For core, use the recorded executable, `HC_SESSION`, and `HC_SOCKET`, then
+  `get <terminal_id>` or `read <terminal_id> --lines 0` for terminal output.
+- For legacy Herdr, use the original server with `herdr agent get <agent-name>` or
+  `herdr pane read <pane_id> --source visible` for terminal output.
+
 If inspection shows a previously unacknowledged task started, or the user cleared a dialog, use `horch wait <task-id> --recheck`. Apply the same background or bounded waiting method as a normal wait. Recheck requires explicit task IDs, never submits or resends a prompt, and never restarts a process. `submission: not_sent` remains `start_failed` even when the native program later reports idle or working. Closed and completed tasks are not reopened. An exited process's result stays on disk for inspection; without turn-completion evidence it is not promoted to `done`.
 
-After the user resolves readiness and chooses recovery, `horch submit <task-id>` sends the original brief once on an unclosed core terminal recorded as `not_sent`. It rechecks native idle and records a new baseline before the first submission. `sent`, `unknown`, historical, closed and completed tasks fail with `submission_unsafe`; never use direct core sends to bypass this guard. Legacy startup recovery still requires inspection, closure and a fresh task. Before requesting any user interaction with a core worker window, require a fresh successful `verify-viewer` result.
+After the user resolves readiness and chooses recovery, `horch submit <task-id>` sends the original brief once on an unclosed Rex block or core terminal recorded as `not_sent`. It rechecks native idle and records a new baseline. `sent`, `unknown`, historical, closed, and completed tasks fail with `submission_unsafe`. Legacy startup recovery requires inspection, closure, and a fresh task. Before requesting user interaction with a core worker window, require a fresh successful `verify-viewer` result.
 
 When `done` has `closed: false`, read `message` and retry `horch close <task-id>`. The worker slot remains occupied until closure is confirmed. Closing an unfinished worker cancels it and cannot satisfy a completion or review gate.
 
-A pane-placement error can leave an empty pane when Herdr's response was lost. No worker has started at that point. Inspect Herdr before removing it; never close an unrelated pane. `list` reports `task_invalid` records without hiding healthy history. Each unclosed invalid record reserves one slot in every caller workspace because its owner and pane are unknown; a full `run` returns `worker_limit`, naming the invalid IDs and `horch list`. `check` keeps polling its started tasks and starts pending workers as slots free; workers it cannot start are `not_checked`, with invalid IDs and `horch list` in their message when invalid records held capacity. No-ID `wait` skips them; targeted `wait` still returns `task_invalid`. `close` also returns `task_invalid`: check `herdr pane list` for a leftover `horch` pane, then remove the task directory by hand. Nothing is deleted automatically.
+A legacy Herdr placement response can be lost before the worker starts, leaving an empty pane. Inspect the original server before removing it. `list` reports `task_invalid` records alongside healthy history. Each unclosed invalid record reserves one slot in every scope because its owner and terminal are unknown. A full `run` returns `worker_limit` with the invalid IDs. `check` keeps polling its started tasks and starts pending workers as slots free. Affected `not_checked` results also name the invalid IDs. A wait without IDs skips invalid records. Targeted `wait` and `close` return `task_invalid`. Inspect the original runtime before removing an invalid task directory by hand.
 
 ## Task store and concurrency
+
+Rex counts unclosed tasks on the same server and session. Known Rex and Herdr
+tasks occupy separate reservations.
 
 Core admission counts all unclosed tasks with the same permanent core ID in this store, plus legacy reservations in the GUI caller's workspace when present. This conservative core quota is session-wide, including headless controllers. Core addresses never enter the older-record legacy pane-membership heuristic. Invalid unclosed records reserve capacity in every scope.
 
@@ -95,4 +136,4 @@ A Pi worker waiting for its session signal can use the full 90-second startup bu
 
 `horch close` resolves the recorded pane directly, even from another workspace. Only explicit pane/tab/workspace-not-found responses establish that it is already gone; other Herdr errors leave cleanup unresolved.
 
-`check` batches at its caller workspace's `max_active_workers` and deduplicates repeated worker names. Each row has `worker`, `task_id`, `state`, `ok`, `pane_id`, `seconds`, and `message`. Workers that cannot start before the wait cap or have no free slot are `not_checked`, with null task, pane, and duration. Invalid reservations do not abort a batch: started tasks are still polled and pending workers launch as slots free. If invalid records held capacity, never-started workers' messages name those IDs and recommend `horch list`. Unfinished/problem tasks retain their panes; inspect `message` before acting.
+`check` batches at its caller's `max_active_workers` limit and deduplicates repeated worker names. Each row has `worker`, `task_id`, `state`, `ok`, `pane_id`, `seconds`, and `message`. Workers that cannot start before the wait cap or have no free slot are `not_checked`, with null task, pane, and duration. Invalid reservations do not abort a batch. Started tasks are still polled and pending workers launch as slots free. Unfinished or problem tasks retain their terminals. Inspect `message` before acting.
