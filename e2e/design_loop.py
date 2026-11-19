@@ -37,7 +37,7 @@ THROUGHPUT = ('Blocking first steps', 'Independent workstreams',
               'Shared mutable state', 'Smallest safe decomposition')
 READS = (
     'poteto-mode/SKILL.md', 'pstack-herdr/SKILL.md',
-    'pstack-herdr/references/herdr-tools.md', 'herdr-orchestrator/SKILL.md',
+    'pstack-herdr/references/herdr-tools.md', 'agent-workers/SKILL.md',
     'how/SKILL.md', 'how/references/explorer-prompt.md', 'how/references/explainer-prompt.md',
     'architect/SKILL.md', 'architect/references/runner-prompt.md',
     'architect/references/rationale-template.md', 'architect/references/design-red-flags.md',
@@ -804,7 +804,7 @@ def design_wait_audit(policy_path, task_id, seconds):
             raise Failure('invalid_gate_request')
         if any(core.sha(Path(filename)) != digest for filename, digest in policy['integrity'].items()):
             raise Failure('gate_integrity_changed')
-        argv = [sys.executable, str(Path(policy['bundle']) / 'skills/herdr-orchestrator/scripts/horch.py'),
+        argv = [sys.executable, str(Path(policy['bundle']) / 'skills/agent-workers/scripts/agent-workers.py'),
                 'wait', task_id, '--max-seconds', str(seconds)]
         began = time.time()
         try:
@@ -1197,7 +1197,7 @@ without -n or hook/signature bypass; git push [-u or
 origin; gh/origin repo view, pr list/view/create (create exact base/head/repo,
 ready); cat ONE_FILE without flags; pwd; command -v origin; which origin;
 exactly sha256sum ABSOLUTE_COMMENT_TASK_DIR/report.md for the actual slot
-comment-review's canonical report only, after its native horch wait proves done
+comment-review's canonical report only, after its native agent-workers wait proves done
 and closed. No flags, extra operands, other task reports/results or review.json
 hashes. Hash output never replaces the required complete report/result reads.
 No other command is accepted. Use native-written --body-file for multiline PRs.
@@ -1209,19 +1209,19 @@ that period do not read/write/search/list its files/directories, run content Git
 even failed attempts. This includes all Arena candidates and Refactor integration.
 Raw gate policy/bindings/waits and task-store parents are NEVER lead-readable by
 any tool or Git option. Only exact safe-delivery execution may use the gate path.
-Use only bundled {self.bundle / 'skills/herdr-orchestrator/scripts/horch.py'} run
+Use only bundled {self.bundle / 'skills/agent-workers/scripts/agent-workers.py'} run
 for delegation; run includes --caller-pane {self.pane}. NEVER use direct horch
 wait/list/stats/close/detect: wait payloads themselves contain untrusted reports.
 For EACH task use ONLY this standalone delivery command (repeat pending waits,
 never retry failure): python3 {Path(__file__).resolve()} --wait-audit {self.gate_policy} TASK_ID 120
-It runs real bounded horch wait privately and returns ONLY safe metadata. Pending
+It runs real bounded agent-workers wait privately and returns ONLY safe metadata. Pending
 means keep waiting, no payload reads; pass/done/closed allows full-read result.json
 and its listed files. Fail/quarantined/blocked/canceled means STOP immediately,
 without consuming any output, launching a dependent task, coding or opening a PR.
 The full all-attempt native audit is post-execution/pre-forwarding evidence
 checking, NOT a sandbox or credential containment. Missing working UUID fails.
 Workers must return a Markdown report, list every output in result.json, and
-close on successful delivery. Never edit horch task/state/result files.
+close on successful delivery. Never edit agent-workers task/state/result files.
 Every brief's first three nonblank lines are exactly:
 Role: <exact configured role>
 Phase: <exact phase from slot map>
@@ -1286,7 +1286,7 @@ record gh fallback; do not substitute fake commands. Use the same forge for all
 PR commands. Read deslop/no-comments/technical-writing/unslop and sequence principle
 before commits and diff review. Use conventional titles and original PR sections.
 After create, actual PR view JSON includes headRefOid,headRefName,baseRefName,isDraft.
-Use literal standalone git, forge, horch run, safe delivery and external-oracle commands. Git add
+Use literal standalone git, forge, agent-workers run, safe delivery and external-oracle commands. Git add
 names files explicitly. No inline interpreters, shell chaining or source scripts.
 Native reads/searches handle inspection. No Git signing/hook bypass flags.
 
@@ -1485,7 +1485,7 @@ No newline, ; | & > < backtick, dollar sign or backslash anywhere, even quoted;
 no shell expansion, pipelines, wrappers, extra flags, CLI execution or Git writes.
 Native read/grep/find/ls may inspect only scoped files, the four declared guides
 or your own task directory. All source is read-only; write/edit ONLY report.md,
-review.json and result.json in your actual own horch task directory. Never edit
+review.json and result.json in your actual own agent-workers task directory. Never edit
 brief.md, task.json, state.json, application/source/skill or evaluator artifacts.
 Return normal actual nonce, question null; result.files lists exactly report.md
 and review.json, in either order. Report actual findings, no invented zero flags.
@@ -1664,7 +1664,7 @@ nested delegation. Follow the original CommentSicko scope and report honestly.
                             and core.stamp(native_rows[event['call_row']]['timestamp']) <= raw['started_at']
                             and raw['completed_at'] <= core.stamp(native_rows[event['result_row']]['timestamp'])
                             and raw['argv'][2:] == ['wait', task_id, '--max-seconds', argv[5]]
-                            and raw['argv'][1] == str(self.bundle / 'skills/herdr-orchestrator/scripts/horch.py')
+                            and raw['argv'][1] == str(self.bundle / 'skills/agent-workers/scripts/agent-workers.py')
                             and raw['returncode'] == 0]
                 self.check('native_wrapper_real_private_wait', bool(matching))
                 if value.get('verdict') == 'pending':
@@ -1985,7 +1985,7 @@ nested delegation. Follow the original CommentSicko scope and report honestly.
                         and output.is_absolute() and output.resolve() == output and output.parent == self.directory
                         and output.name.startswith('native-') and argv[6] == '--mode'
                         and argv[7] in ('feature', 'characterize'))
-            return (len(argv) >= 3 and argv[1] == str(self.bundle / 'skills/herdr-orchestrator/scripts/horch.py')
+            return (len(argv) >= 3 and argv[1] == str(self.bundle / 'skills/agent-workers/scripts/agent-workers.py')
                     and argv[2] == 'run')
         if binary == 'git':
             rest = argv[1:]
@@ -2052,7 +2052,7 @@ nested delegation. Follow the original CommentSicko scope and report honestly.
         steps = re.findall(r'^\d+\. (.+)$', (self.bundle / f'skills/poteto-mode/playbooks/{self.args.scenario}.md').read_text(), re.M)
         self.check('exact_original_eight_step_checklist', len(steps) == 8 and re.findall(r'^\d+\. (.+)$', checklist['args']['content'], re.M) == steps)
         for resource in ('poteto-mode/SKILL.md', 'pstack-herdr/SKILL.md',
-                         'pstack-herdr/references/herdr-tools.md', 'herdr-orchestrator/SKILL.md',
+                         'pstack-herdr/references/herdr-tools.md', 'agent-workers/SKILL.md',
                          f'poteto-mode/playbooks/{self.args.scenario}.md'):
             self.check('initial_full_read_' + resource.replace('/', '_'), bool(core.workflow_reads(
                 events, self.worktree, self.bundle / 'skills' / resource, before=checklist['call_row'])))
@@ -2396,7 +2396,7 @@ nested delegation. Follow the original CommentSicko scope and report honestly.
                         raise Failure('cleanup_ownership_unproven')
                     screen = self.call(['herdr', 'pane', 'read', task['pane_id'], '--source', 'recent', '--lines', '80'], cleanup=True)
                     (self.directory / (task['task_id'] + '-pane.json')).write_text(screen)
-                    self.call([sys.executable, self.bundle / 'skills/herdr-orchestrator/scripts/horch.py', 'close', task['task_id']], cleanup=True)
+                    self.call([sys.executable, self.bundle / 'skills/agent-workers/scripts/agent-workers.py', 'close', task['task_id']], cleanup=True)
             except Exception:
                 cleanup_ok = False
         for pane in ([self.pane] if self.pane else []) + [task['pane_id'] for task in self.tasks.values()]:

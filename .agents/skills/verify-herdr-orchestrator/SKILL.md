@@ -1,9 +1,9 @@
 ---
 name: verify-herdr-orchestrator
-description: Verify herdr-pstack-orchestrator through its existing local E2E drivers. Use when checking skill discovery, worker or controller execution, Pi startup, or upstream monitoring in this repository.
+description: Verify herdr-rex-pstack-orchestrator through its existing local E2E drivers. Use when checking skill discovery, worker or controller execution, Pi startup, or upstream monitoring in this repository.
 ---
 
-# Verify herdr-orchestrator
+# Verify agent-workers
 
 Use the existing scripts for the behavior under investigation. Start with the [feature map](features/README.md); do not run every model E2E for a documentation change. This is repository tooling, not part of the published skill package.
 
@@ -19,17 +19,17 @@ git rev-parse HEAD > "$proof/revision.txt"
 git diff --stat > "$proof/working-tree.txt"
 ```
 
-Record the selected command and CLI versions with the receipt. Model runs require an authenticated harness, Herdr, and existing worker definitions in `${XDG_CONFIG_HOME:-$HOME/.config}/herdr-orchestrator/workers.toml`. Read actual harness/model definitions; names such as `gpt` do not imply Codex. Read [worker operation rules](../../../skills/herdr-orchestrator/SKILL.md) before a model run.
+Record the selected command and CLI versions with the receipt. Model runs require an authenticated harness, Herdr, and existing worker definitions in `${XDG_CONFIG_HOME:-$HOME/.config}/herdr-orchestrator/workers.toml`. Read actual harness/model definitions; names such as `gpt` do not imply Codex. Read [worker operation rules](../../../skills/agent-workers/SKILL.md) before a model run.
 
 ## Doctor
 
 For model runs, first use this read-only check:
 
 ```bash
-python3 skills/herdr-orchestrator/scripts/horch.py detect
+python3 skills/agent-workers/scripts/agent-workers.py detect
 ```
 
-Confirm required CLIs, the selected backend, the actual controller pane/workspace, available slots, and each driver's prerequisites before launching. For a Herdr controller, read `pane process-info` and `pane read --source visible` to match this conversation; inherited environment and session IDs are candidates, never sufficient evidence. Agent-controller `run`/`check` calls require confirmed `--caller-pane` and `--caller-text` (at least 16 characters unique to the visible conversation). Ordinary shell automation can use actual process ancestry. Core needs no Pi integration; legacy Pi does. `horch check` makes real model calls; it is not a read-only doctor. Missing configuration, authentication, or trust is a prerequisite gap; do not change it silently.
+Confirm required CLIs, the selected backend, the actual controller pane/workspace, available slots, and each driver's prerequisites before launching. For a Herdr controller, read `pane process-info` and `pane read --source visible` to match this conversation; inherited environment and session IDs are candidates, never sufficient evidence. Agent-controller `run`/`check` calls require confirmed `--caller-pane` and `--caller-text` (at least 16 characters unique to the visible conversation). Ordinary shell automation can use actual process ancestry. Core needs no Pi integration; legacy Pi does. `agent-workers check` makes real model calls; it is not a read-only doctor. Missing configuration, authentication, or trust is a prerequisite gap; do not change it silently.
 
 For discovery and upstream checks, use the feature's source/CLI doctor instead; Herdr and model credentials are unnecessary.
 
@@ -49,7 +49,7 @@ Keep receipts, command/version records, and diagnostics locally after cleanup. [
 
 ## Cleanup
 
-Drivers close only their own subprocesses or panes. Verify the receipt's cleanup result; never kill by process name or close unrelated panes. Model loop drivers retain worktrees: inspect first, then use `git worktree remove` on the exact printed path. Preserve its sibling receipt/diagnostics. For isolated-state runs, any manual `horch` cleanup must use the run's recorded configuration and state roots.
+Drivers close only their own subprocesses or panes. Verify the receipt's cleanup result; never kill by process name or close unrelated panes. Model loop drivers retain worktrees: inspect first, then use `git worktree remove` on the exact printed path. Preserve its sibling receipt/diagnostics. For isolated-state runs, any manual `agent-workers` cleanup must use the run's recorded configuration and state roots.
 
 The discovery procedure removes its owned installation scratch directory. Never delete the artifact parent or catalog output as cleanup. After teardown, open the receipt again and confirm it still exists. Record any incomplete cleanup explicitly.
 

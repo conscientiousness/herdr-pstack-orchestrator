@@ -4,10 +4,10 @@
   <img alt="A Border Collie controller and Herdr sheep workers at their terminals" src="assets/banner-light.png" width="100%">
 </picture>
 
-# herdr-pstack-orchestrator
+# herdr-rex-pstack-orchestrator
 
-[![Package validation](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/validate.yml)
-[![Pstack upstream](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-pstack-orchestrator/actions/workflows/upstream.yml)
+[![Package validation](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/validate.yml/badge.svg)](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/validate.yml)
+[![Pstack upstream](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/upstream.yml/badge.svg?branch=main)](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/actions/workflows/upstream.yml)
 [![Pstack source: 0.15.43](https://img.shields.io/badge/pstack_source-0.15.43-blue)](https://github.com/cursor/plugins/tree/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7/pstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -16,18 +16,17 @@ Give your coding agent a team of workers in [Herdr](https://herdr.dev) or
 the task, delegates investigation or implementation to Pi, Codex CLI, or Claude
 Code workers, and verifies their results.
 
-In Rex, workers run directly in split blocks in `rexOrch` tabs in the
-controller's verified project session. In Herdr, installed herdr-core runs
-workers with `hcOrch` viewers in the verified workspace. Herdr without core
-uses `horch` worker tabs. Both keep the controller tab and focus in place.
-Herdr-core also supports headless operation.
+The **Workers** tab keeps delegated work visible without taking focus from the
+controller. Rex runs workers in split blocks in the verified project session.
+Herdr uses panes in the verified workspace, with attached viewers when
+herdr-core is installed. Herdr-core also supports headless operation.
 
 Use the core skill for delegation, or add the optional **pstack** bundle for
 workflows such as independent review and multi-step implementation. You can use
 one configured worker or several, including workers from different harnesses.
 No changes to your application code are needed.
 
-[Latest release](https://github.com/conscientiousness/herdr-pstack-orchestrator/releases/latest).
+[Latest release](https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/releases/latest).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/workflow-dark.svg">
@@ -54,13 +53,13 @@ Run one of these commands from your project. `skills@latest` uses the latest
 alone, install the core skill:
 
 ```bash
-npx skills@latest add conscientiousness/herdr-pstack-orchestrator -s herdr-orchestrator
+npx skills@latest add conscientiousness/herdr-rex-pstack-orchestrator -s agent-workers
 ```
 
 For pstack workflows as well, install the full bundle:
 
 ```bash
-npx skills@latest add https://github.com/conscientiousness/herdr-pstack-orchestrator/tree/main/skills --skill '*'
+npx skills@latest add https://github.com/conscientiousness/herdr-rex-pstack-orchestrator/tree/main/skills --skill '*'
 ```
 
 Choose your agent harnesses and project or global scope in the installer, and
@@ -73,14 +72,14 @@ installation, updates, and removal.
 In your new controller session, ask your agent to set up its workers:
 
 ```text
-Set up the herdr-orchestrator skill with me. Find the available harnesses,
+Set up the agent-workers skill with me. Find the available harnesses,
 ask me which workers, models, and permissions to use, then check the setup.
 ```
 
 After setup, give it a task. For example:
 
 ```text
-Use herdr-orchestrator to fix the login redirect bug in this repository.
+Use agent-workers to fix the login redirect bug in this repository.
 Delegate the implementation and have a fresh worker review the result before
 reporting back.
 ```
@@ -95,14 +94,15 @@ equivalent under `$XDG_CONFIG_HOME`). It records each worker's harness, model,
 and permission settings; new tasks use the current definitions. One worker is
 enough to start, and you can add more later.
 
-Workers run with the permissions you choose. `horch` does not enforce a sandbox,
-and separate worktrees only keep edits apart. See [setup and configuration](skills/herdr-orchestrator/references/setup.md)
+Workers run with the permissions you choose. `agent-workers` does not enforce a sandbox,
+and separate worktrees only keep edits apart. See [setup and configuration](skills/agent-workers/references/setup.md)
 for the available options and permission behavior.
 
-## Optional: original pstack through horch
+## Optional pstack workflows
 
 The full bundle includes selected original [pstack](https://github.com/cursor/plugins/tree/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7/pstack)
-skills and a `horch` adapter. After installing it and configuring workers, try:
+skills and an adapter that delegates through `agent-workers`. After installing
+the bundle and configuring workers, try:
 
 ```text
 Use interrogate to review this branch.
@@ -112,7 +112,7 @@ Or ask for `poteto-mode` when you want a broader workflow. The controller can
 help configure the worker roles that a workflow needs. For the included skills,
 role mapping, and compatibility details, see the [pstack guide](skills/pstack-herdr/references/compatibility.md).
 
-The playbook defines what to prove and when to stop. `horch` dispatches through
+The playbook defines what to prove and when to stop. `agent-workers` dispatches through
 the roles, models and effort in your `workers.toml`. The controller checks
 worker results and handles PR delivery under the project's rules. See the
 [workflow review](e2e/PLAYBOOKS.md#workflow-review-for-pstack-01543) for all 22
@@ -120,23 +120,24 @@ playbooks, their evidence and any required cloud, scheduling or workspace capabi
 
 ## Update
 
-To update, rerun the [install command](#install) you chose, select the same
+If you installed `herdr-orchestrator`, follow the [rename upgrade guide](docs/INSTALL.md#upgrade-from-herdr-orchestrator).
+For subsequent updates, rerun the [install command](#install) you chose, select the same
 harnesses and scope, and start a new controller session. These commands install from
 this repository's `main` branch. The [installation guide](docs/INSTALL.md) also
 explains how to update a manual clone or remove the skills.
 
 ## Troubleshooting
 
-Ask your agent to run `horch detect` to see the selected route, available
+Ask your agent to run `agent-workers detect` to see the selected route, available
 harnesses, and Pi integration status. Tasks keep their launch backend. Rex and
 core tasks also pin their server endpoint for later observation and cleanup.
 If a worker stops or fails, inspect its recorded terminal before closing it.
-See the [setup guide](skills/herdr-orchestrator/references/setup.md) and [task
-recovery guide](skills/herdr-orchestrator/references/lifecycle.md#problem-recovery).
+See the [setup guide](skills/agent-workers/references/setup.md) and [task
+recovery guide](skills/agent-workers/references/lifecycle.md#problem-recovery).
 
 ## More information
 
-- [Worker commands and lifecycle](skills/herdr-orchestrator/SKILL.md)
+- [Worker commands and lifecycle](skills/agent-workers/SKILL.md)
 - [Verification evidence](docs/RELEASE-EVIDENCE.md) and [known gaps](docs/CAPABILITY-GAPS.md)
 - [Contributing](CONTRIBUTING.md)
 

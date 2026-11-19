@@ -168,7 +168,7 @@ exact owned worktree with Git. Preserve the external receipt and diagnostics.
 Never publish configuration, profiles, raw native sessions or pane text.
 
 The Design driver now owns a same-file private delivery gate. Its lead calls
-that gate instead of raw horch wait/list/stats, and reads declared outputs only
+that gate instead of raw agent-workers wait/list/stats, and reads declared outputs only
 after a PASS bound to done/closed state and a captured working native session.
 Every worker is audited before forwarding, with independent final lead
 consumption and dependency checks. The first Refactoring run automatically

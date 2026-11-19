@@ -41,7 +41,7 @@ FIELDS = ('id,number,url,mergeable,mergeStateStatus,reviewDecision,headRefOid,'
 LIST_FIELDS = 'id,number,url,state,headRefOid,headRefName,baseRefName,baseRefOid,isDraft,autoMergeRequest'
 CHECK_FIELDS = 'name,state,description,link,workflow,bucket'
 READS = ('poteto-mode/SKILL.md', 'pstack-herdr/SKILL.md',
-         'pstack-herdr/references/herdr-tools.md', 'herdr-orchestrator/SKILL.md',
+         'pstack-herdr/references/herdr-tools.md', 'agent-workers/SKILL.md',
          'poteto-mode/playbooks/babysit.md', 'poteto-mode/references/bugbot-triage.md',
          'poteto-mode/scripts/watch-pr/watch-pr', 'poteto-mode/scripts/bootstrap.ts',
          'poteto-mode/scripts/package.json', 'poteto-mode/scripts/bun.lock',
@@ -702,7 +702,7 @@ privately: native transcripts, PR identities and review text are not public.
                     entry = self.herdr('agent', 'get', task['agent'], cleanup=True)['agent']
                     if entry.get('pane_id') != task.get('pane_id'):
                         raise Failure('cleanup_ownership_unproven')
-                    self.call([sys.executable, self.bundle / 'skills/herdr-orchestrator/scripts/horch.py',
+                    self.call([sys.executable, self.bundle / 'skills/agent-workers/scripts/agent-workers.py',
                                'close', task['task_id']], cleanup=True)
         except Exception:
             cleanup = False

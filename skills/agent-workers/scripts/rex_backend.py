@@ -1,4 +1,4 @@
-"""Rex CLI transport and worker placement for horch."""
+"""Rex CLI transport and worker placement for Agent Workers."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import subprocess
 import time
 
 
-WINDOW_LABEL = "rexOrch"
+WINDOW_LABEL = "Workers"
 TERMINAL = "com.superlogical.terminal"
 NATIVE_STATES = {"idle", "working", "done", "blocked", "error"}
 NATIVE_APPS = {"pi": {"pi"}, "codex": {"codex"}, "claude": {"claude", "claude-code"}}

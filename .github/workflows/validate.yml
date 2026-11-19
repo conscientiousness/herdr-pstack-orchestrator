@@ -26,7 +26,7 @@ jobs:
       - name: Check Python syntax and CLI entry points
         run: |
           python -m compileall -q skills e2e scripts
-          python skills/herdr-orchestrator/scripts/horch.py --help
+          python skills/agent-workers/scripts/agent-workers.py --help
           python scripts/prepare_pstack.py --help
           python scripts/check_upstream.py --help
           python e2e/review_loop.py --help
@@ -53,7 +53,7 @@ jobs:
         run: |
           python - <<'PY'
           import pathlib, tomllib
-          path = pathlib.Path('skills/herdr-orchestrator/references/workers.example.toml')
+          path = pathlib.Path('skills/agent-workers/references/workers.example.toml')
           tomllib.loads(path.read_text())
           PY
       - name: Install the bundled skills into a disposable project
@@ -65,18 +65,20 @@ jobs:
           npx --yes skills@latest --version
           npx --yes skills@latest add "$GITHUB_WORKSPACE/skills" -s '*' -a claude-code -a codex -a pi -y
           python "$GITHUB_WORKSPACE/e2e/skill_catalogs.py" "$package_check" --installation-only
-          python .agents/skills/herdr-orchestrator/scripts/horch.py --help
-          test ! -e .agents/skills/herdr-orchestrator/scripts/e2e.py
-          test ! -e .agents/skills/herdr-orchestrator/e2e
-          test ! -e .agents/skills/herdr-orchestrator/references/verification.json
-          test ! -e .agents/skills/herdr-orchestrator/references/review-e2e.json
-          test -f .agents/skills/herdr-orchestrator/references/workers.example.toml
-          test -f .agents/skills/herdr-orchestrator/references/setup.md
-          test -f .agents/skills/herdr-orchestrator/references/lifecycle.md
-          test -f .agents/skills/herdr-orchestrator/scripts/rex_backend.py
+          python .agents/skills/agent-workers/scripts/agent-workers.py --help
+          python .agents/skills/agent-workers/scripts/horch.py --help
+          .agents/skills/agent-workers/scripts/agent-workers --help
+          test ! -e .agents/skills/agent-workers/scripts/e2e.py
+          test ! -e .agents/skills/agent-workers/e2e
+          test ! -e .agents/skills/agent-workers/references/verification.json
+          test ! -e .agents/skills/agent-workers/references/review-e2e.json
+          test -f .agents/skills/agent-workers/references/workers.example.toml
+          test -f .agents/skills/agent-workers/references/setup.md
+          test -f .agents/skills/agent-workers/references/lifecycle.md
+          test -f .agents/skills/agent-workers/scripts/rex_backend.py
           test -f .agents/skills/pstack-herdr/references/compatibility.md
           test -f .agents/skills/pstack-herdr/references/herdr-tools.md
-          test -f .claude/skills/herdr-orchestrator/SKILL.md
+          test -f .claude/skills/agent-workers/SKILL.md
       - name: Verify bundled upstream files match regeneration
         if: matrix.python == '3.11'
         env:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify horch worker placement and delivery on an isolated, real Rex server."""
+"""Verify agent-workers placement and delivery on an isolated, real Rex server."""
 
 import argparse
 import json
@@ -13,7 +13,7 @@ import tempfile
 import time
 
 
-HORCH = Path(__file__).resolve().parents[1] / "skills/herdr-orchestrator/scripts/horch.py"
+HORCH = Path(__file__).resolve().parents[1] / "skills/agent-workers/scripts/agent-workers.py"
 LEDGERS = {"alpha": [37, -12, 60, -5], "beta": [41, 7, -70, 19]}
 MUX_PREFIXES = ("REX_", "HERDR", "HC_")
 AGENT_SESSION_KEYS = {"CODEX_THREAD_ID", "CLAUDE_CODE_SESSION_ID"}
@@ -96,6 +96,12 @@ def controller(root, program):
         observation["detected"] = rows(horch(program, "detect"))[0]["backend"]
         if observation["detected"] != "rex":
             raise RuntimeError(f"Rex controller reported backend {observation['detected']!r}")
+        manual_tab = subprocess.run(
+            ["rex", "--autostart=false", "-S", os.environ["REX_SERVER"], "window", "new",
+             "-s", observation["session"], "Workers", "--focus=false", "--json",
+             "--shell=none", "--", "/bin/sleep", "300"],
+            check=True, capture_output=True, text=True, timeout=15)
+        observation["manual_window"] = json.loads(manual_tab.stdout)["window_id"]
         observation["runs"] = {}
         for mode, charges in LEDGERS.items():
             brief = root / f"{mode}.md"
@@ -195,16 +201,22 @@ class Scenario:
                                              and row["submission"] == "sent" for row in runs.values()))
         worker_window = bindings[0]["window"]
         worker_blocks = {binding["block"] for binding in bindings}
+        manual_window = observed["manual_window"]
+        manual_blocks = {row["block_id"] for row in self.blocks(session) if row["window_id"] == manual_window}
         live_layout = self.windows(session)
-        self.check("both workers share a background rexOrch tab", worker_window != controller_window
+        self.check("both workers share their own background Workers tab", worker_window not in (controller_window, manual_window)
                    and len(worker_blocks) == 2 and all(binding["window"] == worker_window for binding in bindings)
                    and live_layout["active_window_id"] == controller_window
-                   and any(row["window_id"] == worker_window and row["label"] == "rexOrch"
-                           for row in live_layout["windows"])
-                   and {row["block_id"] for row in self.blocks(session) if row["window_id"] == worker_window}
-                   == worker_blocks)
+                   and any(row["window_id"] == worker_window and row["label"] == "Workers"
+                           for row in live_layout["windows"]))
+        self.check("new blocks show the configured worker and its harness", {
+            row["block_id"]: row["label"] for row in self.blocks(session) if row["window_id"] == worker_window
+        } == {task["backend"]["block"]: f"fixture · Pi · {task['nonce']}" for task in tasks.values()})
+        self.check("manual Workers tab has only its original block", len(manual_blocks) == 1
+                   and worker_blocks.isdisjoint(manual_blocks))
         self.evidence["layout"] = {"session": session, "controller": controller_window,
-                                   "worker": worker_window, "worker_blocks": sorted(worker_blocks)}
+                                   "worker": worker_window, "worker_blocks": sorted(worker_blocks),
+                                   "manual_workers": manual_window}
 
         wait_env = dict(self.env, REX_SERVER=self.endpoint + ".absent", REX_SESSION=other, REX_BLOCK=other_block)
         for mode, run in runs.items():
@@ -225,10 +237,10 @@ class Scenario:
             self.evidence["deliveries"][mode] = {"state": done["state"], "closed": done["closed"],
                                                   "balances": balances}
             worker_blocks.remove(task["backend"]["block"])
-            self.check(f"{mode} leaves only the remaining owned blocks and controller", {
-                row["block_id"] for row in self.blocks(session)} == worker_blocks | {controller_block})
+            self.check(f"{mode} leaves all unrelated blocks and remaining workers", {
+                row["block_id"] for row in self.blocks(session)} == worker_blocks | manual_blocks | {controller_block})
         self.check("last block closure removes only the worker tab", {
-            row["window_id"] for row in self.windows(session)["windows"]} == {controller_window})
+            row["window_id"] for row in self.windows(session)["windows"]} == {controller_window, manual_window})
         after = self.windows(other)
         self.check("unrelated Rex session stayed intact", baseline["windows"] == after["windows"]
                    and baseline["active_window_id"] == after["active_window_id"])

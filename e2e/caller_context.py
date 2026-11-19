@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 
-HORCH = Path(__file__).resolve().parents[1] / "skills/herdr-orchestrator/scripts/horch.py"
+HORCH = Path(__file__).resolve().parents[1] / "skills/agent-workers/scripts/agent-workers.py"
 
 
 def main():

@@ -23,7 +23,7 @@ import traceback
 import uuid
 
 
-HORCH = Path(__file__).resolve().parents[1] / "skills/herdr-orchestrator/scripts/horch.py"
+HORCH = Path(__file__).resolve().parents[1] / "skills/agent-workers/scripts/agent-workers.py"
 RESULT_KEYS = {"task_id", "nonce", "status", "summary", "files", "question"}
 SCENARIOS = {"valid": "done", "missing": "result_missing", "invalid": "result_invalid",
              "blocked": "blocked", "cancel": None}
@@ -114,7 +114,7 @@ class Run:
                          "mode": "baseline" if args.baseline else "product",
                          "scope": "headless real core; deterministic interactive pi fixture; no models",
                          "unverified": ["actual Pi hooks, auth, trust, and model execution",
-                                        "visible hcOrch tabs and legacy horch tabs",
+                                        "Herdr core viewers", "legacy Herdr tabs",
                                         "absence-only live legacy fallback", "mixed-backend task affinity"],
                          "source_hashes": {str(p): hashlib.sha256(p.read_bytes()).hexdigest()
                                            for p in (args.horch, Path(__file__), core)},
@@ -467,6 +467,10 @@ class Run:
             workspace = made["workspace"]["workspace_id"]
             controller = made["root_pane"]["pane_id"]
             controller_tab = made["tab"]["tab_id"]
+            manual = gui("tab", "create", "--workspace", workspace, "--cwd", str(self.root),
+                         "--label", "Workers", "--no-focus")
+            manual_pane = manual["root_pane"]["pane_id"]
+            manual_tab = manual["tab"]["tab_id"]
             tasks = []
             for mode in ("valid", "missing"):
                 # Reuse fixture modes from headless runs but hold both new turns.
@@ -509,14 +513,16 @@ class Run:
                 viewer = task["viewer"]
                 pane = gui("pane", "get", viewer["pane_id"])["pane"]
                 tab = gui("tab", "get", viewer["tab_id"])["tab"]
-                self.check(mode + " viewer uses same workspace and separate hcOrch tab",
+                self.check(mode + " viewer uses same workspace and separate Workers tab",
                            pane["workspace_id"] == workspace and tab["workspace_id"] == workspace
-                           and viewer["tab_id"] != controller_tab and tab["label"] == "hcOrch")
+                           and viewer["tab_id"] not in (controller_tab, manual_tab)
+                           and tab["label"] == "Workers")
+                self.check(mode + " viewer shows configured worker and harness", pane["label"] == "fixture · Pi")
                 read = self.command([str(herdr_binary), "pane", "wait-output", viewer["pane_id"],
                                      "--match", "CORE_E2E_CASE=" + mode, "--timeout", "30000"], env=env)
                 self.check(mode + " actual attach displays worker output", read.returncode == 0)
                 tasks.append(task)
-            self.check("viewers share hcOrch tab with separate panes",
+            self.check("viewers share Workers tab with separate panes",
                        tasks[0]["viewer"]["tab_id"] == tasks[1]["viewer"]["tab_id"]
                        and tasks[0]["viewer"]["pane_id"] != tasks[1]["viewer"]["pane_id"])
             self.check("viewer dispatch preserves user focus", focused() == before)
@@ -535,7 +541,7 @@ class Run:
                        and bool(persisted["viewer_verification_error"]))
             self.check("viewer failure retains existing workers",
                        {t["address"] for t in self.terminals()} == terminals_before)
-            gui("tab", "rename", tasks[0]["viewer"]["tab_id"], "hcOrch")
+            gui("tab", "rename", tasks[0]["viewer"]["tab_id"], "Workers")
             verified = self.cli("verify-viewer", tasks[0]["task_id"], env=env)
             self.check("viewer can be confirmed after repairing its tab",
                        verified.returncode == 0 and rows(verified.stdout)[0]["viewer_verified"]
@@ -550,15 +556,25 @@ class Run:
                            and rows(rejected.stdout)[0].get("error") == "caller_context_invalid")
             self.check("rejected context creates no workers", self.terminals() == terminals
                        and set(self.root.glob("fixture-start-*")) == started)
+            # Older tasks store the pane and tab IDs without a display label.
+            old_record = Path(tasks[0]["task_dir"]) / "task.json"
+            old_task = json.loads(old_record.read_text())
+            old_task["viewer"].pop("tab_label")
+            old_record.write_text(json.dumps(old_task))
+            gui("tab", "rename", tasks[0]["viewer"]["tab_id"], "hcOrch")
+            compat = self.command([sys.executable, str(self.args.horch.with_name("horch.py")),
+                                   "verify-viewer", old_task["task_id"]], env=env)
+            self.check("horch alias verifies historical viewer in hcOrch tab",
+                       compat.returncode == 0 and rows(compat.stdout)[0]["viewer_verified"])
             (self.root / "valid.release").write_text("release\n")
             done = self.cli("wait", tasks[0]["task_id"], "--max-seconds", "30", env=env)
-            self.check("viewer task delivers and auto-closes", done.returncode == 0
+            self.check("historical viewer task delivers and auto-closes", done.returncode == 0
                        and rows(done.stdout)[0]["state"] == "done" and rows(done.stdout)[0]["closed"])
             closed = self.cli("close", tasks[1]["task_id"], env=env)
             self.check("second viewer cancellation closes", closed.returncode == 0)
             panes = gui("pane", "list", "--workspace", workspace)["panes"]
-            self.check("viewer cleanup preserves only owned controller pane",
-                       {p["pane_id"] for p in panes} == {controller})
+            self.check("viewer cleanup preserves the controller and manually created Workers tab",
+                       {p["pane_id"] for p in panes} == {controller, manual_pane})
             self.no_guard()
         finally:
             if workspace:
@@ -641,8 +657,7 @@ def main():
             if args.viewer:
                 run.viewer(Path(herdr_binary).resolve(), socket_path)
                 run.evidence["scope"] += "; real Herdr attach viewers in an owned workspace"
-                run.evidence["unverified"].remove("visible hcOrch tabs and legacy horch tabs")
-                run.evidence["unverified"].append("legacy horch tabs")
+                run.evidence["unverified"].remove("Herdr core viewers")
             run.evidence["verdict"] = "pass"
     except Exception:
         (run.root / "failure.txt").write_text(traceback.format_exc())

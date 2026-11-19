@@ -7,8 +7,8 @@
     "quality_profile": "showcase",
     "output": "assets/workflow.html",
     "repository": {
-      "url": "git@github.com:conscientiousness/herdr-pstack-orchestrator.git",
-      "revision": "2350959bfc1ed8c08764bfebb19b40884f602edb",
+      "url": "git@github.com:conscientiousness/herdr-rex-pstack-orchestrator.git",
+      "revision": "48beb80199138c824f904dbbb94b66fa5c9435a2",
       "link_mode": "local-only"
     },
     "legend": {
@@ -22,7 +22,7 @@
     },
     {
       "id": "workers",
-      "label": "Herdr workers"
+      "label": "Workers"
     }
   ],
   "mainPath": [
@@ -45,14 +45,14 @@
       "sources": [
         {
           "path": "skills/herdr-orchestrator/SKILL.md",
-          "line": 77,
-          "end_line": 91,
-          "label": "Complete briefs + horch run"
+          "line": 52,
+          "end_line": 58,
+          "label": "Brief and dispatch"
         },
         {
           "path": "README.md",
-          "line": 13,
-          "end_line": 15,
+          "line": 14,
+          "end_line": 22,
           "label": "What this repo does"
         }
       ]
@@ -69,8 +69,8 @@
       "sources": [
         {
           "path": "skills/pstack-herdr/SKILL.md",
-          "line": 30,
-          "end_line": 30,
+          "line": 60,
+          "end_line": 60,
           "label": "Implement + verify"
         }
       ]
@@ -87,14 +87,14 @@
       "sources": [
         {
           "path": "skills/pstack-herdr/SKILL.md",
-          "line": 31,
-          "end_line": 32,
+          "line": 61,
+          "end_line": 62,
           "label": "Independent review panel"
         },
         {
           "path": "skills/pstack-herdr/references/herdr-tools.md",
-          "line": 18,
-          "end_line": 20,
+          "line": 34,
+          "end_line": 34,
           "label": "Model diversity"
         }
       ]
@@ -111,8 +111,8 @@
       "sources": [
         {
           "path": "skills/pstack-herdr/SKILL.md",
-          "line": 32,
-          "end_line": 34,
+          "line": 62,
+          "end_line": 62,
           "label": "Lead judgment + review gate"
         }
       ]
@@ -129,8 +129,8 @@
       "sources": [
         {
           "path": "skills/pstack-herdr/SKILL.md",
-          "line": 33,
-          "end_line": 36,
+          "line": 63,
+          "end_line": 63,
           "label": "Fresh fix + fresh reviewers"
         }
       ]
@@ -147,8 +147,8 @@
       "sources": [
         {
           "path": "skills/pstack-herdr/SKILL.md",
-          "line": 34,
-          "end_line": 34,
+          "line": 64,
+          "end_line": 64,
           "label": "Final report"
         }
       ]
@@ -159,7 +159,7 @@
       "id": "delegate",
       "from": "dispatch",
       "to": "implement",
-      "label": "horch run",
+      "label": "dispatch",
       "variant": "emphasis",
       "fromSide": "bottom",
       "toSide": "top",
@@ -176,7 +176,7 @@
       "id": "collect",
       "from": "review",
       "to": "assess",
-      "label": "horch wait",
+      "label": "wait for results",
       "variant": "emphasis"
     },
     {
@@ -219,7 +219,7 @@
       "dot": "emerald",
       "title": "Visible from start to finish",
       "items": [
-        "Every task starts a fresh process in a Herdr pane.",
+        "Every task starts a fresh worker in Herdr or Rex.",
         "The controller verifies each completed result."
       ]
     },
@@ -227,7 +227,7 @@
       "dot": "violet",
       "title": "pstack review loop \u00b7 optional",
       "items": [
-        "pstack-herdr routes the review loop through horch.",
+        "Agent Workers runs each round of the review loop.",
         "Fixes get a fresh panel; done alone is not a pass."
       ]
     }

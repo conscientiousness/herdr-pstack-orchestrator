@@ -23,7 +23,7 @@ import tomllib
 from datetime import datetime, timezone
 
 REPO = Path(__file__).resolve().parents[1]
-HORCH = REPO / 'skills/herdr-orchestrator/scripts/horch.py'
+HORCH = REPO / 'skills/agent-workers/scripts/agent-workers.py'
 
 
 def read(path):

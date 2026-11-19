@@ -300,7 +300,7 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                         if (reads != known_ids or done != known_ids
                                 or any(call_time < delivered_at[tid] for tid in known_ids)):
                             raise Failure('delivery_dynamic_read_unproven')
-                    waits = list(re.finditer(r'(?:horch\.py|\bhorch)\s+wait\b([^\n;&|]*)', cmd))
+                    waits = list(re.finditer(r'\b(?:agent-workers|horch)(?:\.py)?\s+wait\b([^\n;&|]*)', cmd))
                     if len(waits) > 1:
                         raise Failure('transcript_combined_waits')
                     waiting = bool(waits)
@@ -321,7 +321,7 @@ def audit_transcript(path, tasks, counts, delivered_at=None):
                             raise Failure('transcript_wait_semantics_unproven')
                         audited.append(('launch', ids))
                     else:
-                        audited.append(('observe' if re.search(r'(?:horch\.py|\bhorch)\s+(?:run|list)\b', cmd) else 'shell', set()))
+                        audited.append(('observe' if re.search(r'\b(?:agent-workers|horch)(?:\.py)?\s+(?:run|list)\b', cmd) else 'shell', set()))
             pending[item['call_id']] = audited
         elif kind in ('function_call_output', 'custom_tool_call_output'):
             calls = pending.pop(item.get('call_id'), None)

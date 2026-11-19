@@ -19,7 +19,7 @@ import tempfile
 import time
 
 
-HORCH = Path(__file__).resolve().parents[1] / "skills/herdr-orchestrator/scripts/horch.py"
+HORCH = Path(__file__).resolve().parents[1] / "skills/agent-workers/scripts/agent-workers.py"
 CONTRACT = """# Invoice CLI contract
 
 The CLI reads JSON on stdin. `line` accepts quantity, unit_price_cents, and

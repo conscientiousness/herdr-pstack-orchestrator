@@ -7,7 +7,7 @@ Use Python 3.11+ and installed official `herdr-core`. Check `herdr-core --versio
 ## Lifecycle and startup recovery
 
 ```bash
-python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
+python3 e2e/core_backend.py --horch skills/agent-workers/scripts/agent-workers.py \
   --output "$proof" --core-only
 ```
 
@@ -20,13 +20,13 @@ Read the printed `evidence.json`. Require the nonce-bound early-result, complete
 From inside Herdr with `HERDR_ENV=1`, a reachable `HERDR_SOCKET_PATH`, and the real `herdr` CLI:
 
 ```bash
-python3 e2e/core_backend.py --horch skills/herdr-orchestrator/scripts/horch.py \
+python3 e2e/core_backend.py --horch skills/agent-workers/scripts/agent-workers.py \
   --output "$proof" --viewer
 ```
 
-This includes the lifecycle checks and creates an owned workspace without focusing it. Two workers launched from its ordinary shell controller must have separate attach panes in a shared `hcOrch` tab in that controller's live workspace, with `HERDR_ENV` removed. Require `task.json.controller_verification` and successful `viewer_verified` facts, plus the independent pane/tab and actual worker-output checks. It renames the owned viewer tab to invalidate placement, requires `verify-viewer` to fail while retaining workers, restores the label and requires fresh success. Require unchanged user focus, preflight rejection without worker allocation, delivery/cancellation cleanup, and owned workspace removal.
+This includes the lifecycle checks and creates an owned workspace without focusing it. Two workers launched from its ordinary shell controller must have separate attach panes in a shared `Workers` tab in that controller's live workspace, with `HERDR_ENV` removed. Require `task.json.controller_verification` and successful `viewer_verified` facts, plus the independent pane/tab and actual worker-output checks. It renames the owned viewer tab to invalidate placement, requires `verify-viewer` to fail while retaining workers, restores the label and requires fresh success. Require unchanged user focus, preflight rejection without worker allocation, delivery/cancellation cleanup, and owned workspace removal.
 
-Before directing a user to a real worker window, run `horch verify-viewer <task-id>` afresh. It verifies the live controller process, workspace and separate tab, exact pinned attach argv, and recognizable screen output from the pinned core terminal. A returned viewer ID or old verification does not prove current visibility. Failure must report `viewer_verification_error`; retain the task and stop window-interaction instructions.
+Before directing a user to a real worker window, run `agent-workers verify-viewer <task-id>` afresh. It verifies the live controller process, workspace and separate tab, exact pinned attach argv, and recognizable screen output from the pinned core terminal. A returned viewer ID or old verification does not prove current visibility. Failure must report `viewer_verification_error`; retain the task and stop window-interaction instructions.
 
 ## Evidence and limits
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""horch - start, watch, and close worker agents in Herdr or Rex.
+"""agent-workers - start, watch, and close worker agents in Herdr or Rex.
 
-Core of the herdr-orchestrator skill. Subcommands: run, wait, list, close, detect, check, stats.
+Core of the agent-workers skill. Subcommands: run, wait, list, close, detect, check, stats.
 Python 3.11+, standard library only. Every command prints JSON on stdout;
 errors are one {"error": code, "message": text} object with exit status 1.
 """
@@ -31,6 +31,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HARNESSES = ("pi", "codex", "claude")
+HARNESS_LABELS = {"pi": "Pi", "codex": "Codex", "claude": "Claude Code"}
 CONFIG_TOP_KEYS = {"max_active_workers", "notify_after_minutes", "workers", "roles"}
 WORKER_KEYS = {"harness", "model", "provider", "effort", "args", "description"}
 WORKER_NAME_RE = re.compile(r"[a-z][a-z0-9-]{0,15}")
@@ -55,7 +56,8 @@ SETTLED_STATES = {
 POLL_SECONDS = 2.0
 ACK_TIMEOUT_MS = 15000
 START_TIMEOUT_MS = 90000
-PANE_LABEL = "horch"
+WORKER_TAB_LABEL = "Workers"
+HISTORICAL_CORE_TAB_LABEL = "hcOrch"
 PANES_PER_TAB = 4
 
 WORKER_RULES = """\
@@ -63,7 +65,7 @@ WORKER_RULES = """\
 
 - Write your output files first. Write `result.json` last.
 - Do not ask the user questions. If something is unclear, write `result.json` with status `blocked` and the question, then stop.
-- Do not run `herdr`, `rex`, or `horch`.
+- Do not run `herdr`, `rex`, `agent-workers`, or its `horch` alias.
 - You may use your own subagents unless the assignment restricts delegation. Complete a no-delegation assignment yourself.
 
 Write `result.json` at exactly this path:
@@ -104,7 +106,7 @@ def fail(code, message, herdr_payload=None):
 
 def require_herdr_env():
     if os.environ.get("HERDR_ENV") != "1":
-        fail("not_in_herdr", "horch must run inside a herdr pane (HERDR_ENV is not 1)")
+        fail("not_in_herdr", "agent-workers must run inside a herdr pane (HERDR_ENV is not 1)")
 
 
 # ---------------------------------------------------------------------------
@@ -199,6 +201,7 @@ def herdr_id(doc, *path, id_key):
 # ---------------------------------------------------------------------------
 
 
+# Keep this storage namespace for upgrades from the herdr-orchestrator skill.
 def config_path():
     base = os.environ.get("XDG_CONFIG_HOME")
     root = Path(base).expanduser() if base else Path.home() / ".config"
@@ -219,6 +222,10 @@ def validate_task_id(task_id):
 def task_dir(task_id):
     validate_task_id(task_id)
     return tasks_root() / task_id
+
+
+def worker_label(worker, harness):
+    return f"{worker} · {HARNESS_LABELS[harness]}"
 
 
 @contextmanager
@@ -358,7 +365,9 @@ def load_task(directory, task_id):
             viewer = task.get("viewer")
             if viewer is not None and (not isinstance(viewer, dict) or any(
                     not isinstance(viewer.get(k), str) or not viewer[k]
-                    for k in ("pane_id", "tab_id", "socket_path"))):
+                    for k in ("pane_id", "tab_id", "socket_path"))
+                    or viewer.get("tab_label", HISTORICAL_CORE_TAB_LABEL)
+                    not in (WORKER_TAB_LABEL, HISTORICAL_CORE_TAB_LABEL)):
                 raise ValueError("invalid core viewer binding")
         except ValueError as exc:
             raise TaskInvalidError(f"task {task_id}: {exc}") from exc
@@ -366,10 +375,11 @@ def load_task(directory, task_id):
         try:
             rex.validate(binding)
             agent = "horch-" + task_id[2:]
+            branded_label = f"{worker_label(task['worker'], binding['harness'])} · {task['nonce']}"
             if (task["pane_id"] != (binding["block"] or binding["label"])
                     or task.get("workspace_id") != binding["session"]
                     or task.get("harness") != binding["harness"] or task["agent"] != agent
-                    or binding["label"] != f"{agent}-{task['nonce']}"):
+                    or binding["label"] not in (f"{agent}-{task['nonce']}", branded_label)):
                 raise ValueError("inconsistent Rex task binding")
         except ValueError as exc:
             raise TaskInvalidError(f"task {task_id}: {exc}") from exc
@@ -400,12 +410,13 @@ def active_task_count(workspace_id):
 
 
 def task_capacity(workspace_id, binding=None):
-    """Count reservations and collect reusable Rex windows in one store scan."""
+    """Count reservations and collect reusable worker tabs in one store scan."""
     active = 0
     legacy_panes = []
     invalid = []
-    rex_windows = {}
+    owned_tabs = {}
     rex_scope = binding is not None and binding["kind"] == "rex"
+    herdr_socket = os.environ.get("HERDR_SOCKET_PATH") if workspace_id and not rex_scope else None
     for task_id in all_task_ids():
         directory = task_dir(task_id)
         if load_state(directory)["closed"]:
@@ -425,12 +436,17 @@ def task_capacity(workspace_id, binding=None):
             if all(other[key] == binding[key] for key in ("host_id", "instance_id", "session")):
                 active += 1
                 if other["window"] and other["block"]:
-                    rex_windows.setdefault(other["window"], set()).add(other["block"])
+                    owned_tabs.setdefault(other["window"], set()).add(other["block"])
         elif is_rex(task):
             continue
         elif binding is not None and is_core(task):
             if task["backend"]["core_id"] == binding["core_id"]:
                 active += 1
+                viewer = task.get("viewer")
+                if (viewer and herdr_socket and viewer["socket_path"] == herdr_socket
+                        and task.get("workspace_id") == workspace_id
+                        and viewer.get("tab_label") == WORKER_TAB_LABEL):
+                    owned_tabs.setdefault(viewer["tab_id"], set()).add(viewer["pane_id"])
         elif binding is not None and workspace_id is None:
             continue
         elif is_core(task):
@@ -440,10 +456,15 @@ def task_capacity(workspace_id, binding=None):
             legacy_panes.append(task["pane_id"])
         elif task["workspace_id"] == workspace_id:
             active += 1
+            tab_id = task.get("tab_id")
+            legacy = task.get("backend", {})
+            if (binding is None and isinstance(tab_id, str)
+                    and "socket_path" in legacy and legacy["socket_path"] == herdr_socket):
+                owned_tabs.setdefault(tab_id, set()).add(task["pane_id"])
     if legacy_panes:
         panes = {pane_id for pane_id, _ in workspace_panes(workspace_id)}
         active += sum(pane_id in panes for pane_id in legacy_panes)
-    return active, invalid, rex_windows
+    return active, invalid, owned_tabs
 
 
 # ---------------------------------------------------------------------------
@@ -600,20 +621,21 @@ def split_pane(source, direction, cwd):
     return herdr_id(doc, "result", "pane", id_key="pane_id")
 
 
-def place_pane(workspace, cwd, caller_tab, label=PANE_LABEL):
-    """Return (pane_id, tab_id) for a fresh worker pane; never touches caller_tab."""
+def place_pane(workspace, cwd, caller_tab, owned_tabs):
+    """Place a fresh worker pane in a tab owned by this backend."""
     tabs = herdr_path(herdr("tab", "list", "--workspace", workspace, timeout=30.0), "result", "tabs")
     panes = workspace_panes(workspace)
     for tab in tabs:
         tab_id = tab.get("tab_id") if isinstance(tab, dict) else None
-        if not isinstance(tab_id, str) or tab_id == caller_tab or tab.get("label") != label:
+        if (not isinstance(tab_id, str) or tab_id == caller_tab or tab_id not in owned_tabs
+                or tab.get("label") != WORKER_TAB_LABEL):
             continue
         count = tab.get("pane_count")
         if not isinstance(count, int) or count < 1 or count >= PANES_PER_TAB:
             continue
         ids = [pane_id for pane_id, pane_tab in panes if pane_tab == tab_id]
-        if not ids:
-            raise HerdrError(f"herdr tab list says tab {tab_id} has {count} panes, but pane list shows none")
+        if len(ids) != count or not set(ids).issubset(owned_tabs[tab_id]):
+            continue
         if count == 1:
             return split_pane(ids[0], "right", cwd), tab_id
         return split_pane(widest_pane_id(ids[0]), "down", cwd), tab_id
@@ -622,11 +644,18 @@ def place_pane(workspace, cwd, caller_tab, label=PANE_LABEL):
         "tab", "create",
         "--workspace", workspace,
         "--cwd", str(cwd),
-        "--label", label,
+        "--label", WORKER_TAB_LABEL,
         "--no-focus",
         timeout=60.0,
     )
     return herdr_id(doc, "result", "root_pane", id_key="pane_id"), herdr_id(doc, "result", "tab", id_key="tab_id")
+
+
+def label_worker_pane(pane_id, worker, harness):
+    try:
+        herdr("pane", "rename", pane_id, worker_label(worker, harness), timeout=5.0)
+    except HerdrError:
+        pass  # display labels do not affect worker execution
 
 
 # ---------------------------------------------------------------------------
@@ -788,7 +817,7 @@ def require_caller_context(claimed=None, caller_text=None):
     owner = pane_owning_process(ancestors)
     if owner is not None and not needs_screen:
         fail("caller_context_invalid",
-             f"{source} names pane {pane_id!r}, but horch runs inside pane {owner!r}. "
+             f"{source} names pane {pane_id!r}, but agent-workers runs inside pane {owner!r}. "
              f"Rerun with HERDR_PANE_ID={owner} if that pane is this controller. {guidance}")
     if claimed is None:
         fail("caller_context_invalid",
@@ -1027,10 +1056,12 @@ def verify_viewer(task):
                 raise HerdrError("controller harness process changed; confirm the controller again")
             pane = herdr_path(herdr("pane", "get", viewer["pane_id"], env=env), "result", "pane")
             tab = herdr_path(herdr("tab", "get", pane["tab_id"], env=env), "result", "tab")
+            expected_label = viewer.get("tab_label", HISTORICAL_CORE_TAB_LABEL)
             if (pane["workspace_id"] != caller["workspace_id"]
                     or tab["workspace_id"] != caller["workspace_id"]
-                    or pane["tab_id"] == caller["tab_id"] or tab.get("label") != "hcOrch"):
-                raise HerdrError("viewer is outside the live controller workspace or its separate hcOrch tab")
+                    or pane["tab_id"] == caller["tab_id"] or pane["tab_id"] != viewer["tab_id"]
+                    or tab.get("label") != expected_label):
+                raise HerdrError(f"viewer is outside the live controller workspace or its separate {expected_label} tab")
             binding = task["backend"]
             info = pane_process_info(pane["pane_id"], env=env)
             argv = [binding["executable"], "attach", binding["terminal"]]
@@ -1115,7 +1146,7 @@ def submit_core_task(directory, task, state):
     except core.CoreError as exc:
         if state["submission"] == "not_sent":
             state["state"] = "start_failed"
-            state["problem"] = str(exc) + f"; after inspection and resolving readiness, use horch submit {task['task_id']}"
+            state["problem"] = str(exc) + f"; after inspection and resolving readiness, use agent-workers submit {task['task_id']}"
         elif state["submission"] == "unknown":
             state["state"] = "not_started"
             state["problem"] = f"send outcome unresolved: {exc}; inspect, then wait --recheck; do not resend"
@@ -1224,7 +1255,7 @@ def submit_rex_task(directory, task, state):
             state["submission"] = "not_sent"
         if state["submission"] == "not_sent":
             state.update(state="start_failed", problem=f"{exc}; no task was sent. After resolving readiness, "
-                         f"use horch submit {task['task_id']}")
+                         f"use agent-workers submit {task['task_id']}")
         elif state["submission"] == "unknown":
             state["problem"] = f"Rex send outcome unresolved: {exc}; inspect, then wait --recheck; do not resend"
         else:
@@ -1264,7 +1295,8 @@ def start_rex_task(config, worker_name, brief_text, cwd, skip_if_full, caller):
     nonce = secrets.token_hex(8)
     agent = "horch-" + task_id[2:]
     argv = native_launch_args(worker, directory, "Rex")
-    binding = dict(context, window=None, block=None, label=f"{agent}-{nonce}", harness=worker["harness"])
+    label = f"{worker_label(worker_name, worker['harness'])} · {nonce}"
+    binding = dict(context, window=None, block=None, label=label, harness=worker["harness"])
     task = {"task_id": task_id, "nonce": nonce, "worker": worker_name,
             "harness": worker["harness"], "model": worker["model"], "cwd": str(cwd),
             "task_dir": str(directory), "brief_path": str(directory / "brief.md"),
@@ -1312,7 +1344,7 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
     if worker is None:
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
     caller = core_caller_context(caller_pane, caller_text)
-    active, invalid, _ = task_capacity(caller["workspace_id"] if caller else None, binding)
+    active, invalid, owned_tabs = task_capacity(caller["workspace_id"] if caller else None, binding)
     if active >= config["max_active_workers"]:
         if skip_if_full:
             return None
@@ -1360,17 +1392,19 @@ def start_core_task(config, worker_name, brief_text, cwd, skip_if_full, caller_p
                 task["viewer_socket"] = viewer_socket
                 task["viewer_unresolved"] = True
                 write_json(directory / "task.json", task)
-                pane_id, tab_id = place_pane(caller["workspace_id"], cwd, caller["tab_id"], "hcOrch")
-                task["viewer"] = {"pane_id": pane_id, "tab_id": tab_id, "socket_path": viewer_socket}
+                pane_id, tab_id = place_pane(caller["workspace_id"], cwd, caller["tab_id"], owned_tabs)
+                task["viewer"] = {"pane_id": pane_id, "tab_id": tab_id, "socket_path": viewer_socket,
+                                  "tab_label": WORKER_TAB_LABEL}
                 task["viewer_unresolved"] = False
                 write_json(directory / "task.json", task)
+                label_worker_pane(pane_id, worker_name, worker["harness"])
                 env = core.cli_env(binding)
                 assignments = [f"{k}={env[k]}" for k in (*binding["env"], "HC_SESSION", "HC_SOCKET")]
                 command = shlex.join(["env", "-u", "HC_TERMINAL_ID", *assignments,
                                       binding["executable"], "attach", binding["terminal"]])
                 herdr("pane", "run", pane_id, command, timeout=30, expect_json=False)
             except HerdrError as exc:
-                warning = f"core worker retained; required hcOrch viewer failed: {exc}; "
+                warning = f"core worker retained; required Workers viewer failed: {exc}; "
                 warning += "inspect for an empty viewer pane after ambiguous placement"
                 task["viewer_warning"] = warning
                 write_json(directory / "task.json", task)
@@ -1420,11 +1454,11 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         fail("unknown_worker", f"no worker named {worker_name!r} in {config_path()}")
 
     max_active = config["max_active_workers"]
-    active, invalid, _ = task_capacity(caller["workspace_id"])
+    active, invalid, owned_tabs = task_capacity(caller["workspace_id"])
     if active >= max_active:
         if skip_if_full:
             return None
-        guidance = (f"; invalid tasks: {', '.join(invalid)}; inspect them with horch list"
+        guidance = (f"; invalid tasks: {', '.join(invalid)}; inspect them with agent-workers list"
                     if invalid else "")
         fail(
             "worker_limit",
@@ -1449,7 +1483,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         shutil.rmtree(directory, ignore_errors=True)
         raise
     try:
-        pane_id, tab_id = place_pane(caller["workspace_id"], cwd, caller["tab_id"])
+        pane_id, tab_id = place_pane(caller["workspace_id"], cwd, caller["tab_id"], owned_tabs)
     except BaseException as exc:
         shutil.rmtree(directory, ignore_errors=True)
         print(f"warning: pane placement failed: {exc}; an empty pane may exist "
@@ -1472,7 +1506,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         "workspace_id": caller["workspace_id"],
         "controller_verification": caller["controller_verification"],
         "argv": launch_args(worker, directory),
-        "backend": {"kind": "legacy"},
+        "backend": {"kind": "legacy", "socket_path": os.environ.get("HERDR_SOCKET_PATH")},
         "created_at": iso_now(),
     }
     state = default_state()
@@ -1515,6 +1549,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
     start_problem = None
     startup_deadline = time.monotonic() + START_TIMEOUT_MS / 1000
     try:
+        label_worker_pane(pane_id, worker_name, worker["harness"])
         doc = herdr(
             "agent", "start", agent,
             "--kind", worker["harness"],
@@ -1534,7 +1569,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         state["state"] = "start_failed"
         state["problem"] = start_problem
         save_state(directory, state)
-        notify(f"horch: {task_id} start_failed", f"worker {worker_name} failed to start in pane {pane_id}: {start_problem}")
+        notify(f"agent-workers: {task_id} start_failed", f"worker {worker_name} failed to start in pane {pane_id}: {start_problem}")
         return run_object("start_failed")
 
     index = agent_index()
@@ -1544,7 +1579,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         state["state"] = "start_failed"
         state["problem"] = "could not capture a usable agent baseline; prompt was not submitted"
         save_state(directory, state)
-        notify(f"horch: {task_id} start_failed", state["problem"])
+        notify(f"agent-workers: {task_id} start_failed", state["problem"])
         return run_object(state["state"])
     state["baseline_seq"] = baseline
     state["startup_ready"] = True
@@ -1568,7 +1603,7 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
         if status == "blocked":
             state["state"] = "blocked"
             state["problem"] = "the worker is waiting at a dialog"
-            notify(f"horch: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
+            notify(f"agent-workers: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
         else:
             state["state"] = "running"
             state["saw_working"] = status == "working"
@@ -1580,12 +1615,12 @@ def _start_task_locked(config, worker_name, brief_text, cwd, skip_if_full, calle
             state["submission"] = "not_sent"
             state["state"] = "blocked"
             state["problem"] = "the worker is waiting at a dialog"
-            notify(f"horch: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
+            notify(f"agent-workers: {task_id} blocked", f"worker {worker_name} is waiting at a dialog in pane {pane_id}")
         else:
             state["state"] = "not_started"
             state["problem"] = f"prompt acknowledgement not observed: {exc}"
             notify(
-                f"horch: {task_id} not_started",
+                f"agent-workers: {task_id} not_started",
                 f"worker {worker_name} prompt acknowledgement not observed within {ACK_TIMEOUT_MS // 1000}s: {exc}",
             )
     save_state(directory, state)
@@ -1656,7 +1691,7 @@ def evaluate_task(info, agent, config):
     if state["submission"] == "not_sent":
         state["state"] = "start_failed"
         can_submit = is_core(task) or (is_rex(task) and task["backend"]["block"])
-        state["problem"] = ("no task was sent; inspect readiness, then use horch submit " + task["task_id"]
+        state["problem"] = ("no task was sent; inspect readiness, then use agent-workers submit " + task["task_id"]
                             if can_submit else "no task was sent; inspect and close this task before a fresh run")
         return state["state"]
     if state["submission"] == "unknown":
@@ -1768,7 +1803,7 @@ def poll_round(infos, previous, config):
             try:
                 close_task_resources(info["task"])
             except (HerdrError, core.CoreError, rex.RexError) as exc:
-                cleanup_error = f"task cleanup failed: {exc}; retry with horch close {info['task_id']}"
+                cleanup_error = f"task cleanup failed: {exc}; retry with agent-workers close {info['task_id']}"
             with task_state_lock(directory):
                 state = load_state(directory)
                 if not state["closed"]:
@@ -1782,7 +1817,7 @@ def poll_round(infos, previous, config):
         # Suppress a notice if a concurrent close has already completed.
         if (notice and not is_rex(info["task"]) and not load_state(directory)["closed"]
                 and (not is_core(info["task"]) or info["task"].get("viewer"))):
-            notify(f"horch: {info['task_id']}", notice)
+            notify(f"agent-workers: {info['task_id']}", notice)
         info["reported"] = reported
         if previous.get(info["task_id"]) != reported:
             previous[info["task_id"]] = reported
@@ -2135,9 +2170,9 @@ def cmd_close(args):
 
 
 CHECK_BRIEF = """\
-# horch setup check
+# Agent Workers setup check
 
-This task only checks that horch can start you and read your result. Do not
+This task only checks that agent-workers can start you and read your result. Do not
 read, create, or change any file except `result.json`. Write `result.json` now
 with status `completed` and summary `check ok`.
 """
@@ -2160,7 +2195,7 @@ def pi_providers():
 
     Sign-in status is left out: `pi auth check` does not know providers that come
     from extensions (measured: commandcode reports provider_not_found yet works).
-    `horch check` is the real test.
+    `agent-workers check` is the real test.
     """
     try:
         proc = subprocess.run(["pi", "--list-models"], capture_output=True, text=True, timeout=60)
@@ -2279,10 +2314,10 @@ def cmd_check(args):
     for name in names:
         if name not in started:
             message = ("check wait limit reached before this worker could start" if time.monotonic() >= deadline
-                       else "no free worker slot; review max_active_workers or close problem panes with horch close")
+                       else "no free worker slot; review max_active_workers or close problem panes with agent-workers close")
             if capacity_invalid:
                 message += (f"; invalid tasks held capacity: {', '.join(sorted(capacity_invalid))}; "
-                            "inspect them with horch list")
+                            "inspect them with agent-workers list")
             emit({"worker": name, "task_id": None, "state": "not_checked", "ok": False,
                   "pane_id": None, "seconds": None, "message": message})
             continue
@@ -2326,7 +2361,7 @@ def add_caller_arguments(parser):
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        prog="horch",
+        prog="agent-workers",
         description="Start worker agents in Rex or Herdr, give each one task, and wait for the result.",
     )
     sub = parser.add_subparsers(dest="command", required=True, metavar="command")
@@ -2402,7 +2437,7 @@ def main(argv=None):
         fail("internal_error", f"{type(exc).__name__}: {exc}")
 
 
-if __name__ == "__main__":
+def cli():
     if sys.argv[1:2] == ["--exec-rex-worker"]:
         # The Rex server can inherit another controller's multiplexer and harness environment.
         keep = {key: value for key, value in os.environ.items()
@@ -2410,3 +2445,7 @@ if __name__ == "__main__":
                 and key not in (*CONTROLLER_SESSION_ENV.values(), "PI_SESSION_ID", "CLAUDECODE")}
         os.execve(sys.argv[2], sys.argv[2:], keep)
     main()
+
+
+if __name__ == "__main__":
+    cli()
