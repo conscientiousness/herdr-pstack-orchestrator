@@ -1,6 +1,6 @@
 # Original pstack source and compatibility
 
-This bundle tracks [Lauren Tan's original pstack](https://github.com/cursor/plugins/tree/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7/pstack), version **0.15.43**, at commit `2f87c854fe3e2fcda44ca86b46ede35aad3c46b7`. The revision pins instructions and references; it does not establish runtime support for every playbook.
+This bundle tracks [Lauren Tan's original pstack](https://github.com/cursor/plugins/tree/fbb86c09bbb4a25e490aaed136899ced1e9140e4/pstack), version **0.15.46**, at commit `2f87c854fe3e2fcda44ca86b46ede35aad3c46b7`. The revision pins instructions and references; it does not establish runtime support for every playbook.
 
 ## Install
 
@@ -61,6 +61,8 @@ Arena now requires a cross-judge from a different vendor, treating Claude Fable 
 The [0.15.43 update](https://github.com/cursor/plugins/compare/bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7...2f87c854fe3e2fcda44ca86b46ede35aad3c46b7) adds `poteto-mode/worker.md` and shortens workflow and writing guidance. Architect asks the controller to sketch two designs and routes large or contested designs to Arena. Reflect reviews the transcript in the controller and retains approval before skill edits. Poteto mode has 22 playbooks after the removal of Orchestrate. The update simplifies Babysit, Opening a PR, and Multi-phase plan and removes the plan checker. The new Cursor model defaults and effort limits leave Herdr's configured role selection in place. Team-kit and the three skill exclusions are unchanged.
 
 The controller owns each `poteto-mode` playbook. The bundle preserves the upstream [worker rules](../../poteto-mode/worker.md) for reference. Herdr dispatch and delivery follow the companion skill, project instructions, and scoped task brief. A `poteto-agent` brief includes the bundled agent instructions and the absolute path to `poteto-mode/SKILL.md`. The `comment-sicko` agent ID maps to its bundled instructions through the same configured-worker mechanism.
+
+The [0.15.46 update](https://github.com/cursor/plugins/compare/2f87c854fe3e2fcda44ca86b46ede35aad3c46b7...fbb86c09bbb4a25e490aaed136899ced1e9140e4) updates the Gemini panel default in Arena and Poteto mode. Worker model and effort still come from `workers.toml`. Statechart adds a native Windows Node entry point, normalizes CRLF in TLC output, and handles worker process-tree cleanup on Windows.
 
 ## Resource and runtime mapping
 

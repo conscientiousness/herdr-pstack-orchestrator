@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/cursor/plugins.git",
-  "revision": "2f87c854fe3e2fcda44ca86b46ede35aad3c46b7",
-  "version": "0.15.43",
+  "revision": "fbb86c09bbb4a25e490aaed136899ced1e9140e4",
+  "version": "0.15.46",
   "team_kit_skills": [
     "control-cli",
     "control-ui",
