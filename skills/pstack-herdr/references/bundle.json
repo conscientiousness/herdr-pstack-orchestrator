@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/cursor/plugins.git",
-  "revision": "2f87c854fe3e2fcda44ca86b46ede35aad3c46b7",
-  "version": "0.15.43",
+  "revision": "fbb86c09bbb4a25e490aaed136899ced1e9140e4",
+  "version": "0.15.46",
   "excluded_skills": {
     "make-bot-ui": "Requires unavailable Cursor Routines and secret-request tools; no coding workflow depends on it.",
     "poteto-help": "Cursor-specific setup and navigation duplicate the adapter docs and require unbundled guide pages; no workflow depends on it.",
@@ -18,7 +18,7 @@
       "name": "arena",
       "adapted": true,
       "source": "pstack/skills/arena/SKILL.md",
-      "source_sha256": "04f79ee8239251bc0c8a9e92f895ebe7bff42e785a5f6ef8ed2dc34dae18e85d"
+      "source_sha256": "24366948a9546dcb7dfc15a5cf7a4571edd917a8c1efef060b458a0fad608053"
     },
     {
       "name": "automate-me",
@@ -120,7 +120,7 @@
       "name": "poteto-mode",
       "adapted": true,
       "source": "pstack/skills/poteto-mode/SKILL.md",
-      "source_sha256": "67fd2c54fd25ebfae1e46db62c4b2e54f806a7ea9dfb6c83922de37e9b9635ea"
+      "source_sha256": "7aa026dc1fad7db0ea1ff39171e6b768ee99d03a7f46d0b9cd38973511251d81"
     },
     {
       "name": "principle-attack-the-premise",
@@ -294,7 +294,7 @@
       "name": "statechart",
       "adapted": false,
       "source": "pstack/skills/statechart/SKILL.md",
-      "source_sha256": "010b7b4532406739b1c3a426d1a45f02bb618a42561fc96b3976e064a7f8384d"
+      "source_sha256": "ca7b3e43b1ddc4fb2425a33960f9390357323a869e1d921b6e2aff4f3004d55e"
     },
     {
       "name": "swarm",
